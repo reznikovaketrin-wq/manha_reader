@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Manhwa } from '@/types/manhwa';
 
@@ -7,68 +8,75 @@ interface ManhwaCardProps {
 
 export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
   // Определение статусов на украинском
-  const statusText = 
-    manhwa.status === 'ongoing' ? 'ONGOING' : 
-    manhwa.status === 'completed' ? 'ЗАВЕРШЕНО' : 
+  const statusText =
+    manhwa.status === 'ongoing' ? 'ONGOING' :
+    manhwa.status === 'completed' ? 'ЗАВЕРШЕНО' :
     'HIATUS';
-
+ const lastSlashIndex = manhwa.coverImage.lastIndexOf('/');
+  const baseImageUrl = lastSlashIndex !== -1
+    ? manhwa.coverImage.slice(0, lastSlashIndex)
+    : manhwa.coverImage;
+  const backgroundImageUrl = `${baseImageUrl}/bg.png`;
+  const characterImageUrl = `${baseImageUrl}/char.png`;
   return (
-    <Link href={`/manhwa/${manhwa.id}`}>
+    <Link
+      href={`/manhwa/${manhwa.id}`}
+      className="block w-full"
+    >
       <section
-        className="
-          relative w-full 
-          h-[440px] min-h-[440px]
-          md:h-[260px] md:min-h-[260px]
-          sm:h-auto sm:min-h-[260px]
-          bg-card-bg bg-center bg-right bg-cover bg-no-repeat 
-          overflow-visible 
-          flex items-center
-          sm:items-end
-          px-10 py-8
-          md:px-5 md:py-6
-          sm:px-4 sm:py-5
-          cursor-pointer 
-          transition-all duration-150 ease-out 
-          hover:-translate-y-0.5 
-          hover:shadow-[0_18px_40px_rgba(0,0,0,0.8)] 
-          hover:bg-card-hover
-        "
-        style={{
-          backgroundImage: `url(${manhwa.coverImage})`,
-        }}
+        className="relative w-full overflow-hidden rounded-3xl border border-white/5 bg-black shadow-[0_18px_60px_rgba(0,0,0,0.45)] transition-transform duration-200 ease-out hover:-translate-y-0.5"
       >
-        {/* Character Art - отдельный слой поверх фона */}
+        {/* Background image */}
         <div
-          className="absolute top-[-39px] right-0 w-[50%] h-[109%] bg-no-repeat bg-contain bg-top-right pointer-events-none z-[1]"
-          style={{
-            backgroundImage: `url(${manhwa.coverImage})`,
-          }}
+           className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${backgroundImageUrl})` }}
         />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/25" />
 
+        {/* Large decorative title */}
+        <div className="pointer-events-none absolute inset-0 hidden md:flex items-center px-10">
+          <div className="text-white/10 text-[180px] xl:text-[200px] font-extrabold uppercase leading-none tracking-tight-2 truncate">
+            {manhwa.title}
+          </div>
+        </div>
         {/* Текстовый контент */}
-        <div className="max-w-[52%] md:max-w-[70%] sm:max-w-full relative z-[2]">
+        <div className="relative z-10 flex min-h-[380px] md:min-h-[320px] flex-col justify-between gap-6 px-10 py-10 md:px-7 md:py-8 sm:px-5 sm:py-6">
           {/* Статусы */}
-          <div className="flex flex-wrap gap-[90px] md:gap-6 sm:gap-[18px] mb-4 text-[20px] md:text-[18px] sm:text-base font-medium uppercase tracking-tight-2">
-            <span className="text-white">{statusText}</span>
-            <span className="text-white">БЕЗ ЦЕНЗУРИ</span>
-            <span className="text-white">MANHWA</span>
+         <div className="flex flex-wrap gap-10 md:gap-6 sm:gap-4 text-lg md:text-base sm:text-sm font-semibold uppercase tracking-tight-2 text-white/90">
+            <span>{statusText}</span>
+            <span>БЕЗ ЦЕНЗУРИ</span>
+            <span>MANHWA</span>
           </div>
 
-          {/* Заголовок */}
-          <h2 className="
-            my-6 md:my-[18px] sm:my-3
-            text-[70px] md:text-[44px] sm:text-[32px]
-            font-extrabold uppercase tracking-tight-2 leading-none 
-            whitespace-nowrap overflow-visible
-          ">
-            {manhwa.title}
-          </h2>
+           {/* Заголовок и описание */}
+            <div className="max-w-[640px] md:max-w-[520px] sm:max-w-full space-y-4 md:space-y-3">
+              <h2 className="text-[64px] md:text-[46px] sm:text-[34px] font-extrabold uppercase leading-none tracking-tight-2 text-white drop-shadow-[0_6px_12px_rgba(0,0,0,0.45)]">
+                {manhwa.title}
+              </h2>
+              <p className="text-[17px] sm:text-[14px] leading-relaxed text-white/80 md:max-w-[90%]">
+                {manhwa.description.slice(0, 140)}...
+              </p>
+            </div>
 
-          {/* Описание */}
-          <p className="text-text-muted text-base sm:text-[13px] leading-relaxed">
-            {manhwa.description.slice(0, 120)}...
-          </p>
-        </div>
+            {/* Призыв к действию */}
+            <div className="inline-flex w-fit items-center gap-3 rounded-full bg-white/10 px-5 py-3 text-sm font-semibold uppercase tracking-tight-2 text-white backdrop-blur transition-colors duration-150 hover:bg-white/18">
+              Читать сейчас
+              <span aria-hidden className="text-lg">→</span>
+            </div>
+          </div>
+
+          {/* Character artwork */}
+          <div className="relative w-full md:w-[42%] sm:w-full min-h-[220px] md:min-h-[320px] lg:min-h-[360px] pointer-events-none flex items-end justify-center md:justify-end">
+            <Image
+              src={characterImageUrl}
+              alt={`${manhwa.title} characters`}
+              fill
+              sizes="(max-width: 640px) 70vw, (max-width: 1024px) 46vw, 38vw"
+              className="object-contain object-bottom md:object-right-bottom drop-shadow-[0_16px_30px_rgba(0,0,0,0.6)]"
+              priority
+            />
+          </div>
+          
       </section>
     </Link>
   );

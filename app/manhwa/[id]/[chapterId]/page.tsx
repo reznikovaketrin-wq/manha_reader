@@ -120,23 +120,21 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       </div>
 
       {/* Pages */}
-      <div className="max-w-[1000px] mx-auto pt-20">
+      <div className="max-w-5xl w-full mx-auto pt-20 px-4 md:px-6 flex flex-col gap-6">
         {chapter.pages.map((page, index) => (
-          <div key={index} className="w-full">
-            <div 
-              className="w-full bg-gray-900 bg-center bg-contain bg-no-repeat"
-              style={{ 
-                backgroundImage: `url(${page})`,
-                paddingBottom: '150%', // Aspect ratio для вертикальних сторінок
-                minHeight: '100vh'
-              }}
+          <div key={index} className="w-full overflow-hidden rounded-lg bg-gray-900/50">
+            <img
+              src={page}
+              alt={`Сторінка ${index + 1}`}
+              className="w-full h-auto object-contain"
+              loading="lazy"
             />
           </div>
         ))}
       </div>
 
       {/* Bottom Navigation */}
-      <div className="max-w-[1000px] mx-auto px-4 py-8 bg-black">
+      <div className="max-w-5xl w-full mx-auto px-4 py-8 bg-black">
         <div className="flex items-center justify-between gap-4">
           {/* Previous Chapter */}
           {prevChapter ? (

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import './globals.css';
-import Link from 'next/link';
+import Image from 'next/image'
 
 const manrope = Manrope({ 
   subsets: ['latin', 'cyrillic'],
@@ -26,9 +26,15 @@ export default function RootLayout({
           {/* Header */}
           <header className="flex items-center gap-[18px] px-[18px] py-[14px] mb-[26px]">
             <div className="flex items-center gap-[18px]">
-              {/* Logo placeholder - replace with actual logo */}
-              <div className="h-[100px] w-[100px] flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
-                <span className="text-white font-extrabold text-4xl">TriW</span>
+              <div className="relative h-[100px] w-[100px] overflow-hidden rounded-lg bg-[#111111]">
+                <Image
+                  src="/images/logo_triw_white.svg"
+                  alt="TriW logo"
+                  fill
+                  sizes="100px"
+                  className="object-contain"
+                  priority
+                />
               </div>
               <div className="font-extrabold text-[30px] uppercase tracking-tight-2 text-white mt-[38px]">
                 Бібліотека
