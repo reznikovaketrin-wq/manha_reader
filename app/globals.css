@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #111111;
+    --foreground: #ffffff;
+  }
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    @apply bg-page-bg text-text-main;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  html {
+    background: #111111;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .text-shadow-strong {
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+  }
+}
