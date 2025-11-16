@@ -13,7 +13,7 @@ export default function HomePage() {
         Вся манхва
       </h2>
 
-      {/* Cards Grid */}
+      {/* Cards List */}
       <div className="flex flex-col gap-10 w-full">
         {manhwaData.map((manhwa) => (
           <ManhwaCard key={manhwa.id} manhwa={manhwa} />
