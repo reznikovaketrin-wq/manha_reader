@@ -9,8 +9,8 @@ export default function HomePage() {
       <ContinueReading />
 
       {/* All Manhwa Section */}
-      <h2 className="text-3xl font-extrabold uppercase tracking-tight-2 mb-6">
-        Вся манхва
+      <h2 className="text-2xl font-extrabold uppercase tracking-tight-2 mb-6">
+        Всі тайтли
       </h2>
 
       {/* Cards List */}

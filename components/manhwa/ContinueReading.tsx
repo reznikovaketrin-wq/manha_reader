@@ -29,11 +29,11 @@ export default function ContinueReading() {
 
   return (
     <div className="mb-12">
-      <h2 className="text-3xl font-extrabold uppercase tracking-tight-2 mb-6">
+      <h2 className="text-2xl font-extrabold uppercase tracking-tight-2 mb-6">
         Продовжити читання
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {history.map((item) => {
           const manhwa = getManhwaById(item.manhwaId);
           if (!manhwa) return null;
@@ -45,21 +45,28 @@ export default function ContinueReading() {
             <Link
               key={item.manhwaId}
               href={`/manhwa/${item.manhwaId}/${item.chapterId}`}
-              className="block"
+              className="block w-5/6 mx-auto"
             >
               <div className="bg-card-bg hover:bg-card-hover transition-colors rounded-lg overflow-hidden border border-transparent hover:border-text-muted/20">
                 {/* Обкладинка */}
                 <div 
-                  className="h-48 bg-cover bg-center"
-                  style={{ backgroundImage: `url(${manhwa.coverImage})` }}
+                  className="relative w-full bg-center bg-no-repeat"
+                  style={{ 
+                    backgroundImage: `url(${manhwa.coverImage})`,
+                    backgroundSize: 'contain',
+                    backgroundPosition: 'center',
+                    backgroundColor: '#1a1a1a',
+                    aspectRatio: '4 / 5',
+                    height: '187px'
+                  }}
                 />
 
                 {/* Інформація */}
-                <div className="p-4">
-                  <h3 className="font-bold text-lg mb-1 line-clamp-1">
+                <div className="p-2">
+                  <h3 className="font-bold text-sm mb-1 line-clamp-1">
                     {manhwa.title}
                   </h3>
-                  <p className="text-text-muted text-sm mb-2">
+                  <p className="text-text-muted text-xs mb-1 line-clamp-1">
                     Розділ {chapter.number}: {chapter.title}
                   </p>
                   <div className="flex items-center justify-between text-xs text-text-muted">

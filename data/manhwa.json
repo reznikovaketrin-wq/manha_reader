@@ -3,22 +3,105 @@
     {
       "id": "lycar-ta-vidma",
       "title": "Лицар та Відьма",
-      "alternativeTitles": ["The Knight and the Witch"],
       "description": "Зерак — зухвала відьма, народжена з самоцвіту. Її не приймають у злет традиційних відьом, тому вона вирушає у мандри. На своєму шляху вона зустрічає трьох загадкових чоловіків, і кожен з них може змінити її долю — як у коханні, так і в магії.",
       "coverImage": "/lycar-ta-vidma/cover.png",
-      "author": "Невідомо",
-      "artist": "Невідомо",
-      "genres": ["Фентезі", "Романтика"],
       "status": "ongoing",
       "rating": 8.9,
-      "updatedAt": "2024-03-15",
       "chapters": [
         {
           "id": "chapter-1",
           "number": 1,
-          "title": "Зустріч",
-          "pagesCount": 5,
-          "publishedAt": "2024-01-01"
+          "pagesCount": 5
+        }
+      ]
+    },
+    {
+      "id": "laboratoriia-krisel-kokhannia",
+      "title": "Лабораторія крісел кохання",
+      "description": "З кожним днем «Лабораторія крісел кохання» продовжує вдосконалюватися, а її особливість полягає в тому, що співробітники охоче занурюються в цю ілюзію.",
+      "coverImage": "/laboratoriia-krisel-kokhannia/cover.png",
+      "status": "ongoing",
+      "rating": 8.5,
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "pagesCount": 8
+        }
+      ]
+    },
+    {
+      "id": "klub-dorosloi-literatury",
+      "title": "Клуб дорослої літератури",
+      "description": "Першокурсниця Хоїн вступає до книжкового клубу, де начебто достатньо просто читати вголос. Але дуже швидко вона розуміє, що обрана література — зовсім не невинна.",
+      "coverImage": "/klub-dorosloi-literatury/cover.png",
+      "status": "ongoing",
+      "rating": 8.7,
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "pagesCount": 6
+        }
+      ]
+    },
+    {
+      "id": "yak-pryborkaty-hercoga-monstra",
+      "title": "Як приборкати герцога-монстра",
+      "description": "Чарівниця Неоніс має зняти прокляття з герцога, у жилах якого тече кров драконів. Чим довше вона залишається в маєтку, тим сильніше чудовисько бачить у ній свою пару.",
+      "coverImage": "/yak-pryborkaty-hercoga-monstra/cover.png",
+      "status": "completed",
+      "rating": 9.3,
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "pagesCount": 7
+        }
+      ]
+    },
+    {
+      "id": "yak-otrymaty-tu-pokoivku",
+      "title": "Як отримати ту покоївку",
+      "description": "Генрі та Ґрейс виросли разом, але їхні заручини перетворилися на формальність. Після падіння роду Ґрейс баланс руйнується, а нічні домовленості стають небезпечно відвертими.",
+      "coverImage": "/yak-otrymaty-tu-pokoivku/cover.png",
+      "status": "completed",
+      "rating": 8.8,
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "pagesCount": 9
+        }
+      ]
+    },
+    {
+      "id": "punkni-vyshenky",
+      "title": "Пуньки вишеньки",
+      "description": "Є Ін усе життя соромилася своїх втягнутих сосків і клялася ніколи не показувати груди. Але випадкова ніч з Джеміном, надто уважним юристом, змінює все.",
+      "coverImage": "/punkni-vyshenky/cover.png",
+      "status": "ongoing",
+      "rating": 8.5,
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "pagesCount": 5
+        }
+      ]
+    },
+    {
+      "id": "miy-drug-dytynstva",
+      "title": "Мій друг дитинства, якого я вважала мертвим, став володарем демонів",
+      "description": "Люссі жила тихим життям поруч з Орто, поки її друг дитинства, якого всі вважали мертвим, не повернувся як король демонів — і тепер не збирається відпускати її знову.",
+      "coverImage": "/miy-drug-dytynstva/cover.png",
+      "status": "ongoing",
+      "rating": 9.0,
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "pagesCount": 10
         }
       ]
     }

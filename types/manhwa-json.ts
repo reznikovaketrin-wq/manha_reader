@@ -2,23 +2,16 @@
 export interface ChapterJSON {
   id: string;
   number: number;
-  title: string;
-  pagesCount: number;  // Замість масиву pages - просто кількість
-  publishedAt: string;
+  pagesCount: number;
 }
 
 export interface ManhwaJSON {
   id: string;
   title: string;
-  alternativeTitles: string[];
   description: string;
-  coverImage: string;  // Відносний шлях (без R2_BASE_URL)
-  author: string;
-  artist: string;
-  genres: string[];
+  coverImage: string;
   status: 'ongoing' | 'completed' | 'hiatus';
   rating: number;
-  updatedAt: string;
   chapters: ChapterJSON[];
 }
 

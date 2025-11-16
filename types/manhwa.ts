@@ -10,12 +10,8 @@ export interface Chapter {
 export interface Manhwa {
   id: string;
   title: string;
-  alternativeTitles: string[];
   description: string;
   coverImage: string; // URL to cover image in R2
-  author: string;
-  artist: string;
-  genres: string[];
   status: 'ongoing' | 'completed' | 'hiatus';
   rating: number;
   totalViews: number;

@@ -26,18 +26,18 @@ export default function RootLayout({
           {/* Header */}
           <header className="mb-[26px]">
             <div className="max-w-[1160px] mx-auto px-4">
-              <div className="flex items-center gap-[18px] py-[14px]">
-                <div className="relative h-[100px] w-[100px] overflow-hidden bg-[#111111]">
+              <div className="flex items-end gap-[20px] py-[14px]">
+                <div className="relative h-[76px] w-[251px] overflow-hidden bg-[#111111]">
                   <Image
                     src="/images/logo_triw_white.svg"
                     alt="TriW logo"
                     fill
-                    sizes="100px"
+                    sizes="251px"
                     className="object-contain"
                     priority
                   />
                 </div>
-                <div className="font-extrabold text-[30px] uppercase tracking-tight-2 text-white mt-[38px]">
+                <div className="font-extrabold text-[34px] uppercase tracking-tight-2 text-white">
                   Бібліотека
                 </div>
               </div>
