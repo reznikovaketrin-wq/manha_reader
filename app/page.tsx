@@ -13,8 +13,13 @@ export default function HomePage() {
         Всі тайтли
       </h2>
 
-      {/* Cards List */}
-      <div className="flex flex-col gap-10 w-full">
+      {/* 
+        Cards List with gap that accounts for character image overflow
+        Desktop: 40px overflow + 40px gap = 80px total (gap-20 = 80px in Tailwind)
+        Tablet (900px): 16px overflow + 32px gap = 48px total (gap-12 = 48px in Tailwind)
+        Mobile (640px): 0px overflow (static positioned) + 32px gap = 32px total (gap-8 = 32px in Tailwind)
+      */}
+      <div className="flex flex-col gap-20 max-[900px]:gap-12 max-[640px]:gap-8 w-full">
         {manhwaData.map((manhwa) => (
           <ManhwaCard key={manhwa.id} manhwa={manhwa} />
         ))}

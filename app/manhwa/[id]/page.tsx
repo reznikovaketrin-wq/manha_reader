@@ -78,23 +78,9 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               {manhwa.title}
             </h1>
 
-            {/* Альтернативні назви */}
-            {manhwa.alternativeTitles.length > 0 && (
-              <p className="text-text-muted text-sm mb-6">
-                {manhwa.alternativeTitles.join(' · ')}
-              </p>
-            )}
 
             {/* Метадані */}
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <p className="text-text-muted text-sm mb-1">Автор</p>
-                <p className="font-medium">{manhwa.author}</p>
-              </div>
-              <div>
-                <p className="text-text-muted text-sm mb-1">Художник</p>
-                <p className="font-medium">{manhwa.artist}</p>
-              </div>
               <div>
                 <p className="text-text-muted text-sm mb-1">Рейтинг</p>
                 <p className="font-medium">{manhwa.rating} / 10</p>
@@ -105,20 +91,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               </div>
             </div>
 
-            {/* Жанри */}
-            <div className="mb-6">
-              <p className="text-text-muted text-sm mb-2">Жанри</p>
-              <div className="flex flex-wrap gap-2">
-                {manhwa.genres.map((genre) => (
-                  <span 
-                    key={genre}
-                    className="px-3 py-1 bg-card-hover rounded text-sm font-medium"
-                  >
-                    {genre}
-                  </span>
-                ))}
-              </div>
-            </div>
+        
 
             {/* Опис */}
             <div>

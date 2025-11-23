@@ -50,7 +50,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
         {/* Статусы — сверху */}
         <div
           className="
-            absolute left-10 top-[60px]
+            absolute left-10 top-[50px]
             z-30
             flex flex-wrap gap-[90px]
             text-[20px] font-medium uppercase tracking-tight-2 text-white
@@ -78,7 +78,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
               mb-3
               text-[70px] font-extrabold uppercase
               tracking-tight-2 leading-[1]
-              whitespace-nowrap
+              line-clamp-2
               max-[900px]:text-[44px]
               max-[640px]:text-[32px]
             "
@@ -89,7 +89,9 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           <p
             className="
               text-[17px] leading-[1.32] text-white/85
-              max-[640px]:text-[14px]
+              line-clamp-3
+              max-[900px]:line-clamp-2
+              max-[640px]:text-[14px] max-[640px]:line-clamp-2
             "
           >
             {manhwa.description}
