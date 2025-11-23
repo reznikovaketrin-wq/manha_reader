@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import './globals.css';
 import Image from 'next/image';
+import HeaderNav from '@/components/HeaderNav';
 
 const manrope = Manrope({
   subsets: ['latin', 'cyrillic'],
@@ -37,9 +38,7 @@ export default function RootLayout({
                     priority
                   />
                 </div>
-                <div className="font-extrabold text-[34px] uppercase tracking-tight-2 text-white">
-                  Бібліотека
-                </div>
+                <HeaderNav />
               </div>
             </div>
           </header>

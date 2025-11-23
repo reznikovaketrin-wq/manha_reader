@@ -98,14 +98,14 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           </p>
         </div>
 
-        {/* Правый арт — снизу приклеен, сверху/справа может выходить */}
+        {/* Правий арт — приклеєний до нижнього правого кута, може виходити тільки зверху */}
         <div
           className="
             pointer-events-none
-            absolute bottom-0 right-[-40px]
+            absolute bottom-0 right-0
             z-10
-            h-[125%] w-[48%]
-            max-[900px]:right-[-16px] max-[900px]:h-[120%] max-[900px]:w-[54%]
+            h-[125%] w-[36%]
+            max-[900px]:h-[120%] max-[900px]:w-[40%]
             max-[640px]:static max-[640px]:mt-6 max-[640px]:h-[260px] max-[640px]:w-full
           "
         >
