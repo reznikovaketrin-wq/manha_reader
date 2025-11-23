@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import './globals.css';
 import Image from 'next/image';
+import Link from 'next/link';
 import HeaderNav from '@/components/HeaderNav';
 
 const manrope = Manrope({
@@ -28,16 +29,18 @@ export default function RootLayout({
           <header className="mb-[26px]">
             <div className="max-w-[1160px] mx-auto px-4">
               <div className="flex items-end gap-[20px] py-[14px]">
-                <div className="relative h-[76px] w-[251px] overflow-hidden bg-[#111111]">
-                  <Image
-                    src="/images/logo_triw_white.svg"
-                    alt="TriW logo"
-                    fill
-                    sizes="251px"
-                    className="object-contain"
-                    priority
-                  />
-                </div>
+                <Link href="/" className="group">
+                  <div className="relative h-[76px] w-[251px] overflow-hidden bg-[#111111] rounded cursor-pointer transition-opacity group-hover:opacity-80">
+                    <Image
+                      src="/images/logo_triw_white.svg"
+                      alt="TriW logo"
+                      fill
+                      sizes="251px"
+                      className="object-contain"
+                      priority
+                    />
+                  </div>
+                </Link>
                 <HeaderNav />
               </div>
             </div>

@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { Manhwa } from '@/types/manhwa';
+import ResizeableTitle from '@/components/ResizeableTitle';
 
 interface ManhwaCardProps {
   manhwa: Manhwa;
@@ -73,18 +74,10 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
             max-[640px]:static max-[640px]:mt-4 max-[640px]:max-w-full
           "
         >
-          <h2
-            className="
-              mb-3
-              text-[70px] font-extrabold uppercase
-              tracking-tight-2 leading-[1]
-              line-clamp-2
-              max-[900px]:text-[44px]
-              max-[640px]:text-[32px]
-            "
-          >
+          {/* Используем ResizeableTitle вместо простого h2 */}
+          <ResizeableTitle minFontSize={32} maxFontSize={70}>
             {manhwa.title}
-          </h2>
+          </ResizeableTitle>
 
           <p
             className="

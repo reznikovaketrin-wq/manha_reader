@@ -22,7 +22,7 @@ function generatePageUrls(manhwaId: string, chapterId: string, pagesCount: numbe
 
 // Конвертувати JSON дані в Manhwa об'єкти
 export const manhwaData: Manhwa[] = manhwaJson.manhwa.map(m => {
-  console.log(`📚 Загрузка: ${m.id} - ${m.title}`);
+  console.log(`📚 Загрузка: ${m.id} - ${m.title}${m.scheduleDay ? ' (в розкладі)' : ''}`);
   return {
     id: m.id,
     title: m.title,
@@ -47,10 +47,12 @@ export const manhwaData: Manhwa[] = manhwaJson.manhwa.map(m => {
         views: 0,
       };
     }),
+    scheduleDay: m.scheduleDay, // ✅ ДОБАВЛЕНО: передаём scheduleDay из JSON
   };
 });
 
 console.log(`✅ Загружено манхвы: ${manhwaData.length}`);
+console.log(`📅 У розкладі: ${manhwaData.filter(m => m.scheduleDay).length}`);
 
 export function getManhwaById(id: string): Manhwa | undefined {
   const result = manhwaData.find(manhwa => manhwa.id === id);

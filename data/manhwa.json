@@ -7,11 +7,26 @@
       "coverImage": "/lycar-ta-vidma/cover.png",
       "status": "ongoing",
       "rating": 8.9,
+      "scheduleDay": {
+        "dayBig": "ПН",
+        "dayLabel": "Понеділок",
+        "note": "Нове оновлення кожного понеділка."
+      },
       "chapters": [
         {
-          "id": "chapter-1",
+          "id": "01",
           "number": 1,
-          "pagesCount": 5
+          "pagesCount": 4
+        },
+        {
+          "id": "02",
+          "number": 2,
+          "pagesCount": 4
+        },
+        {
+          "id": "03",
+          "number": 3,
+          "pagesCount": 4
         }
       ]
     },
@@ -24,9 +39,19 @@
       "rating": 8.5,
       "chapters": [
         {
-          "id": "chapter-1",
+          "id": "01",
           "number": 1,
           "pagesCount": 8
+        },
+        {
+          "id": "02",
+          "number": 2,
+          "pagesCount": 5
+        },
+        {
+          "id": "03",
+          "number": 3,
+          "pagesCount": 4
         }
       ]
     },
@@ -37,10 +62,35 @@
       "coverImage": "/klub-dorosloi-literatury/cover.png",
       "status": "ongoing",
       "rating": 8.7,
+      "scheduleDay": {
+        "dayBig": "СР",
+        "dayLabel": "Середа",
+        "note": "Справжній дорослий клуб посеред тижня."
+      },
       "chapters": [
         {
-          "id": "chapter-1",
+          "id": "01",
           "number": 1,
+          "pagesCount": 10
+        },
+        {
+          "id": "02",
+          "number": 2,
+          "pagesCount": 8
+        },
+        {
+          "id": "03",
+          "number": 3,
+          "pagesCount": 6
+        },
+        {
+          "id": "04",
+          "number": 4,
+          "pagesCount": 5
+        },
+        {
+          "id": "05",
+          "number": 5,
           "pagesCount": 6
         }
       ]
@@ -54,7 +104,7 @@
       "rating": 9.3,
       "chapters": [
         {
-          "id": "chapter-1",
+          "id": "01",
           "number": 1,
           "pagesCount": 7
         }
@@ -67,11 +117,26 @@
       "coverImage": "/yak-otrymaty-tu-pokoivku/cover.png",
       "status": "completed",
       "rating": 8.8,
+      "scheduleDay": {
+        "dayBig": "ЧТ",
+        "dayLabel": "Четвер",
+        "note": "Продовження історії щочетверга."
+      },
       "chapters": [
         {
-          "id": "chapter-1",
+          "id": "00",
           "number": 1,
-          "pagesCount": 9
+          "pagesCount": 2
+        },
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 6
+        },
+        {
+          "id": "02",
+          "number": 1,
+          "pagesCount": 6
         }
       ]
     },
@@ -82,9 +147,14 @@
       "coverImage": "/punkni-vyshenky/cover.png",
       "status": "ongoing",
       "rating": 8.5,
+      "scheduleDay": {
+        "dayBig": "ПТ",
+        "dayLabel": "П'ятниця",
+        "note": "П'ятничний реліз для тих, хто чекав."
+      },
       "chapters": [
         {
-          "id": "chapter-1",
+          "id": "01",
           "number": 1,
           "pagesCount": 5
         }
@@ -99,7 +169,7 @@
       "rating": 9.0,
       "chapters": [
         {
-          "id": "chapter-1",
+          "id": "01",
           "number": 1,
           "pagesCount": 10
         }

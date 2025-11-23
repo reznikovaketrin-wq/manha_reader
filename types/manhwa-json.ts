@@ -5,6 +5,12 @@ export interface ChapterJSON {
   pagesCount: number;
 }
 
+export interface ScheduleDayJSON {
+  dayBig: string;
+  dayLabel: string;
+  note: string;
+}
+
 export interface ManhwaJSON {
   id: string;
   title: string;
@@ -13,6 +19,7 @@ export interface ManhwaJSON {
   status: 'ongoing' | 'completed' | 'hiatus';
   rating: number;
   chapters: ChapterJSON[];
+  scheduleDay?: ScheduleDayJSON; // Опциональное поле для расписания
 }
 
 export interface ManhwaDataJSON {

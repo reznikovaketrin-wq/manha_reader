@@ -7,6 +7,12 @@ export interface Chapter {
   views: number;
 }
 
+export interface ScheduleDay {
+  dayBig: string;
+  dayLabel: string;
+  note: string;
+}
+
 export interface Manhwa {
   id: string;
   title: string;
@@ -17,6 +23,7 @@ export interface Manhwa {
   totalViews: number;
   chapters: Chapter[];
   updatedAt: string;
+  scheduleDay?: ScheduleDay; // Опциональное поле для расписания
 }
 
 export interface ReadingHistory {
