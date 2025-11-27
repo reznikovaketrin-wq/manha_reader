@@ -20,6 +20,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   const manhwa = getManhwaById(params.id);
   const chapter = getChapterByIds(params.id, params.chapterId);
@@ -30,6 +31,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       incrementViews(params.id, params.chapterId);
     }
   }, [params.id, params.chapterId, manhwa, chapter]);
+
+  const currentChapterIndex = manhwa?.chapters.findIndex(ch => ch.id === params.chapterId) ?? -1;
+  const prevChapter = currentChapterIndex > 0 ? manhwa?.chapters[currentChapterIndex - 1] : null;
+  const nextChapter = currentChapterIndex < (manhwa?.chapters.length ?? 0) - 1 ? manhwa?.chapters[currentChapterIndex + 1] : null;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,11 +50,16 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         const page = Math.floor(scrolled / pageHeight) + 1;
         setCurrentPage(Math.min(page, chapter.pages.length));
       }
+
+      // Автоматичний перехід на наступний розділ при досяганні кінця
+      if (progress >= 95 && nextChapter) {
+        router.push(`/manhwa/${params.id}/${nextChapter.id}`);
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [chapter]);
+  }, [chapter, nextChapter, params.id, router]);
 
   // Автоматичне збереження прогресу
   useEffect(() => {
@@ -71,10 +81,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
   if (!manhwa || !chapter) {
     notFound();
   }
-
-  const currentChapterIndex = manhwa.chapters.findIndex(ch => ch.id === params.chapterId);
-  const prevChapter = currentChapterIndex > 0 ? manhwa.chapters[currentChapterIndex - 1] : null;
-  const nextChapter = currentChapterIndex < manhwa.chapters.length - 1 ? manhwa.chapters[currentChapterIndex + 1] : null;
 
   return (
     <div className="min-h-screen bg-black">
@@ -119,10 +125,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         </div>
       </div>
 
-      {/* Pages */}
-      <div className="max-w-5xl w-full mx-auto pt-20 px-4 md:px-6 flex flex-col gap-6">
+      {/* Pages - без разрывів та закруглень */}
+      <div className="max-w-5xl w-full mx-auto pt-20 px-4 md:px-6 flex flex-col gap-0">
         {chapter.pages.map((page, index) => (
-          <div key={index} className="w-full overflow-hidden rounded-lg bg-gray-900/50">
+          <div key={index} className="w-full bg-black">
             <img
               src={page}
               alt={`Сторінка ${index + 1}`}
@@ -140,7 +146,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           {prevChapter ? (
             <Link
               href={`/manhwa/${params.id}/${prevChapter.id}`}
-              className="flex-1 p-4 bg-card-bg hover:bg-card-hover transition-colors rounded-lg text-left"
+              className="flex-1 p-4 bg-card-bg hover:bg-card-hover transition-colors text-left"
             >
               <p className="text-text-muted text-sm mb-1">← Попередній</p>
               <p className="font-medium">Розділ {prevChapter.number}: {prevChapter.title}</p>
@@ -152,7 +158,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           {/* Back to Chapters */}
           <Link
             href={`/manhwa/${params.id}`}
-            className="px-6 py-4 bg-white text-black hover:bg-text-muted transition-colors rounded-lg font-medium"
+            className="px-6 py-4 bg-white text-black hover:bg-text-muted transition-colors font-medium"
           >
             Всі розділи
           </Link>
@@ -161,7 +167,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           {nextChapter ? (
             <Link
               href={`/manhwa/${params.id}/${nextChapter.id}`}
-              className="flex-1 p-4 bg-card-bg hover:bg-card-hover transition-colors rounded-lg text-right"
+              className="flex-1 p-4 bg-card-bg hover:bg-card-hover transition-colors text-right"
             >
               <p className="text-text-muted text-sm mb-1">Наступний →</p>
               <p className="font-medium">Розділ {nextChapter.number}: {nextChapter.title}</p>
@@ -181,7 +187,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       {/* Floating Controls Toggle */}
       <button
         onClick={() => setShowControls(!showControls)}
-        className="fixed bottom-8 right-8 w-12 h-12 bg-white text-black rounded-full shadow-lg hover:bg-text-muted transition-colors z-50 flex items-center justify-center"
+        className="fixed bottom-8 right-8 w-12 h-12 bg-white text-black shadow-lg hover:bg-text-muted transition-colors z-50 flex items-center justify-center"
       >
         {showControls ? (
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
