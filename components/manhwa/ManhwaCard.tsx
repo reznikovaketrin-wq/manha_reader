@@ -21,6 +21,23 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
   const bgImgRef = useRef<HTMLImageElement>(null);
   const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
   const [bgSize, setBgSize] = useState({ width: 0, height: 0 });
+  
+  // 🆕 Определяем isMobile один раз в ManhwaCard!
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Определяем мобилку после загрузки компонента
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize(); // Первоначальная проверка
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  console.log(`🎴 ManhwaCard обновлён! isMobile=${isMobile} (${new Date().toLocaleTimeString()})`);
 
   const statusText =
     manhwa.status === 'ongoing'
@@ -51,10 +68,8 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
       const originalHeight = imgRef.current.naturalHeight;
       const aspectRatio = originalWidth / originalHeight;
 
-      console.log(`${manhwa.title} - Section: ${sectionWidth}x${sectionHeight}, Original img: ${originalWidth}x${originalHeight}`);
-
       const maxWidth = sectionWidth;
-      const maxHeight = sectionHeight * 1.1;
+      const maxHeight = isMobile ? sectionHeight * 1.15 : sectionHeight * 1.2;
 
       let calculatedWidth: number;
       let calculatedHeight: number;
@@ -67,8 +82,6 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
         calculatedWidth = maxHeight * aspectRatio;
       }
 
-      console.log(`${manhwa.title} - Calculated size: ${calculatedWidth.toFixed(0)}x${calculatedHeight.toFixed(0)}`);
-
       setImgSize({
         width: calculatedWidth,
         height: calculatedHeight,
@@ -77,28 +90,27 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
 
     // Вычисляем размер фонового изображения
     const calculateBgSize = () => {
-  if (!sectionRef.current || !bgImgRef.current || !bgImgRef.current.naturalWidth) {
-    return;
-  }
+      if (!sectionRef.current || !bgImgRef.current || !bgImgRef.current.naturalWidth) {
+        return;
+      }
 
-  const sectionHeight = sectionRef.current.offsetHeight;
-  const sectionWidth = sectionRef.current.offsetWidth;
-  
-  const originalWidth = bgImgRef.current.naturalWidth;
-  const originalHeight = bgImgRef.current.naturalHeight;
-  const aspectRatio = originalWidth / originalHeight;
+      const sectionHeight = sectionRef.current.offsetHeight;
+      const sectionWidth = sectionRef.current.offsetWidth;
 
-  // Фон должен занимать ВСЮ ширину и масштабироваться по высоте
-  const calculatedWidth = sectionWidth;
-  const calculatedHeight = sectionWidth / aspectRatio;
+      // Коэффициент для подгонки высоты фона только на мобилке
+      const bgHeightMultiplier = isMobile ? 1.05 : 1.0;
 
-  console.log(`${manhwa.title} - Background size: ${calculatedWidth.toFixed(0)}x${calculatedHeight.toFixed(0)}`);
+      // Фоновое изображение заполняет весь контейнер с коэффициентом
+      const calculatedWidth = sectionWidth;
+      const calculatedHeight = sectionHeight * bgHeightMultiplier;
 
-  setBgSize({
-    width: calculatedWidth,
-    height: calculatedHeight,
-  });
-};
+      console.log(`📐 Background: width=${calculatedWidth.toFixed(0)}px, height=${calculatedHeight.toFixed(0)}px, multiplier=${bgHeightMultiplier}, isMobile=${isMobile}`);
+
+      setBgSize({
+        width: calculatedWidth,
+        height: calculatedHeight,
+      });
+    };
 
     const img = imgRef.current;
     const bgImg = bgImgRef.current;
@@ -134,7 +146,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
         bgImg.removeEventListener('load', calculateBgSize);
       }
     };
-  }, [manhwa.title]);
+  }, [isMobile, manhwa.title]);
 
   return (
     <Link href={`/manhwa/${manhwa.id}`} className="block w-full">
@@ -151,7 +163,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           p-[var(--spacing-lg)]
           
           flex flex-col
-          h-auto
+          h-[clamp(100px,_40vw,_150px)]
           
           md:rounded-[var(--radius-xl)]
           md:overflow-visible
@@ -163,16 +175,18 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           md:hover:-translate-y-0.5 
           md:hover:shadow-[0_18px_40px_rgba(0,0,0,0.8)]
         "
-              style={{
-        backgroundImage: `url(${backgroundImageUrl})`,
-        backgroundPosition: 'right center',
-        backgroundRepeat: 'no-repeat',
-        backgroundSize: bgSize.width 
-          ? `${bgSize.width}px ${bgSize.height}px` 
-          : 'contain',
-        gap: 'clamp(32px, 8vw, 48px)',
-      } as React.CSSProperties}
-
+        style={{
+          backgroundImage: `url(${backgroundImageUrl})`,
+          backgroundPosition: 'right center',
+          backgroundRepeat: 'no-repeat',
+          // На мобилке и десктопе - используем вычисленный размер с коэффициентом
+          backgroundSize: bgSize.width 
+            ? `${bgSize.width}px ${bgSize.height}px` 
+            : 'contain',
+          gap: 'clamp(32px, 8vw, 48px)',
+          // На мобилке - запретить выступание снизу, на десктопе оставить visible
+          overflowY: isMobile ? 'hidden' : 'visible',
+        } as React.CSSProperties}
       >
         {/* Скрытое изображение для вычисления размера фона */}
         <img
@@ -244,42 +258,46 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           "
         >
           {/* ЗАГОЛОВОК - МОБИЛКА */}
-          <h2
-            className="
-              md:hidden
-              font-extrabold uppercase 
-              tracking-tight-2 leading-[1.05]
-              max-w-[99%]
-            "
-            style={{
-              fontSize: 'clamp(24px, 6vw, 32px)',
-            }}
-          >
-            {manhwa.title}
-          </h2>
+          <div className="md:hidden max-w-[99%]">
+            <ResizeableTitle 
+              maxLines={2} 
+              minFontSize={18} 
+              maxFontSize={28} 
+              onlyIfLong={true}
+              isMobile={isMobile}
+            >
+              {manhwa.title}
+            </ResizeableTitle>
+          </div>
 
           {/* ЗАГОЛОВОК - ДЕСКТОП */}
           <div className="hidden md:block max-w-[99%]">
-            <ResizeableTitle maxLines={2} minFontSize={42} maxFontSize={88} onlyIfLong={true}>
+            <ResizeableTitle 
+              maxLines={2} 
+              minFontSize={42} 
+              maxFontSize={88} 
+              onlyIfLong={true}
+              isMobile={isMobile}
+            >
               {manhwa.title}
             </ResizeableTitle>
           </div>
 
           {/* ОПИСАНИЕ */}
           <p
-  className="
-    md:hidden
-    leading-[1.3] text-white/80
-    max-w-[80%]
-  "
-  style={{
-    fontSize: 'clamp(5.5px, 1vw, 8.5px)',
-  }}
->
-  {manhwa.description}
-</p>
+            className="
+              md:hidden
+              leading-[1.3] text-white/80
+              max-w-[80%]
+            "
+            style={{
+              fontSize: 'clamp(5.5px, 1vw, 8.5px)',
+            }}
+          >
+            {manhwa.description}
+          </p>
 
-{/* ОПИСАНИЕ - ДЕСКТОП */}
+          {/* ОПИСАНИЕ - ДЕСКТОП */}
           <p
             className="
               hidden md:block

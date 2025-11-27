@@ -8,20 +8,24 @@ interface ResizeableTitleProps {
   minFontSize?: number;
   maxFontSize?: number;
   onlyIfLong?: boolean;
+  isMobile?: boolean;
 }
 
 export default function ResizeableTitle({
   children,
   maxLines = 3,
-  minFontSize = 42,
-  maxFontSize = 88,
+  minFontSize = 32,
+  maxFontSize = 70,
   onlyIfLong = false,
+  isMobile = false,
 }: ResizeableTitleProps) {
   const titleRef = useRef<HTMLHeadingElement>(null);
   const [fontSize, setFontSize] = useState<number | null>(null);
 
-  // Генерируем уникальный ключ для этого заголовка
-  const cacheKey = `title-${children.substring(0, 20)}`;
+  // Используем переданный параметр isMobile вместо собственного расчета!
+  const cacheKey = `title-${isMobile ? 'mobile' : 'desktop'}-${children.substring(0, 20)}`;
+
+  console.log(`🆕 ResizeableTitle инициализирован! isMobile=${isMobile}, cacheKey=${cacheKey}, maxFontSize=${maxFontSize}`);
 
   useEffect(() => {
     const element = titleRef.current;
@@ -32,14 +36,23 @@ export default function ResizeableTitle({
       const cachedFontSize = localStorage.getItem(cacheKey);
       
       if (cachedFontSize) {
-        // Используем кешированное значение
-        setFontSize(parseInt(cachedFontSize));
-        console.log(`✅ Используем кеш для "${children.substring(0, 20)}": ${cachedFontSize}px`);
-        return;
+        const parsedSize = parseInt(cachedFontSize);
+        
+        // 🆕 Защита: размер не может быть меньше minFontSize!
+        if (parsedSize < minFontSize) {
+          console.log(`⚠️ Кеш ${cacheKey} имеет ${parsedSize}px но minFontSize=${minFontSize}! Пересчитываем...`);
+          localStorage.removeItem(cacheKey); // Удаляем неверный кеш
+          // Продолжаем вычисление дальше
+        } else {
+          // Используем кешированное значение
+          setFontSize(parsedSize);
+          console.log(`✅ Используем кеш: ${cacheKey} = ${cachedFontSize}px (maxFontSize=${maxFontSize})`);
+          return;
+        }
       }
 
       // Если в кеше нет - вычисляем размер один раз
-      console.log(`🔄 Вычисляем размер для "${children.substring(0, 20)}"`);
+      console.log(`🔄 Вычисляем размер для "${children.substring(0, 20)}" (${cacheKey})`);
       
       let currentFontSize = maxFontSize;
       let iterations = 0;
@@ -50,7 +63,7 @@ export default function ResizeableTitle({
           // Сохраняем в localStorage
           localStorage.setItem(cacheKey, currentFontSize.toString());
           setFontSize(currentFontSize);
-          console.log(`💾 Сохранили в кеш: ${currentFontSize}px`);
+          console.log(`💾 Сохранили в кеш ${cacheKey}: ${currentFontSize}px`);
           return;
         }
 
@@ -64,7 +77,7 @@ export default function ResizeableTitle({
         if (onlyIfLong && lines <= maxLines) {
           localStorage.setItem(cacheKey, maxFontSize.toString());
           setFontSize(maxFontSize);
-          console.log(`✅ Текст умещается в ${maxLines} строк, используем maxFontSize: ${maxFontSize}px`);
+          console.log(`✅ Текст умещается в ${maxLines} строк, используем maxFontSize: ${maxFontSize}px (${cacheKey})`);
           return;
         }
 
@@ -80,13 +93,13 @@ export default function ResizeableTitle({
           // Нашли оптимальный размер
           localStorage.setItem(cacheKey, currentFontSize.toString());
           setFontSize(currentFontSize);
-          console.log(`💾 Сохранили в кеш: ${currentFontSize}px`);
+          console.log(`💾 Сохранили в кеш ${cacheKey}: ${currentFontSize}px`);
         }
       };
 
       calculateFontSize();
     }
-  }, []);
+  }, [cacheKey, maxFontSize, minFontSize, maxLines, onlyIfLong]); // 🆕 Добавил cacheKey в зависимости!
 
   return (
     <h2
