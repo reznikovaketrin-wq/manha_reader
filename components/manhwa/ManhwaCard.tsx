@@ -1,13 +1,27 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { Manhwa } from '@/types/manhwa';
-import ResizeableTitle from '@/components/ResizeableTitle';
+import { useRef, useEffect, useState } from 'react';
+import ResizeableTitle from './ResizeableTitle';
 
 interface ManhwaCardProps {
-  manhwa: Manhwa;
+  manhwa: {
+    id: string;
+    title: string;
+    description: string;
+    status: 'ongoing' | 'completed' | 'hiatus';
+    coverImage: string;
+  };
 }
 
 export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const bgImgRef = useRef<HTMLImageElement>(null);
+  const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
+  const [bgSize, setBgSize] = useState({ width: 0, height: 0 });
+
   const statusText =
     manhwa.status === 'ongoing'
       ? 'ОНГОЇНГ'
@@ -24,95 +38,262 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
   const backgroundImageUrl = `${baseImageUrl}/bg.png`;
   const characterImageUrl = `${baseImageUrl}/char.png`;
 
+  useEffect(() => {
+    const calculateImageSize = () => {
+      if (!sectionRef.current || !imgRef.current || !imgRef.current.naturalWidth) {
+        return;
+      }
+
+      const sectionHeight = sectionRef.current.offsetHeight;
+      const sectionWidth = sectionRef.current.offsetWidth;
+      
+      const originalWidth = imgRef.current.naturalWidth;
+      const originalHeight = imgRef.current.naturalHeight;
+      const aspectRatio = originalWidth / originalHeight;
+
+      console.log(`${manhwa.title} - Section: ${sectionWidth}x${sectionHeight}, Original img: ${originalWidth}x${originalHeight}`);
+
+      const maxWidth = sectionWidth;
+      const maxHeight = sectionHeight * 1.1;
+
+      let calculatedWidth: number;
+      let calculatedHeight: number;
+
+      if (maxWidth / aspectRatio < maxHeight) {
+        calculatedWidth = maxWidth;
+        calculatedHeight = maxWidth / aspectRatio;
+      } else {
+        calculatedHeight = maxHeight;
+        calculatedWidth = maxHeight * aspectRatio;
+      }
+
+      console.log(`${manhwa.title} - Calculated size: ${calculatedWidth.toFixed(0)}x${calculatedHeight.toFixed(0)}`);
+
+      setImgSize({
+        width: calculatedWidth,
+        height: calculatedHeight,
+      });
+    };
+
+    // Вычисляем размер фонового изображения
+    const calculateBgSize = () => {
+  if (!sectionRef.current || !bgImgRef.current || !bgImgRef.current.naturalWidth) {
+    return;
+  }
+
+  const sectionHeight = sectionRef.current.offsetHeight;
+  const sectionWidth = sectionRef.current.offsetWidth;
+  
+  const originalWidth = bgImgRef.current.naturalWidth;
+  const originalHeight = bgImgRef.current.naturalHeight;
+  const aspectRatio = originalWidth / originalHeight;
+
+  // Фон должен занимать ВСЮ ширину и масштабироваться по высоте
+  const calculatedWidth = sectionWidth;
+  const calculatedHeight = sectionWidth / aspectRatio;
+
+  console.log(`${manhwa.title} - Background size: ${calculatedWidth.toFixed(0)}x${calculatedHeight.toFixed(0)}`);
+
+  setBgSize({
+    width: calculatedWidth,
+    height: calculatedHeight,
+  });
+};
+
+    const img = imgRef.current;
+    const bgImg = bgImgRef.current;
+    
+    if (img) {
+      img.addEventListener('load', calculateImageSize);
+    }
+    if (bgImg) {
+      bgImg.addEventListener('load', calculateBgSize);
+    }
+
+    const observer = new ResizeObserver(() => {
+      calculateImageSize();
+      calculateBgSize();
+    });
+    
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    const timer = setTimeout(() => {
+      calculateImageSize();
+      calculateBgSize();
+    }, 100);
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      if (img) {
+        img.removeEventListener('load', calculateImageSize);
+      }
+      if (bgImg) {
+        bgImg.removeEventListener('load', calculateBgSize);
+      }
+    };
+  }, [manhwa.title]);
+
   return (
     <Link href={`/manhwa/${manhwa.id}`} className="block w-full">
       <section
+        ref={sectionRef}
         className="
-          relative flex items-stretch
-          h-[440px] min-h-[440px] w-full
-          overflow-visible
-          rounded-3xl
+          relative w-full
           bg-[#111111]
-          px-10 py-8
           transition-all duration-150 ease-linear
-          hover:-translate-y-0.5 hover:bg-[#141414]
-          hover:shadow-[0_18px_40px_rgba(0,0,0,0.8)]
-          max-[900px]:h-auto max-[900px]:min-h-[260px]
-          max-[900px]:px-6 max-[900px]:py-6
+          hover:bg-[#141414]
+          
+          rounded-none
+          overflow-visible
+          p-[var(--spacing-lg)]
+          
+          flex flex-col
+          h-auto
+          
+          md:rounded-[var(--radius-xl)]
+          md:overflow-visible
+          md:h-[clamp(320px,_60vw,_440px)]
+          md:flex-row
+          md:items-stretch
+          md:p-[var(--spacing-xl)]
+          md:gap-[var(--gap-lg)]
+          md:hover:-translate-y-0.5 
+          md:hover:shadow-[0_18px_40px_rgba(0,0,0,0.8)]
         "
-        style={{
-          backgroundImage: `url(${backgroundImageUrl})`,
-          backgroundPosition: 'center right',
-          backgroundRepeat: 'no-repeat',
-          backgroundSize: 'cover',
-        }}
-      >
+              style={{
+        backgroundImage: `url(${backgroundImageUrl})`,
+        backgroundPosition: 'right center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: bgSize.width 
+          ? `${bgSize.width}px ${bgSize.height}px` 
+          : 'contain',
+        gap: 'clamp(32px, 8vw, 48px)',
+      } as React.CSSProperties}
 
-        {/* Статусы — сверху */}
+      >
+        {/* Скрытое изображение для вычисления размера фона */}
+        <img
+          ref={bgImgRef}
+          src={backgroundImageUrl}
+          alt="background"
+          style={{ display: 'none' }}
+          onError={() => console.log('Failed to load background image')}
+        />
+
+        {/* СТАТУСЫ */}
         <div
           className="
-            absolute left-10 top-[50px]
-            z-30
-            flex flex-wrap gap-[90px]
-            text-[20px] font-medium uppercase tracking-tight-2 text-white
-            max-[900px]:left-6 max-[900px]:top-[40px] max-[900px]:gap-6 max-[900px]:text-[18px]
-            max-[640px]:static max-[640px]:mt-2 max-[640px]:mb-3 max-[640px]:text-[16px] max-[640px]:gap-4
+            flex flex-wrap gap-[clamp(12px,_5vw,_20px)]
+            font-medium uppercase tracking-tight text-white
+            w-full
+            flex-shrink-0
+            
+            md:absolute 
+            md:top-0
+            md:left-[var(--spacing-xl)]
+            md:z-30
+            md:pt-[var(--spacing-xl)]
+            md:w-auto
+            md:flex-shrink-0
+            md:gap-[clamp(40px,_10vw,_90px)]
           "
+          style={{
+            fontSize: 'clamp(10px, 2.5vw, 20px)',
+          }}
         >
           <span>{statusText}</span>
           <span>БЕЗ ЦЕНЗУРИ</span>
           <span>МАНХВА</span>
         </div>
 
-        {/* Левая текстовая колонка — приклеена к низу */}
+        {/* КАРТИНКА ПЕРСОНАЖА */}
+        <img
+          ref={imgRef}
+          src={characterImageUrl}
+          alt={`${manhwa.title} characters`}
+          style={{
+            position: 'absolute',
+            right: '0',
+            bottom: '0',
+            zIndex: 10,
+            pointerEvents: 'none',
+            width: imgSize.width ? `${imgSize.width}px` : '200px',
+            height: imgSize.height ? `${imgSize.height}px` : 'auto',
+            objectFit: 'cover',
+            objectPosition: 'right bottom',
+            lineHeight: 0,
+            display: 'block',
+          }}
+        />
+
+        {/* ОСНОВНОЙ КОНТЕНТ */}
         <div
           className="
-            absolute left-10 bottom-8
-            z-20
-            max-w-[60%]
-            max-[900px]:left-6 max-[900px]:bottom-6 max-[900px]:max-w-[72%]
-            max-[640px]:static max-[640px]:mt-4 max-[640px]:max-w-full
+            relative z-20
+            flex flex-col gap-[clamp(12px, 3vw, 16px)]
+            
+            flex-1
+            max-w-[80%]
+            
+            md:absolute md:left-[var(--spacing-xl)] md:bottom-[var(--spacing-xl)]
+            md:max-w-[80%]
+            md:flex-1
           "
         >
-          {/* Используем ResizeableTitle вместо простого h2 */}
-          <ResizeableTitle minFontSize={32} maxFontSize={70}>
+          {/* ЗАГОЛОВОК - МОБИЛКА */}
+          <h2
+            className="
+              md:hidden
+              font-extrabold uppercase 
+              tracking-tight-2 leading-[1.05]
+              max-w-[99%]
+            "
+            style={{
+              fontSize: 'clamp(24px, 6vw, 32px)',
+            }}
+          >
             {manhwa.title}
-          </ResizeableTitle>
+          </h2>
 
+          {/* ЗАГОЛОВОК - ДЕСКТОП */}
+          <div className="hidden md:block max-w-[99%]">
+            <ResizeableTitle maxLines={2} minFontSize={42} maxFontSize={88} onlyIfLong={true}>
+              {manhwa.title}
+            </ResizeableTitle>
+          </div>
+
+          {/* ОПИСАНИЕ */}
+          <p
+  className="
+    md:hidden
+    leading-[1.3] text-white/80
+    max-w-[80%]
+  "
+  style={{
+    fontSize: 'clamp(5.5px, 1vw, 8.5px)',
+  }}
+>
+  {manhwa.description}
+</p>
+
+{/* ОПИСАНИЕ - ДЕСКТОП */}
           <p
             className="
-              text-[17px] leading-[1.32] text-white/85
-              line-clamp-3
-              max-[900px]:line-clamp-2
-              max-[640px]:text-[14px] max-[640px]:line-clamp-2
+              hidden md:block
+              leading-[1.3] text-white/80
+              max-w-[80%]
+              md:text-white/85
+              md:max-w-[70%]
             "
+            style={{
+              fontSize: 'clamp(11px, 2vw, 17px)',
+            }}
           >
             {manhwa.description}
           </p>
-        </div>
-
-        {/* Правий арт — приклеєний до нижнього правого кута, може виходити тільки зверху */}
-        <div
-          className="
-            pointer-events-none
-            absolute bottom-0 right-0
-            z-10
-            h-[125%] w-[36%]
-            max-[900px]:h-[120%] max-[900px]:w-[40%]
-            max-[640px]:static max-[640px]:mt-6 max-[640px]:h-[260px] max-[640px]:w-full
-          "
-        >
-          <div className="relative h-full w-full">
-            <Image
-              src={characterImageUrl}
-              alt={`${manhwa.title} characters`}
-              fill
-              className="object-contain"
-              style={{ objectPosition: 'right bottom' }}
-              sizes="(max-width: 640px) 90vw, (max-width: 900px) 50vw, 45vw"
-              priority
-            />
-          </div>
         </div>
       </section>
     </Link>

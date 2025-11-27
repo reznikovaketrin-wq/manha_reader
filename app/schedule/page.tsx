@@ -35,14 +35,7 @@ export default function SchedulePage() {
 
   return (
     <div className="max-w-[1160px] mx-auto px-4 pb-10">
-      <div className="mb-7">
-        <h1 className="text-[40px] font-extrabold uppercase tracking-tight-2 mb-1.5">
-          Розклад
-        </h1>
-        <p className="text-[15px] text-[#b9b9b9]">
-          Основні тайтли та дні, коли виходять нові розділи.
-        </p>
-      </div>
+      
 
       {scheduleItems.length > 0 ? (
         <div className="grid grid-cols-2 gap-7 max-[960px]:grid-cols-1">
@@ -75,8 +68,8 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
           transition-all duration-[180ms] ease-in
           hover:translate-y-[-4px] hover:shadow-[0_26px_60px_rgba(0,0,0,0.9)]
           hover:bg-gradient-to-br hover:from-[#232329] hover:from-0% hover:via-[#08080a] hover:via-55% hover:to-[#050506] hover:to-100%
-          max-[720px]:min-h-[340px] max-[720px]:p-5
-          max-[520px]:min-h-auto
+          min-[720px]:min-h-[380px] min-[720px]:p-6
+          max-[720px]:min-h-[238px] max-[720px]:pb-1 max-[720px]:px-3.5 max-[720px]:pt-3.5
         "
       >
         {/* Огромные буквы дня на фоне - всегда видны одним цветом */}
@@ -85,7 +78,7 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
             position: 'absolute',
             left: '0',
             top: '0px',
-            fontSize: '200px',
+            fontSize: 'clamp(100px, 35vw, 200px)',
             fontWeight: '800',
             textTransform: 'uppercase',
             letterSpacing: '0.00em',
@@ -99,7 +92,7 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
         </div>
 
         {/* Тонкая полоска внизу */}
-        <div className="absolute left-6 bottom-5 w-[90px] h-0.5 bg-white/30"></div>
+        <div className="absolute left-4 bottom-4 w-[70px] h-0.5 bg-white/30 max-[720px]:left-3.5 max-[720px]:bottom-1 max-[720px]:w-[51px]"></div>
 
         {/* Основной контент - grid с двумя колонками */}
         <div
@@ -108,25 +101,24 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
             grid grid-cols-[minmax(0,1.1fr)_minmax(0,1.1fr)]
             gap-[18px]
             items-start
-            max-[720px]:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] max-[720px]:gap-[14px]
-            max-[520px]:grid-cols-1 max-[520px]:items-start
+            max-[720px]:gap-[6px]
           "
         >
           {/* Левая колонка - текстовая информация */}
-          <div className="flex flex-col gap-2.5 mt-20">
-            <div className="text-[13px] font-semibold uppercase tracking-[0.18em] text-[#b9b9b9]">
+          <div className="flex flex-col gap-2.5 mt-20 max-[720px]:mt-11 max-[720px]:gap-1.5 max-[720px]:flex-1 max-[720px]:justify-start">
+            <div className="text-[13px] font-semibold uppercase tracking-[0.18em] text-[#b9b9b9] max-[720px]:text-[11px]">
               {item.dayLabel}
             </div>
-            <div className="text-[32px] font-extrabold uppercase tracking-tight-2 leading-[1.05] max-[720px]:text-[24px]">
+            <div className="text-[32px] font-extrabold uppercase tracking-tight-2 leading-[1.05] max-[720px]:text-[21px]">
               {item.title}
             </div>
-            <div className="text-[13px] text-[#b9b9b9] max-w-[340px]">
+            <div className="text-[13px] text-[#b9b9b9] max-w-[340px] max-[720px]:text-[10px] max-[720px]:max-w-full">
               {item.scheduleNote}
             </div>
           </div>
 
           {/* Правая колонка - обложка */}
-          <div className="flex items-center justify-end max-[520px]:justify-start">
+          <div className="flex items-center justify-end">
             <div
               className="
                 w-full max-w-[260px]
@@ -134,8 +126,7 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
                 border border-white/15
                 shadow-[0_16px_40px_rgba(0,0,0,0.85)]
                 bg-black
-                max-[720px]:max-w-[210px]
-                max-[520px]:max-w-[220px]
+                max-[720px]:max-w-[170px]
               "
               style={{ aspectRatio: '3 / 4' }}
             >

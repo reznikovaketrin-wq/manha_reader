@@ -39,3 +39,94 @@
     text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
   }
 }
+/* globals.css - добавить в конец файла */
+
+/* ========================================
+   FLUID TYPOGRAPHY & RESPONSIVE SCALING
+   ======================================== */
+
+:root {
+  /* FONT SIZES - плавное масштабирование */
+  --fs-h1: clamp(24px, 6vw, 70px);
+  --fs-h2: clamp(20px, 5vw, 48px);
+  --fs-h3: clamp(18px, 4vw, 32px);
+  --fs-base: clamp(14px, 2.5vw, 18px);
+  --fs-sm: clamp(12px, 2vw, 16px);
+  --fs-xs: clamp(10px, 1.5vw, 14px);
+  
+  /* SPACING - плавное масштабирование отступов */
+  --spacing-xs: clamp(4px, 1vw, 8px);
+  --spacing-sm: clamp(8px, 2vw, 12px);
+  --spacing-md: clamp(12px, 3vw, 20px);
+  --spacing-lg: clamp(16px, 4vw, 32px);
+  --spacing-xl: clamp(24px, 5vw, 48px);
+  --spacing-2xl: clamp(32px, 6vw, 64px);
+  
+  /* GAP - для flex/grid */
+  --gap-xs: clamp(4px, 1vw, 8px);
+  --gap-sm: clamp(8px, 1.5vw, 12px);
+  --gap-md: clamp(12px, 2.5vw, 20px);
+  --gap-lg: clamp(16px, 3.5vw, 28px);
+  --gap-xl: clamp(24px, 5vw, 40px);
+  
+  /* BORDER RADIUS */
+  --radius-sm: clamp(4px, 1vw, 8px);
+  --radius-md: clamp(8px, 1.5vw, 12px);
+  --radius-lg: clamp(12px, 2vw, 24px);
+  --radius-xl: clamp(16px, 3vw, 32px);
+  
+  /* IMAGE SIZES */
+  --img-card-height: clamp(180px, 50vw, 320px);
+  --img-cover-width: clamp(140px, 35vw, 260px);
+  
+  /* CONTAINER & WIDTHS */
+  --container-max: 1160px;
+  --container-padding: clamp(16px, 4vw, 48px);
+}
+
+/* ========================================
+   ПРИМЕНЕНИЕ В КОМПОНЕНТАХ
+   ======================================== */
+
+/* Пример использования в компонентах */
+h1 {
+  font-size: var(--fs-h1);
+}
+
+h2 {
+  font-size: var(--fs-h2);
+}
+
+p {
+  font-size: var(--fs-base);
+}
+
+.container {
+  max-width: var(--container-max);
+  padding: 0 var(--container-padding);
+  margin: 0 auto;
+}
+
+.card {
+  padding: var(--spacing-lg);
+  gap: var(--gap-lg);
+  border-radius: var(--radius-lg);
+}
+
+/* ========================================
+   MEDIA QUERIES ТОЛЬКО ДЛЯ LAYOUT
+   ======================================== */
+
+/* Мобилка - вертикальный layout */
+@media (max-width: 640px) {
+  .card-desktop {
+    flex-direction: column;
+  }
+}
+
+/* Планшет и выше - горизонтальный layout */
+@media (min-width: 641px) {
+  .card-desktop {
+    flex-direction: row;
+  }
+}

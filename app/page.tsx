@@ -4,7 +4,7 @@ import ContinueReading from '@/components/manhwa/ContinueReading';
 
 export default function HomePage() {
   return (
-    <div className="max-w-[1160px] mx-auto px-4 pb-10">
+    <div className="max-w-[1160px] mx-auto px-4 pb-10 overflow-visible">
       {/* Continue Reading Section */}
       <ContinueReading />
 
@@ -14,12 +14,11 @@ export default function HomePage() {
       </h2>
 
       {/* 
-        Cards List with gap that accounts for character image overflow
-        Desktop: 40px overflow + 40px gap = 80px total (gap-20 = 80px in Tailwind)
-        Tablet (900px): 16px overflow + 32px gap = 48px total (gap-12 = 48px in Tailwind)
-        Mobile (640px): 0px overflow (static positioned) + 32px gap = 32px total (gap-8 = 32px in Tailwind)
+        Cards List with overflow-visible so character images can extend beyond card bounds
+        Desktop: картинка в правом нижнем углу, выходит за границы
+        Mobile: картинка выходит за верхний край карточки
       */}
-      <div className="flex flex-col gap-20 max-[900px]:gap-12 max-[640px]:gap-8 w-full">
+      <div className="flex flex-col gap-20 max-[900px]:gap-12 max-[640px]:gap-8 w-full overflow-visible">
         {manhwaData.map((manhwa) => (
           <ManhwaCard key={manhwa.id} manhwa={manhwa} />
         ))}
