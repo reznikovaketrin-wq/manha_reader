@@ -23,7 +23,8 @@ export default function ResizeableTitle({
   const [fontSize, setFontSize] = useState<number | null>(null);
 
   // Используем переданный параметр isMobile вместо собственного расчета!
-  const cacheKey = `title-${isMobile ? 'mobile' : 'desktop'}-${children.substring(0, 20)}`;
+  // 🆕 Добавили maxFontSize в ключ чтобы разные размеры имели разные кеши!
+  const cacheKey = `title-${isMobile ? 'mobile' : 'desktop'}-${maxFontSize}-${children.substring(0, 20)}`;
 
   console.log(`🆕 ResizeableTitle инициализирован! isMobile=${isMobile}, cacheKey=${cacheKey}, maxFontSize=${maxFontSize}`);
 

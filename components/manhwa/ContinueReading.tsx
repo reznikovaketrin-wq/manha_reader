@@ -33,7 +33,63 @@ export default function ContinueReading() {
         Продовжити читання
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Мобільна версія - горизонтальна карусель */}
+      <div className="md:hidden overflow-x-auto snap-x snap-mandatory -mx-6 px-6 pb-4">
+        <div className="flex gap-3 flex-nowrap">
+          {history.map((item) => {
+            const manhwa = getManhwaById(item.manhwaId);
+            if (!manhwa) return null;
+
+            const chapter = manhwa.chapters.find(ch => ch.id === item.chapterId);
+            if (!chapter) return null;
+
+            return (
+              <Link
+                key={item.manhwaId}
+                href={`/manhwa/${item.manhwaId}/${item.chapterId}`}
+                className="block flex-shrink-0 w-1/2 snap-start"
+              >
+                <div className="bg-card-bg hover:bg-card-hover transition-colors rounded-lg overflow-hidden border border-transparent hover:border-text-muted/20">
+                  {/* Обкладинка */}
+                  <div 
+                    className="relative w-full bg-center bg-no-repeat"
+                    style={{ 
+                      backgroundImage: `url(${manhwa.coverImage})`,
+                      backgroundSize: 'contain',
+                      backgroundPosition: 'center',
+                      backgroundColor: '#1a1a1a',
+                      aspectRatio: '4 / 5',
+                      height: '160px'
+                    }}
+                  />
+
+                  {/* Інформація */}
+                  <div className="p-2">
+                    <h3 className="font-bold text-xs mb-1 line-clamp-1">
+                      {manhwa.title}
+                    </h3>
+                    <p className="text-text-muted text-xs mb-1 line-clamp-1">
+                      Розділ {chapter.number}
+                    </p>
+                    <div className="flex items-center justify-between text-xs text-text-muted">
+                      <span>Стр. {item.pageNumber}</span>
+                      <span>
+                        {new Date(item.timestamp).toLocaleDateString('uk-UA', {
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Десктопна версія - звичайна сітка */}
+      <div className="hidden md:grid grid-cols-2 lg:grid-cols-5 gap-4">
         {history.map((item) => {
           const manhwa = getManhwaById(item.manhwaId);
           if (!manhwa) return null;
