@@ -7,6 +7,7 @@
       "coverImage": "/lycar-ta-vidma/cover.png",
       "status": "ongoing",
       "rating": 8.9,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
       "scheduleDay": {
         "dayBig": "ПН",
         "dayLabel": "Понеділок",
@@ -37,6 +38,7 @@
       "coverImage": "/laboratoriia-krisel-kokhannia/cover.png",
       "status": "ongoing",
       "rating": 8.5,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
       "chapters": [
         {
           "id": "01",
@@ -62,6 +64,7 @@
       "coverImage": "/klub-dorosloi-literatury/cover.png",
       "status": "ongoing",
       "rating": 8.7,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
       "scheduleDay": {
         "dayBig": "СР",
         "dayLabel": "Середа",
@@ -102,6 +105,7 @@
       "coverImage": "/yak-pryborkaty-hercoga-monstra/cover.png",
       "status": "completed",
       "rating": 9.3,
+      "tags": [],
       "chapters": [
         {
           "id": "01",
@@ -117,6 +121,7 @@
       "coverImage": "/yak-otrymaty-tu-pokoivku/cover.png",
       "status": "completed",
       "rating": 8.8,
+      "tags": [],
       "scheduleDay": {
         "dayBig": "ЧТ",
         "dayLabel": "Четвер",
@@ -147,6 +152,7 @@
       "coverImage": "/punkni-vyshenky/cover.png",
       "status": "ongoing",
       "rating": 8.5,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
       "scheduleDay": {
         "dayBig": "ПТ",
         "dayLabel": "П'ятниця",
@@ -167,6 +173,7 @@
       "coverImage": "/miy-drug-dytynstva/cover.png",
       "status": "ongoing",
       "rating": 9.0,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
       "chapters": [
         {
           "id": "01",

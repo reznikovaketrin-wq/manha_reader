@@ -24,6 +24,7 @@ export interface Manhwa {
   chapters: Chapter[];
   updatedAt: string;
   scheduleDay?: ScheduleDay; // Опциональное поле для расписания
+  tags?: string[]; // Опциональное поле для тегов (БЕЗ ЦЕНЗУРИ, МАНХВА, и т.д.)
 }
 
 export interface ReadingHistory {

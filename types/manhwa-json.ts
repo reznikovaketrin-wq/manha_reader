@@ -20,6 +20,7 @@ export interface ManhwaJSON {
   rating: number;
   chapters: ChapterJSON[];
   scheduleDay?: ScheduleDayJSON; // Опциональное поле для расписания
+  tags?: string[]; // Опциональное поле для тегов (БЕЗ ЦЕНЗУРИ, МАНХВА, и т.д.)
 }
 
 export interface ManhwaDataJSON {

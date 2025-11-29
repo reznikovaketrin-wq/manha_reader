@@ -12,6 +12,7 @@ interface ManhwaCardProps {
     description: string;
     status: 'ongoing' | 'completed' | 'hiatus';
     coverImage: string;
+    tags?: string[];
   };
 }
 
@@ -208,7 +209,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
             md:absolute 
             md:top-0
             md:left-[var(--spacing-xl)]
-            md:z-30
+            md:z-40
             md:pt-[var(--spacing-xl)]
             md:w-auto
             md:flex-shrink-0
@@ -216,11 +217,18 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           "
           style={{
             fontSize: 'clamp(10px, 2.5vw, 20px)',
+            textShadow: '3px 2px 6px rgba(0, 0, 0, 0.8)',
+            zIndex: 40,
           }}
         >
           <span>{statusText}</span>
-          <span>БЕЗ ЦЕНЗУРИ</span>
-          <span>МАНХВА</span>
+          {manhwa.tags && manhwa.tags.length > 0 && (
+            <>
+              {manhwa.tags.map((tag) => (
+                <span key={tag}>{tag}</span>
+              ))}
+            </>
+          )}
         </div>
 
         {/* КАРТИНКА ПЕРСОНАЖА */}
@@ -260,7 +268,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           {/* ЗАГОЛОВОК И ОПИСАНИЕ - МОБИЛКА */}
           {isMobile ? (
             <>
-              <div className="max-w-[99%]">
+              <div className="max-w-[99%]" style={{ textShadow: '3px 2px 8px rgba(0, 0, 0, 0.8)' }}>
                 <ResizeableTitle 
                   maxLines={2} 
                   minFontSize={18} 
@@ -279,6 +287,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 "
                 style={{
                   fontSize: 'clamp(5.5px, 1vw, 8.5px)',
+                  textShadow: '3px 2px 8px rgba(0, 0, 0, 0.8)',
                 }}
               >
                 {manhwa.description}
@@ -287,7 +296,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           ) : (
             <>
               {/* ЗАГОЛОВОК И ОПИСАНИЕ - ДЕСКТОП */}
-              <div className="max-w-[99%]">
+              <div className="max-w-[99%]" style={{ textShadow: '3px 2px 12px rgba(0, 0, 0, 0.9)' }}>
                 <ResizeableTitle 
                   maxLines={2} 
                   minFontSize={42} 
@@ -308,6 +317,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 "
                 style={{
                   fontSize: 'clamp(11px, 2vw, 17px)',
+                  textShadow: '3px 2px 10px rgba(0, 0, 0, 0.85)',
                 }}
               >
                 {manhwa.description}

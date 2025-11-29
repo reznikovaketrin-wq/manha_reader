@@ -48,6 +48,7 @@ export const manhwaData: Manhwa[] = manhwaJson.manhwa.map(m => {
       };
     }),
     scheduleDay: m.scheduleDay, // ✅ ДОБАВЛЕНО: передаём scheduleDay из JSON
+    tags: m.tags || [], // ✅ ДОБАВЛЕНО: передаём tags из JSON
   };
 });
 
