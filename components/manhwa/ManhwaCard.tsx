@@ -184,8 +184,8 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
             ? `${bgSize.width}px ${bgSize.height}px` 
             : 'contain',
           gap: 'clamp(32px, 8vw, 48px)',
-          // На мобилке - запретить выступание снизу, на десктопе оставить visible
-          overflowY: isMobile ? 'hidden' : 'visible',
+          // 🆕 На обеих платформах оставляем visible чтобы картинка выступала
+          overflow: 'visible',
         } as React.CSSProperties}
       >
         {/* Скрытое изображение для вычисления размера фона */}
@@ -250,68 +250,70 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
             flex flex-col gap-[clamp(12px, 3vw, 16px)]
             
             flex-1
-            max-w-[85%]
+            max-w-[80%]
             
             md:absolute md:left-[var(--spacing-xl)] md:bottom-[var(--spacing-xl)]
-            md:max-w-[85%]
+            md:max-w-[80%]
             md:flex-1
           "
         >
-          {/* ЗАГОЛОВОК - МОБИЛКА */}
-          <div className="md:hidden max-w-[99%]">
-            <ResizeableTitle 
-              maxLines={2} 
-              minFontSize={14} 
-              maxFontSize={26} 
-              onlyIfLong={true}
-              isMobile={isMobile}
-            >
-              {manhwa.title}
-            </ResizeableTitle>
-          </div>
+          {/* ЗАГОЛОВОК И ОПИСАНИЕ - МОБИЛКА */}
+          {isMobile ? (
+            <>
+              <div className="max-w-[99%]">
+                <ResizeableTitle 
+                  maxLines={2} 
+                  minFontSize={18} 
+                  maxFontSize={28} 
+                  onlyIfLong={true}
+                  isMobile={isMobile}
+                >
+                  {manhwa.title}
+                </ResizeableTitle>
+              </div>
 
-          {/* ЗАГОЛОВОК - ДЕСКТОП */}
-          <div className="hidden md:block max-w-[99%]">
-            <ResizeableTitle 
-              maxLines={2} 
-              minFontSize={42} 
-              maxFontSize={88} 
-              onlyIfLong={true}
-              isMobile={isMobile}
-            >
-              {manhwa.title}
-            </ResizeableTitle>
-          </div>
+              <p
+                className="
+                  leading-[1.3] text-white/80
+                  max-w-[80%]
+                "
+                style={{
+                  fontSize: 'clamp(5.5px, 1vw, 8.5px)',
+                }}
+              >
+                {manhwa.description}
+              </p>
+            </>
+          ) : (
+            <>
+              {/* ЗАГОЛОВОК И ОПИСАНИЕ - ДЕСКТОП */}
+              <div className="max-w-[99%]">
+                <ResizeableTitle 
+                  maxLines={2} 
+                  minFontSize={42} 
+                  maxFontSize={88} 
+                  onlyIfLong={true}
+                  isMobile={isMobile}
+                >
+                  {manhwa.title}
+                </ResizeableTitle>
+              </div>
 
-          {/* ОПИСАНИЕ */}
-          <p
-            className="
-              md:hidden
-              leading-[1.3] text-white/80
-              max-w-[90%]
-            "
-            style={{
-              fontSize: 'clamp(5.5px, 1vw, 8.5px)',
-            }}
-          >
-            {manhwa.description}
-          </p>
-
-          {/* ОПИСАНИЕ - ДЕСКТОП */}
-          <p
-            className="
-              hidden md:block
-              leading-[1.3] text-white/80
-              max-w-[80%]
-              md:text-white/85
-              md:max-w-[70%]
-            "
-            style={{
-              fontSize: 'clamp(11px, 2vw, 17px)',
-            }}
-          >
-            {manhwa.description}
-          </p>
+              <p
+                className="
+                  leading-[1.3] text-white/80
+                  max-w-[80%]
+                  md:text-white/85
+                  md:max-w-[70%]
+                "
+                style={{
+                  fontSize: 'clamp(11px, 2vw, 17px)',
+                }}
+              >
+                {manhwa.description}
+              </p>
+            </>
+          )}
         </div>
       </section>
     </Link>
