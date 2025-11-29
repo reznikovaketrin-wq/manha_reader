@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { manhwaData } from '@/data/manhwa';
 import { Manhwa } from '@/types/manhwa';
@@ -55,6 +55,17 @@ export default function SchedulePage() {
 
 function ScheduleCard({ item }: { item: ScheduleItem }) {
   const [imageError, setImageError] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Определяем размер экрана при загрузке
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 720);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <Link href={`/manhwa/${item.id}`}>
@@ -78,7 +89,7 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
             position: 'absolute',
             left: '0',
             top: '0px',
-            fontSize: 'clamp(80px, 35vw, 200px)',
+            fontSize: isMobile ? 'clamp(90px, 32vw, 150px)' : 'clamp(100px, 35vw, 200px)',
             fontWeight: '800',
             textTransform: 'uppercase',
             letterSpacing: '0.00em',
