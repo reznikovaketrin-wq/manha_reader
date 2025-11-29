@@ -87,8 +87,8 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
         <div
           style={{
             position: 'absolute',
-            left: '0',
-            top: '0px',
+            left: isMobile ? '14px' : '24px',
+            top: isMobile ? '14px' : '24px',
             fontSize: isMobile ? 'clamp(90px, 32vw, 150px)' : 'clamp(100px, 35vw, 200px)',
             fontWeight: '800',
             textTransform: 'uppercase',
