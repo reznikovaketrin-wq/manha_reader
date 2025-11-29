@@ -217,7 +217,11 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           "
           style={{
             fontSize: 'clamp(10px, 2.5vw, 20px)',
-            textShadow: '3px 2px 6px rgba(0, 0, 0, 0.8)',
+            textShadow: `
+              3px 2px 4px rgba(0, 0, 0, 0.45),
+              3px 2px 8px rgba(0, 0, 0, 0.30),
+              3px 2px 16px rgba(0, 0, 0, 0.15)
+            `,
             zIndex: 40,
           }}
         >
@@ -268,7 +272,11 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           {/* ЗАГОЛОВОК И ОПИСАНИЕ - МОБИЛКА */}
           {isMobile ? (
             <>
-              <div className="max-w-[99%]" style={{ textShadow: '3px 2px 8px rgba(0, 0, 0, 0.8)' }}>
+              <div className="max-w-[99%]" style={{ textShadow: `
+                3px 2px 4px rgba(0, 0, 0, 0.45),
+                3px 2px 8px rgba(0, 0, 0, 0.30),
+                3px 2px 16px rgba(0, 0, 0, 0.15)
+              ` }}>
                 <ResizeableTitle 
                   maxLines={2} 
                   minFontSize={18} 
@@ -287,7 +295,11 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 "
                 style={{
                   fontSize: 'clamp(5.5px, 1vw, 8.5px)',
-                  textShadow: '3px 2px 8px rgba(0, 0, 0, 0.8)',
+                  textShadow: `
+                    3px 2px 4px rgba(0, 0, 0, 0.45),
+                    3px 2px 8px rgba(0, 0, 0, 0.30),
+                    3px 2px 16px rgba(0, 0, 0, 0.15)
+                  `,
                 }}
               >
                 {manhwa.description}
@@ -296,7 +308,11 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           ) : (
             <>
               {/* ЗАГОЛОВОК И ОПИСАНИЕ - ДЕСКТОП */}
-              <div className="max-w-[99%]" style={{ textShadow: '3px 2px 12px rgba(0, 0, 0, 0.9)' }}>
+              <div className="max-w-[99%]" style={{ textShadow: `
+                3px 2px 5px rgba(0, 0, 0, 0.48),
+                3px 2px 12px rgba(0, 0, 0, 0.32),
+                3px 2px 20px rgba(0, 0, 0, 0.18)
+              ` }}>
                 <ResizeableTitle 
                   maxLines={2} 
                   minFontSize={42} 
@@ -317,7 +333,11 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 "
                 style={{
                   fontSize: 'clamp(11px, 2vw, 17px)',
-                  textShadow: '3px 2px 10px rgba(0, 0, 0, 0.85)',
+                  textShadow: `
+                    3px 2px 5px rgba(0, 0, 0, 0.45),
+                    3px 2px 12px rgba(0, 0, 0, 0.30),
+                    3px 2px 20px rgba(0, 0, 0, 0.15)
+                  `,
                 }}
               >
                 {manhwa.description}
