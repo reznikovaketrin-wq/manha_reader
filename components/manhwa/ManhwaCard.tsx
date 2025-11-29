@@ -280,7 +280,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 <ResizeableTitle 
                   maxLines={2} 
                   minFontSize={18} 
-                  maxFontSize={28} 
+                  maxFontSize={32} 
                   onlyIfLong={true}
                   isMobile={isMobile}
                 >
