@@ -78,7 +78,7 @@ function ScheduleCard({ item }: { item: ScheduleItem }) {
             position: 'absolute',
             left: '0',
             top: '0px',
-            fontSize: 'clamp(100px, 35vw, 200px)',
+            fontSize: 'clamp(80px, 35vw, 200px)',
             fontWeight: '800',
             textTransform: 'uppercase',
             letterSpacing: '0.00em',
