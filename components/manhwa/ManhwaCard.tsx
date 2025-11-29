@@ -262,10 +262,10 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
             flex flex-col gap-[clamp(12px, 3vw, 16px)]
             
             flex-1
-            max-w-[85%]
+            max-w-[80%]
             
             md:absolute md:left-[var(--spacing-xl)] md:bottom-[var(--spacing-xl)]
-            md:max-w-[85%]
+            md:max-w-[80%]
             md:flex-1
           "
         >
@@ -278,9 +278,9 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 3px 2px 16px rgba(0, 0, 0, 0.15)
               ` }}>
                 <ResizeableTitle 
-                  maxLines={2} 
-                  minFontSize={18} 
-                  maxFontSize={32} 
+                  maxLines={3} 
+                  minFontSize={12} 
+                  maxFontSize={28} 
                   onlyIfLong={true}
                   isMobile={isMobile}
                 >
@@ -290,11 +290,12 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
 
               <p
                 className="
-                  leading-[1.3] text-white/80
-                  max-w-[80%]
+                  leading-[1.2] text-white/80
+                  max-w-[99%]
+                  line-clamp-2
                 "
                 style={{
-                  fontSize: 'clamp(5.5px, 1vw, 8.5px)',
+                  fontSize: 'clamp(5px, 1vw, 7px)',
                   textShadow: `
                     3px 2px 4px rgba(0, 0, 0, 0.45),
                     3px 2px 8px rgba(0, 0, 0, 0.30),
@@ -327,9 +328,9 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
               <p
                 className="
                   leading-[1.3] text-white/80
-                  max-w-[90%]
+                  max-w-[80%]
                   md:text-white/85
-                  md:max-w-[90%]
+                  md:max-w-[70%]
                 "
                 style={{
                   fontSize: 'clamp(11px, 2vw, 17px)',
