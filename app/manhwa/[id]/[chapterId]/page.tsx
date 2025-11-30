@@ -149,6 +149,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   // Обработка скролла
   useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout;
+
     const handleScroll = () => {
       const contentElement = contentRef.current;
       if (!contentElement) return;
@@ -170,13 +172,19 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       }
 
       // Автоматический переход на следующую главу при достижении конца
-      if (progress >= 95 && nextChapter) {
-        router.push(`/manhwa/${params.id}/${nextChapter.id}`);
-      }
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        if (progress >= 90 && nextChapter) {
+          router.push(`/manhwa/${params.id}/${nextChapter.id}`);
+        }
+      }, 500); // Дождаться окончания скролла перед переходом
     };
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
   }, [chapter, params.id, nextChapter, headerHeight, footerHeight, router]);
 
   // Горячие клавиши
@@ -253,38 +261,38 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           showUI ? 'h-auto' : 'h-0'
         }`}
       >
-        <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-3">
+        <div className="flex items-center justify-between px-2 py-1.5 md:px-4 md:py-2">
           <Link
             href={`/manhwa/${params.id}`}
-            className="p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+            className="p-1 md:p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
           >
-            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </Link>
 
-          <div className="flex-1 text-center min-w-0">
+          <div className="flex-1 text-center min-w-0 px-2">
             <h1 className="text-xs md:text-sm font-semibold truncate">{manhwa.title}</h1>
-            <div className="flex items-center justify-center gap-1 md:gap-2 mt-1">
+            <div className="flex items-center justify-center gap-1 mt-0.5">
               {prevChapter && (
                 <button
                   onClick={goToPrevChapter}
-                  className="p-1 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                  className="p-0.5 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                 >
-                  <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
               )}
               <span className="text-xs text-gray-400 truncate">
-                Том 2 Розділ {chapter.number}
+                Розділ {chapter.number}
               </span>
               {nextChapter && (
                 <button
                   onClick={goToNextChapter}
-                  className="p-1 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                  className="p-0.5 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                 >
-                  <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </button>
@@ -292,8 +300,8 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             </div>
           </div>
 
-          <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0">
-            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button className="p-1 md:p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0">
+            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
@@ -363,34 +371,34 @@ export default function ReaderPage({ params }: ReaderPageProps) {
           showUI ? 'h-auto' : 'h-0'
         }`}
       >
-        <div className="px-3 py-2 md:px-4 md:py-3">
-          <div className="w-full h-1 bg-gray-800 rounded-full mb-2 md:mb-3">
+        <div className="px-2 py-1.5 md:px-4 md:py-2">
+          <div className="w-full h-0.5 bg-gray-800 rounded-full mb-1.5 md:mb-2">
             <div
               className="h-full bg-blue-500 rounded-full transition-all"
               style={{ width: `${scrollProgress}%` }}
             />
           </div>
 
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-1 md:gap-2">
             <div className="text-xs text-gray-400 flex-shrink-0">{currentPage}/{chapter.pages.length}</div>
 
             <div className="flex items-center gap-0.5 md:gap-1">
               <button
                 onClick={() => setShowChapterList(!showChapterList)}
-                className="p-1.5 md:p-2 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                 title="Список глав"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
 
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-1.5 md:p-2 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                 title="Настройки"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -398,22 +406,22 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
               <button 
                 onClick={() => setShowComments(!showComments)}
-                className="p-1.5 md:p-2 hover:bg-gray-800 rounded transition-colors relative flex-shrink-0"
+                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors relative flex-shrink-0"
                 title="Коментарии"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-2H5a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 2z" />
                 </svg>
               </button>
 
               <button
                 onClick={() => setAutoScrolling(!autoScrolling)}
-                className={`p-1.5 md:p-2 rounded transition-colors flex-shrink-0 ${
+                className={`p-1 md:p-2 rounded transition-colors flex-shrink-0 ${
                   autoScrolling ? 'bg-blue-600' : 'hover:bg-gray-800'
                 }`}
                 title="Автопрокрутка"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               </button>
@@ -423,9 +431,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               <button
                 onClick={goToPrevChapter}
                 disabled={!prevChapter}
-                className="p-1.5 md:p-2 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -433,9 +441,9 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               <button
                 onClick={goToNextChapter}
                 disabled={!nextChapter}
-                className="p-1.5 md:p-2 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
               >
-                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -511,13 +519,26 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       )}
 
       {/* Comments Panel - Drawer */}
-      <ChapterCommentsComponent
-        manhwaId={params.id}
-        chapterId={params.chapterId}
-        mode="drawer"
-        isOpen={showComments}
-        onClose={() => setShowComments(false)}
-      />
+      {showComments && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setShowComments(false)}
+          />
+          
+          {/* Drawer Container */}
+          <div className="fixed right-0 top-0 h-screen w-full max-w-full md:max-w-md bg-black border-l border-text-muted/20 shadow-xl z-50 flex flex-col">
+            <ChapterCommentsComponent
+              manhwaId={params.id}
+              chapterId={params.chapterId}
+              mode="drawer"
+              isOpen={showComments}
+              onClose={() => setShowComments(false)}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
