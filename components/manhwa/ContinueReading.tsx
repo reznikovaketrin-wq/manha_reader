@@ -12,8 +12,25 @@ export default function ContinueReading() {
   useEffect(() => {
     // Завантажити історію при монтуванні компонента
     const loadHistory = () => {
-      const recent = getRecentHistory(5);
-      setHistory(recent);
+      const recent = getRecentHistory(20); // Берем больше для дедупликации
+      
+      // Дедупликация: оставляем только последнюю запись для каждого manhwaId
+      const uniqueHistory: { [key: string]: ReadingHistory } = {};
+      
+      recent.forEach((item) => {
+        // Если этот manhwa еще не в uniqueHistory или текущий элемент более новый
+        if (!uniqueHistory[item.manhwaId] || 
+            new Date(item.timestamp) > new Date(uniqueHistory[item.manhwaId].timestamp)) {
+          uniqueHistory[item.manhwaId] = item;
+        }
+      });
+      
+      // Преобразуем обратно в массив и сортируем по времени (новые первыми)
+      const dedupedHistory = Object.values(uniqueHistory)
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, 5); // Берем только 5 последних уникальных
+      
+      setHistory(dedupedHistory);
     };
 
     loadHistory();
@@ -45,7 +62,7 @@ export default function ContinueReading() {
 
             return (
               <Link
-                key={item.manhwaId}
+                key={`continue-${item.manhwaId}`}
                 href={`/manhwa/${item.manhwaId}/${item.chapterId}`}
                 className="block flex-shrink-0 w-1/2 snap-start"
               >
@@ -99,7 +116,7 @@ export default function ContinueReading() {
 
           return (
             <Link
-              key={item.manhwaId}
+              key={`continue-${item.manhwaId}`}
               href={`/manhwa/${item.manhwaId}/${item.chapterId}`}
               className="block w-5/6 mx-auto"
             >
