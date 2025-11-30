@@ -87,7 +87,7 @@ export default function ReadingHistoryPage() {
             historyWithDetails.push({
               id: manhwaId,
               title: manhwa.title,
-              imageUrl: manhwa.imageUrl,
+              imageUrl: manhwa.coverImage,
               currentChapter: chapter?.number.toString() || 'Unknown',
               currentPage: item.page_number,
               totalPages: totalPages,
