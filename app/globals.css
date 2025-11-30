@@ -130,3 +130,125 @@ p {
     flex-direction: row;
   }
 }
+
+/* ========================================
+   MOBILE VIEWPORT FIXES
+   Исправления для правильного масштабирования
+   ======================================== */
+
+@layer base {
+  /* Fix для html - убирает горизонтальный скролл */
+  html {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    width: 100%;
+    /* Гладкий скролл на iOS */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Гладкий скролл для контейнеров с overflow */
+  div[style*="overflow-y: auto"],
+  div[style*="overflow: auto"] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Защита от горизонтального скролла - max-width на все элементы */
+@layer base {
+  * {
+    max-width: 100%;
+  }
+
+  /* Отключает зум на double-tap для элементов с touch-none */
+  .touch-none {
+    touch-action: none;
+  }
+
+  /* Изображения - защита от drag и выделения */
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Гладкое поведение скролла */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Убирает стандартный зум на инпутах (font-size: 16px) */
+  input[type="range"],
+  input[type="number"],
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  textarea,
+  select {
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Убирает выделение при долгом нажатии */
+  div,
+  span,
+  img,
+  button,
+  a {
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Safe Area поддержка для notch и других cutouts */
+@supports (padding: max(0px)) {
+  /* Не добавляем padding на body, так как это может сломать layout */
+  /* Safe area уже учитывается браузером для fixed элементов */
+}
+
+/* Специфичные стили для reader компонента */
+@layer utilities {
+  /* Убирает стандартное поведение зума при фокусе на iOS */
+  .no-ios-zoom input {
+    font-size: 16px !important;
+  }
+
+  /* Плавный скролл для контейнеров */
+  .scroll-smooth-ios {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Предотвращает перемасштабирование при input focus */
+  .input-no-zoom {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+/* ========================================
+   ДОПОЛНИТЕЛЬНЫЕ УТИЛИТЫ
+   ======================================== */
+
+@layer utilities {
+  /* Для скрытия элемента но сохранения пространства */
+  .invisible-preserve {
+    visibility: hidden;
+  }
+
+  /* Полноэкранный контейнер */
+  .fullscreen {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Контейнер с ограничением ширины */
+  .max-screen-width {
+    width: 100vw;
+    max-width: 100%;
+  }
+}

@@ -28,7 +28,6 @@ export default function UserMenu() {
   useEffect(() => {
     if (!mounted) return;
 
-    // Get current user
     const getUser = async () => {
       try {
         const {
@@ -44,7 +43,6 @@ export default function UserMenu() {
 
     getUser();
 
-    // Subscribe to auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -71,41 +69,68 @@ export default function UserMenu() {
 
   if (!mounted || loading) {
     return (
-      <div className="px-4 py-2 bg-card-bg border border-text-muted/20 rounded-lg animate-pulse">
-        <div className="w-20 h-6 bg-text-muted/20 rounded"></div>
-      </div>
+      <div className="w-10 h-10 md:w-20 md:h-6 bg-card-bg border border-text-muted/20 rounded-lg animate-pulse" />
     );
   }
 
+  // Не залогинен
   if (!user) {
     return (
-      <Link
-        href="/auth"
-        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors flex items-center gap-2"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-          />
-        </svg>
-        Увійти
-      </Link>
+      <>
+        {/* 📱 Мобилка - иконка */}
+        <Link
+          href="/auth"
+          className="md:hidden inline-flex items-center justify-center w-10 h-10 p-2 hover:bg-card-hover border border-text-muted/20 rounded-lg transition-colors flex-shrink-0"
+          title="Увійти"
+        >
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+            />
+          </svg>
+        </Link>
+
+        {/* 💻 Десктоп - кнопка с текстом */}
+        <Link
+          href="/auth"
+          className="hidden md:inline-flex px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors items-center gap-2 flex-shrink-0"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+            />
+          </svg>
+          Увійти
+        </Link>
+      </>
     );
   }
 
   const username = user.user_metadata?.username || user.email?.split('@')[0] || 'User';
 
   return (
-    <div className="relative">
-      {/* Menu Button */}
+    <div className="relative flex-shrink-0">
+      {/* 📱 Мобилка - аватар */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-2 bg-card-bg hover:bg-card-hover border border-text-muted/20 rounded-lg transition-colors"
+        className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold transition-colors flex-shrink-0"
+        title={username}
       >
-        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+        {username[0].toUpperCase()}
+      </button>
+
+      {/* 💻 Десктоп - полное меню */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="hidden md:inline-flex items-center gap-2 px-3 py-2 bg-card-bg hover:bg-card-hover border border-text-muted/20 rounded-lg transition-colors flex-shrink-0"
+      >
+        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
           {username[0].toUpperCase()}
         </div>
         <span className="text-text-main text-sm font-medium max-w-[100px] truncate">
@@ -178,12 +203,9 @@ export default function UserMenu() {
         </div>
       )}
 
-      {/* Backdrop для закрытия меню */}
+      {/* Backdrop */}
       {open && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setOpen(false)}
-        />
+        <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
       )}
     </div>
   );

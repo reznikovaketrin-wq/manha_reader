@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getManhwaById, getChapterByIds } from '@/data/manhwa';
@@ -19,29 +19,158 @@ interface ReaderPageProps {
 
 export default function ReaderPage({ params }: ReaderPageProps) {
   const router = useRouter();
-  const headerRef = useRef<HTMLDivElement>(null);
-  const footerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [user, setUser] = useState<any>(null);
   const [progressRestored, setProgressRestored] = useState(false);
-  const [brightness, setBrightness] = useState(100);
+  const [brightness, setBrightness] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('manhwa-brightness');
+      return saved ? parseInt(saved) : 100;
+    }
+    return 100;
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [showChapterList, setShowChapterList] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [autoScrolling, setAutoScrolling] = useState(false);
   const [showUI, setShowUI] = useState(true);
-  const [headerHeight, setHeaderHeight] = useState(60);
-  const [footerHeight, setFooterHeight] = useState(70);
+  const [currentChapterId, setCurrentChapterId] = useState(params.chapterId);
+  const [nextChapterLoaded, setNextChapterLoaded] = useState(false);
+  const [preloadMarkerVisible, setPreloadMarkerVisible] = useState(false);
+  const [chapters, setChapters] = useState<any[]>([]);
+  const [autoAdvance, setAutoAdvance] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('manhwa-autoAdvance');
+      return saved ? JSON.parse(saved) : true;
+    }
+    return true;
+  });
+  const [isChapterReady, setIsChapterReady] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false); // ← Флаг блокировки переходов
 
   const manhwa = getManhwaById(params.id);
-  const chapter = getChapterByIds(params.id, params.chapterId);
+  const chapter = getChapterByIds(params.id, currentChapterId);
 
-  // Определить текущие главы (выше всех useEffect для использования в зависимостях)
-  const currentChapterIndex = manhwa?.chapters.findIndex(ch => ch.id === params.chapterId) ?? -1;
-  const prevChapter = currentChapterIndex > 0 ? manhwa?.chapters[currentChapterIndex - 1] : null;
-  const nextChapter = currentChapterIndex < (manhwa?.chapters.length ?? 0) - 1 ? manhwa?.chapters[currentChapterIndex + 1] : null;
+  // Определить какая глава видна на экране по currentPage
+  const getVisibleChapterIndexInBuffer = () => {
+    let pageCount = 0;
+    for (let i = 0; i < chapters.length; i++) {
+      const chapterPageCount = chapters[i].pages.length;
+      if (currentPage <= pageCount + chapterPageCount) {
+        return i;
+      }
+      pageCount += chapterPageCount;
+    }
+    return chapters.length > 0 ? chapters.length - 1 : -1;
+  };
+
+  // Вычислять nextChapter используя useMemo чтобы он пересчитывался при изменении chapters
+  const { visibleChapterIndex, nextChapter, prevChapter } = useMemo(() => {
+    const visIdx = getVisibleChapterIndexInBuffer();
+    
+    // Определяем текущую главу по visibleChapterIndex в буфере
+    const visibleChapterInBuffer = visIdx >= 0 && visIdx < chapters.length ? chapters[visIdx] : null;
+    
+    if (!visibleChapterInBuffer || !manhwa) {
+      console.log('📊 [MEMO] nextChapter calculated - no visible chapter or manhwa');
+      return { visibleChapterIndex: visIdx, nextChapter: null, prevChapter: null };
+    }
+    
+    // Ищем текущую главу в манхве
+    const currentChapterIndexInManhwa = manhwa.chapters.findIndex(ch => ch.id === visibleChapterInBuffer.id);
+    
+    // Следующая глава это следующая в манхве!
+    const next = currentChapterIndexInManhwa >= 0 && currentChapterIndexInManhwa < manhwa.chapters.length - 1
+      ? manhwa.chapters[currentChapterIndexInManhwa + 1]
+      : null;
+    
+    const prev = currentChapterIndexInManhwa > 0
+      ? manhwa.chapters[currentChapterIndexInManhwa - 1]
+      : null;
+    
+    console.log('📊 [MEMO] nextChapter calculated');
+    console.log('  visibleChapterIndex:', visIdx);
+    console.log('  visibleChapter:', visibleChapterInBuffer.number);
+    console.log('  chapters.length:', chapters.length);
+    console.log('  nextChapter:', next?.number);
+    
+    return { visibleChapterIndex: visIdx, nextChapter: next, prevChapter: prev };
+  }, [chapters, currentPage, manhwa]);
+
+  // Сбросить флаги когда меняется видимая глава
+  useEffect(() => {
+    console.log('📖 [VISIBLE] Visible chapter changed');
+    console.log('  Visible chapter index:', visibleChapterIndex);
+    console.log('  Next chapter:', nextChapter?.number);
+    setNextChapterLoaded(false);
+    setPreloadMarkerVisible(false);
+  }, [visibleChapterIndex]);
+
+  // Отследить изменение preloadMarkerVisible
+  useEffect(() => {
+    console.log('📌 [PRELOAD-MARKER] Visibility changed:', preloadMarkerVisible);
+  }, [preloadMarkerVisible]);
+
+  // Логика предзагрузки - срабатывает когда preloadMarker видна и есть nextChapter
+  useEffect(() => {
+    console.log('📊 [PRELOAD-EFFECT] Effect triggered');
+    console.log('  preloadMarkerVisible:', preloadMarkerVisible);
+    console.log('  nextChapter:', nextChapter?.number);
+    console.log('  nextChapterLoaded:', nextChapterLoaded);
+    console.log('  chapters.length:', chapters.length);
+    
+    if (preloadMarkerVisible && nextChapter && !nextChapterLoaded) {
+      console.log('═══════════════════════════════════════════════════');
+      console.log('⚡ [PRELOAD] Starting to preload next chapter at 70%');
+      console.log('  Visible Chapter Index:', visibleChapterIndex);
+      console.log('  Next Chapter ID:', nextChapter.id);
+      console.log('  Next Chapter Number:', nextChapter.number);
+      console.log('═══════════════════════════════════════════════════');
+      
+      const nextChapterData = getChapterByIds(params.id, nextChapter.id);
+      if (nextChapterData) {
+        console.log('✓ [PRELOAD] Chapter preloaded successfully');
+        console.log('  Pages in next chapter:', nextChapterData.pages.length);
+        setChapters(prev => {
+          const newChapters = [...prev, nextChapterData];
+          console.log('✓ [PRELOAD] Chapters buffer updated. Total chapters in buffer:', newChapters.length);
+          return newChapters;
+        });
+        setNextChapterLoaded(true);
+      } else {
+        console.error('❌ [PRELOAD] Failed to load next chapter data');
+      }
+    } else {
+      if (!preloadMarkerVisible) console.log('  ❌ preloadMarkerVisible is false');
+      if (!nextChapter) console.log('  ❌ nextChapter is null');
+      if (nextChapterLoaded) console.log('  ❌ nextChapterLoaded is true (already loaded)');
+    }
+  }, [preloadMarkerVisible, nextChapter, nextChapterLoaded, chapters.length, visibleChapterIndex]);
+
+  useEffect(() => {
+    if (chapter && chapters.length === 0) {
+      console.log('═══════════════════════════════════════════════════');
+      console.log('📦 [INIT] First chapter loaded');
+      console.log('  Chapter ID:', chapter.id);
+      console.log('  Chapter Number:', chapter.number);
+      console.log('  Pages Count:', chapter.pages.length);
+      console.log('  Total Pages:', chapter.pages.reduce((s, c) => s + 1, 0));
+      console.log('═══════════════════════════════════════════════════');
+      setChapters([chapter]);
+      setNextChapterLoaded(false);
+      setScrollProgress(0);
+      setIsChapterReady(false);
+      
+      const timer = setTimeout(() => {
+        console.log('✓ [INIT] Chapter ready after 500ms, autoscroll now available');
+        setIsChapterReady(true);
+      }, 500);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [chapter]);
 
   // Получить текущего пользователя
   useEffect(() => {
@@ -52,10 +181,22 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     getUser();
   }, []);
 
+  // Сохранить brightness в localStorage
+  useEffect(() => {
+    localStorage.setItem('manhwa-brightness', brightness.toString());
+    console.log('💾 [SETTINGS] Brightness saved to localStorage:', brightness + '%');
+  }, [brightness]);
+
+  // Сохранить autoAdvance в localStorage
+  useEffect(() => {
+    localStorage.setItem('manhwa-autoAdvance', JSON.stringify(autoAdvance));
+    console.log('💾 [SETTINGS] Auto-advance saved to localStorage:', autoAdvance ? 'ON' : 'OFF');
+  }, [autoAdvance]);
+
   // Отслеживание просмотров
   useEffect(() => {
     if (manhwa && chapter) {
-      incrementViews(params.id, params.chapterId);
+      incrementViews(params.id, currentChapterId);
 
       const trackView = async () => {
         try {
@@ -71,13 +212,11 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
       trackView();
     }
-  }, [params.id, params.chapterId, manhwa, chapter]);
+  }, [params.id, currentChapterId, manhwa, chapter]);
 
-  // Сброс прогресса при смене главы
-  useEffect(() => {
-    setProgressRestored(false);
-    window.scrollTo(0, 0);
-  }, [params.chapterId]);
+  // ❌ УДАЛЕНО: Сброс прогресса при смене главы
+  // currentChapterId больше не меняется при скролле!
+  // Прогресс считается по всему буферу глав
 
   // Восстановить прогресс при загрузке главы
   useEffect(() => {
@@ -87,8 +226,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       try {
         if (user?.id) {
           const lastChapter = await getLastReadChapter(user.id, params.id);
-          if (lastChapter && lastChapter.chapter_id === params.chapterId) {
+          if (lastChapter && lastChapter.chapter_id === currentChapterId) {
             const pageNumber = lastChapter.page_number || 1;
+            console.log('📍 [RESTORE] Restored progress from Supabase');
+            console.log('  Page:', pageNumber, '/', chapter.pages.length);
             setCurrentPage(pageNumber);
             setProgressRestored(true);
             return;
@@ -96,15 +237,19 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         }
 
         const history = getHistoryForManhwa(params.id);
-        const currentChapterHistory = history.find(h => h.chapterId === params.chapterId);
+        const currentChapterHistory = history.find(h => h.chapterId === currentChapterId);
 
         if (currentChapterHistory) {
+          console.log('📍 [RESTORE] Restored progress from localStorage');
+          console.log('  Page:', currentChapterHistory.pageNumber, '/', chapter.pages.length);
           setCurrentPage(currentChapterHistory.pageNumber || 1);
+        } else {
+          console.log('📍 [RESTORE] No saved progress, starting from page 1');
         }
 
         setProgressRestored(true);
       } catch (error) {
-        console.error('Error restoring progress:', error);
+        console.error('❌ [RESTORE] Error restoring progress:', error);
         setProgressRestored(true);
       }
     };
@@ -114,13 +259,17 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [params.id, params.chapterId, chapter, user, manhwa]);
+  }, [params.id, currentChapterId, chapter, user, manhwa]);
 
   // Сохранение прогресса
   useEffect(() => {
     if (manhwa && chapter && progressRestored) {
       const saveProgress = () => {
-        saveReadingProgress(params.id, params.chapterId, currentPage);
+        saveReadingProgress(params.id, currentChapterId, currentPage);
+        console.log('💾 [SAVE] Progress saved');
+        console.log('  Manhwa:', manhwa.title);
+        console.log('  Chapter:', currentChapterId);
+        console.log('  Page:', currentPage, '/', chapter.pages.length);
       };
 
       saveProgress();
@@ -129,63 +278,159 @@ export default function ReaderPage({ params }: ReaderPageProps) {
         saveProgress();
       };
     }
-  }, [params.id, params.chapterId, currentPage, manhwa, chapter, progressRestored]);
+  }, [params.id, currentChapterId, currentPage, manhwa, chapter, progressRestored]);
 
-  // Отслеживание размеров
+  // Обработка скролла с Intersection Observer - подгрузка при 70% и отслеживание главы
   useEffect(() => {
-    const updateHeights = () => {
-      if (headerRef.current) {
-        setHeaderHeight(headerRef.current.offsetHeight);
-      }
-      if (footerRef.current) {
-        setFooterHeight(footerRef.current.offsetHeight);
-      }
-    };
+    if (!contentRef.current || chapters.length === 0) return;
 
-    updateHeights();
-    window.addEventListener('resize', updateHeights);
-    return () => window.removeEventListener('resize', updateHeights);
-  }, [showUI]);
+    const contentContainer = contentRef.current;
+    const totalPages = chapters.reduce((sum, ch) => sum + ch.pages.length, 0);
 
-  // Обработка скролла
-  useEffect(() => {
-    let scrollTimeout: NodeJS.Timeout;
+    console.log('═══════════════════════════════════════════════════');
+    console.log('🔧 [SETUP] Setting up Intersection Observers');
+    console.log('  Chapters in buffer:', chapters.length);
+    chapters.forEach((ch, idx) => {
+      console.log(`    [${idx + 1}] Chapter ${ch.number} (${ch.pages.length} pages)`);
+    });
+    console.log('  Total pages:', totalPages);
+    console.log('═══════════════════════════════════════════════════');
 
-    const handleScroll = () => {
-      const contentElement = contentRef.current;
-      if (!contentElement) return;
+    // Создаем маркеры для каждой страницы (для отслеживания прогресса)
+    const pageMarkers: HTMLDivElement[] = [];
+    let pageCount = 0;
 
-      const scrollTop = window.scrollY;
-      const documentHeight = contentElement.offsetHeight;
-      const windowHeight = window.innerHeight - headerHeight - footerHeight;
-      const totalScrollable = documentHeight - windowHeight;
-
-      // Прогресс скролла
-      const progress = totalScrollable > 0 ? (scrollTop / totalScrollable) * 100 : 0;
-      setScrollProgress(progress);
-
-      // Вычисление текущей страницы на основе скролла
-      if (chapter && chapter.pages.length > 0) {
-        const pageHeight = documentHeight / chapter.pages.length;
-        const page = Math.floor(scrollTop / pageHeight) + 1;
-        setCurrentPage(Math.min(Math.max(page, 1), chapter.pages.length));
-      }
-
-      // Автоматический переход на следующую главу при достижении конца
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        if (progress >= 90 && nextChapter) {
-          router.push(`/manhwa/${params.id}/${nextChapter.id}`);
+    chapters.forEach((ch, chapterIdx) => {
+      ch.pages.forEach((page: string, pageIdx: number) => {
+        pageCount++;
+        const marker = document.createElement('div');
+        marker.setAttribute('data-page', pageCount.toString());
+        marker.style.height = '1px';
+        marker.style.pointerEvents = 'none';
+        
+        const images = contentContainer.querySelectorAll('img');
+        if (images[pageCount - 1]) {
+          const imgParent = images[pageCount - 1].parentElement;
+          if (imgParent && !imgParent.querySelector(`[data-page="${pageCount}"]`)) {
+            imgParent.insertBefore(marker, images[pageCount - 1]);
+            pageMarkers.push(marker);
+          }
         }
-      }, 500); // Дождаться окончания скролла перед переходом
+      });
+    });
+
+    // Маркер для предзагрузки следующей главы (при 70%)
+    // Размещаем на 70% от всех страниц в буфере
+    const preloadPageIndex = Math.ceil((totalPages * 70) / 100);
+    const preloadMarker = document.createElement('div');
+    preloadMarker.setAttribute('data-preload', 'true');
+    preloadMarker.style.height = '1px';
+    preloadMarker.style.pointerEvents = 'none';
+    
+    const allImages = contentContainer.querySelectorAll('img');
+    if (allImages[preloadPageIndex - 1]) {
+      allImages[preloadPageIndex - 1].parentElement?.appendChild(preloadMarker);
+      console.log(`📍 [PRELOAD-MARKER] Created at page ${preloadPageIndex}/${totalPages} (70%)`);
+    } else {
+      contentContainer.appendChild(preloadMarker);
+      console.log(`📍 [PRELOAD-MARKER] Created at end of container`);
+    }
+
+    // Intersection Observer для отслеживания текущей страницы и главы
+    const observerOptions = {
+      root: contentContainer,
+      rootMargin: '0px',
+      threshold: [0, 0.5, 1],
     };
 
-    window.addEventListener('scroll', handleScroll);
+    const pageObserver = new IntersectionObserver((entries) => {
+      // Отслеживаем текущую страницу
+      const visiblePages = entries
+        .filter(e => e.isIntersecting && e.target.getAttribute('data-page'))
+        .map(e => parseInt(e.target.getAttribute('data-page') || '0'))
+        .filter(p => p > 0);
+
+      if (visiblePages.length > 0) {
+        const currentPageNum = Math.max(...visiblePages);
+        setCurrentPage(currentPageNum);
+
+        // Рассчитываем прогресс по ВСЕм главам в буфере
+        const progress = totalPages > 0 ? (currentPageNum / totalPages) * 100 : 0;
+        setScrollProgress(Math.min(progress, 100));
+        
+        // Логирование только каждые 5%
+        if (Math.round(progress) % 5 === 0) {
+          console.log(`📄 Progress: ${Math.round(progress)}% (Page ${currentPageNum}/${totalPages})`);
+        }
+      }
+
+      // ❌ УДАЛЕНО: Отслеживание смены главы (больше не нужно!)
+      // currentChapterId остается неизменным на протяжении всего буфера
+    }, observerOptions);
+
+    // Observer для предзагрузки (70% прогресса)
+    const preloadObserver = new IntersectionObserver(
+      (entries) => {
+        console.log('🔍 [PRELOAD-OBSERVER] Callback fired');
+        console.log('  Entries count:', entries.length);
+        
+        entries.forEach((entry) => {
+          console.log(`  Entry isIntersecting: ${entry.isIntersecting}`);
+          
+          // Просто устанавливаем флаг видимости маркера
+          if (entry.isIntersecting) {
+            setPreloadMarkerVisible(true);
+          } else {
+            setPreloadMarkerVisible(false);
+          }
+        });
+      },
+      {
+        root: contentContainer,
+        rootMargin: '0px',
+        threshold: 0,
+      }
+    );
+
+    pageMarkers.forEach((marker) => {
+      pageObserver.observe(marker);
+    });
+
+    console.log(`✓ [SETUP] Page markers set up (${pageMarkers.length} markers)`);
+
+    preloadObserver.observe(preloadMarker);
+    console.log('✓ [SETUP] Preload observer set up');
+    console.log('═══════════════════════════════════════════════════');
+
     return () => {
-      window.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
+      console.log('🧹 [CLEANUP] Disconnecting all observers');
+      pageObserver.disconnect();
+      preloadObserver.disconnect();
+      pageMarkers.forEach(marker => marker.remove());
+      preloadMarker.remove();
+      console.log('✓ [CLEANUP] All observers disconnected');
     };
-  }, [chapter, params.id, nextChapter, headerHeight, footerHeight, router]);
+  }, [chapters, params.id, nextChapter, nextChapterLoaded]);
+
+  // Логирование состояния при изменении (для отладки)
+  useEffect(() => {
+    const state = {
+      'Manhwa': manhwa?.title || 'Loading...',
+      'Current Chapter': currentChapterId,
+      'Current Page': currentPage,
+      'Progress': Math.round(scrollProgress) + '%',
+      'Chapters in Buffer': chapters.length,
+      'Is Ready': isChapterReady,
+      'UI Visible': showUI,
+    };
+    
+    // Логирование в таблице каждые 2 секунды
+    const logInterval = setInterval(() => {
+      console.table(state);
+    }, 5000);
+    
+    return () => clearInterval(logInterval);
+  }, [manhwa, currentChapterId, currentPage, scrollProgress, chapters.length, isChapterReady, showUI]);
 
   // Горячие клавиши
   useEffect(() => {
@@ -200,10 +445,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
-        window.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
+        contentRef.current?.scrollBy({ top: window.innerHeight / 2, behavior: 'smooth' });
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        window.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
+        contentRef.current?.scrollBy({ top: -window.innerHeight / 2, behavior: 'smooth' });
       }
     };
 
@@ -213,24 +458,36 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
   // Автопрокрутка
   useEffect(() => {
-    if (!autoScrolling) return;
+    if (!autoScrolling || !contentRef.current) return;
 
     const interval = setInterval(() => {
-      window.scrollBy({ top: 2, behavior: 'auto' });
+      contentRef.current?.scrollBy({ top: 2, behavior: 'auto' });
     }, 300);
 
     return () => clearInterval(interval);
   }, [autoScrolling]);
 
+  // ⚠️ ОТКЛЮЧЕНО: Автопереход больше не нужен - используется бесконечный скролл
+  // При достижении 70% прогресса следующая глава предзагружается и добавляется в буфер
+  // Пользователь просто скролит дальше, видит разделитель и продолжает читать новую главу
+
   const goToNextChapter = () => {
-    if (nextChapter) {
-      router.push(`/manhwa/${params.id}/${nextChapter.id}`);
+    // Вместо перехода - скроллим вниз на высоту экрана
+    if (contentRef.current) {
+      contentRef.current.scrollBy({ 
+        top: window.innerHeight, 
+        behavior: 'smooth' 
+      });
     }
   };
 
   const goToPrevChapter = () => {
-    if (prevChapter) {
-      router.push(`/manhwa/${params.id}/${prevChapter.id}`);
+    // Вместо перехода - скроллим вверх на высоту экрана
+    if (contentRef.current) {
+      contentRef.current.scrollBy({ 
+        top: -window.innerHeight, 
+        behavior: 'smooth' 
+      });
     }
   };
 
@@ -239,7 +496,6 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     const rect = target.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
 
-    // Клик по центру - скрыть интерфейс
     if (clickX > rect.width * 0.25 && clickX < rect.width * 0.75) {
       setShowUI(!showUI);
       setShowSettings(false);
@@ -252,153 +508,145 @@ export default function ReaderPage({ params }: ReaderPageProps) {
     notFound();
   }
 
+  const totalPages = chapters.reduce((sum, ch) => sum + ch.pages.length, 0);
+
   return (
-    <div className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden">
-      {/* Top Header */}
+    <div className="fixed inset-0 bg-black text-white flex flex-col overflow-hidden w-screen h-screen">
+      {/* Top Header - Fixed */}
       <header
-        ref={headerRef}
-        className={`bg-black/90 backdrop-blur-sm border-b border-text-muted/20 transition-all duration-300 overflow-hidden flex-shrink-0 ${
-          showUI ? 'h-auto' : 'h-0'
+        className={`fixed top-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-b border-text-muted/20 transition-all duration-300 z-30 overflow-hidden ${
+          showUI ? 'h-12 md:h-14 pointer-events-auto' : 'h-0 -top-12 pointer-events-none'
         }`}
       >
-        <div className="flex items-center justify-between px-2 py-1.5 md:px-4 md:py-2">
+        <div className="flex items-center justify-between px-2 py-1 md:px-4 md:py-2 h-full w-full">
           <Link
             href={`/manhwa/${params.id}`}
-            className="p-1 md:p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
+            className="p-1 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0"
           >
-            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
           </Link>
 
           <div className="flex-1 text-center min-w-0 px-2">
             <h1 className="text-xs md:text-sm font-semibold truncate">{manhwa.title}</h1>
-            <div className="flex items-center justify-center gap-1 mt-0.5">
-              {prevChapter && (
-                <button
-                  onClick={goToPrevChapter}
-                  className="p-0.5 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                </button>
-              )}
-              <span className="text-xs text-gray-400 truncate">
-                Розділ {chapter.number}
-              </span>
-              {nextChapter && (
-                <button
-                  onClick={goToNextChapter}
-                  className="p-0.5 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
-              )}
-            </div>
+            <p className="text-xs text-gray-400">Розділ {chapter.number}</p>
           </div>
 
-          <button className="p-1 md:p-2 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0">
-            <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button className="p-1 hover:bg-gray-800 rounded-lg transition-colors flex-shrink-0">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
         </div>
       </header>
 
-      {/* Main Content Area - скролл для страниц */}
+      {/* Main Content Area */}
       <div 
-        className="flex-1 relative overflow-y-auto overflow-x-hidden bg-black" 
-        style={{ filter: `brightness(${brightness}%)` }} 
+        className="flex-1 relative overflow-y-auto bg-black w-full"
+        style={{ 
+          filter: `brightness(${brightness}%)`,
+          marginTop: showUI ? '3rem' : '0',
+          marginBottom: showUI ? '4rem' : '0',
+          transition: 'margin 300ms',
+          overflowX: 'hidden',
+          WebkitOverflowScrolling: 'touch',
+        }}
         onClick={handleCenterClick}
         ref={contentRef}
       >
-        {/* Left tap zone - переход к предыдущей главе */}
+        {/* Left tap zone */}
         <div
-          className="fixed left-0 top-0 bottom-0 w-1/4 cursor-pointer group z-20 pointer-events-auto"
+          className={`fixed left-0 top-0 bottom-0 w-1/4 cursor-pointer group z-20 pointer-events-auto touch-none transition-opacity duration-300 ${
+            showUI ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
           onClick={(e) => {
             e.stopPropagation();
             goToPrevChapter();
           }}
-          style={{
-            top: headerHeight,
-            bottom: footerHeight,
-          }}
         >
           <div className="h-full flex items-center justify-center group-hover:bg-white/5 transition-colors">
-            <span className="text-white/0 group-hover:text-white/50 transition-colors text-xs md:text-sm">
-              ← Глава
-            </span>
+            <span className="text-white/0 group-hover:text-white/50 transition-colors text-xs">← Глава</span>
           </div>
         </div>
 
-        {/* Right tap zone - переход к следующей главе */}
+        {/* Right tap zone */}
         <div
-          className="fixed right-0 top-0 bottom-0 w-1/4 cursor-pointer group z-20 pointer-events-auto"
+          className={`fixed right-0 top-0 bottom-0 w-1/4 cursor-pointer group z-20 pointer-events-auto touch-none transition-opacity duration-300 ${
+            showUI ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
           onClick={(e) => {
             e.stopPropagation();
             goToNextChapter();
           }}
-          style={{
-            top: headerHeight,
-            bottom: footerHeight,
-          }}
         >
           <div className="h-full flex items-center justify-center group-hover:bg-white/5 transition-colors">
-            <span className="text-white/0 group-hover:text-white/50 transition-colors text-xs md:text-sm">
-              Глава →
-            </span>
+            <span className="text-white/0 group-hover:text-white/50 transition-colors text-xs">Глава →</span>
           </div>
         </div>
 
-        {/* Image container */}
-        <div className="w-full">
-          <img
-            src={chapter.pages[0]}
-            alt={`Розділ ${chapter.number}`}
-            className="w-full h-auto object-contain"
-            loading="lazy"
-          />
+        {/* All chapters content */}
+        <div className="w-full overflow-x-hidden">
+          {chapters.map((ch, chapterIdx) => (
+            <div key={ch.id} className="w-full">
+              {ch.pages.map((page: string, pageIdx: number) => (
+                <img
+                  key={`${ch.id}-${pageIdx}`}
+                  src={page}
+                  alt={`Розділ ${ch.number} - Сторінка ${pageIdx + 1}`}
+                  className="w-full h-auto object-contain block"
+                  loading="lazy"
+                  draggable={false}
+                />
+              ))}
+              {/* Разделитель между главами */}
+              {chapterIdx < chapters.length - 1 && (
+                <div className="w-full h-8 bg-gradient-to-b from-black to-black/50 flex items-center justify-center">
+                  <span className="text-gray-600 text-sm">Розділ {chapters[chapterIdx + 1].number}</span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Bottom Navigation Panel */}
+      {/* Bottom Navigation Panel - Fixed */}
       <div
-        ref={footerRef}
-        className={`bg-black/90 backdrop-blur-sm border-t border-text-muted/20 transition-all duration-300 overflow-hidden flex-shrink-0 ${
-          showUI ? 'h-auto' : 'h-0'
+        className={`fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-text-muted/20 transition-all duration-300 z-30 overflow-hidden ${
+          showUI ? 'h-16 md:h-14 pointer-events-auto' : 'h-0 pointer-events-none'
         }`}
+        style={{
+          width: '100%',
+        }}
       >
-        <div className="px-2 py-1.5 md:px-4 md:py-2">
-          <div className="w-full h-0.5 bg-gray-800 rounded-full mb-1.5 md:mb-2">
+        <div className="px-2 py-1.5 md:px-4 md:py-2 h-full flex flex-col justify-center w-full overflow-x-hidden">
+          <div className="w-full h-0.5 bg-gray-800 rounded-full mb-1.5">
             <div
               className="h-full bg-blue-500 rounded-full transition-all"
               style={{ width: `${scrollProgress}%` }}
             />
           </div>
 
-          <div className="flex items-center justify-between gap-1 md:gap-2">
-            <div className="text-xs text-gray-400 flex-shrink-0">{currentPage}/{chapter.pages.length}</div>
+          <div className="flex items-center justify-between gap-1 w-full overflow-x-auto">
+            <div className="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">{currentPage}/{totalPages}</div>
 
-            <div className="flex items-center gap-0.5 md:gap-1">
+            <div className="flex items-center gap-0.5 md:gap-1 flex-shrink-0">
               <button
                 onClick={() => setShowChapterList(!showChapterList)}
-                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                className="p-1 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                 title="Список глав"
               >
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
 
               <button
                 onClick={() => setShowSettings(!showSettings)}
-                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                className="p-1 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                 title="Настройки"
               >
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -406,44 +654,44 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
               <button 
                 onClick={() => setShowComments(!showComments)}
-                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors relative flex-shrink-0"
+                className="p-1 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
                 title="Коментарии"
               >
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-2H5a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 2z" />
                 </svg>
               </button>
 
               <button
                 onClick={() => setAutoScrolling(!autoScrolling)}
-                className={`p-1 md:p-2 rounded transition-colors flex-shrink-0 ${
+                className={`p-1 rounded transition-colors flex-shrink-0 ${
                   autoScrolling ? 'bg-blue-600' : 'hover:bg-gray-800'
                 }`}
                 title="Автопрокрутка"
               >
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               </button>
             </div>
 
-            <div className="flex items-center gap-0.5 md:gap-1">
+            <div className="flex items-center gap-0.5 flex-shrink-0">
               <button
                 onClick={goToPrevChapter}
-                disabled={!prevChapter}
-                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                className="p-1 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                title="Скролл вверх"
               >
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
 
               <button
                 onClick={goToNextChapter}
-                disabled={!nextChapter}
-                className="p-1 md:p-2 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                className="p-1 hover:bg-gray-800 rounded transition-colors flex-shrink-0"
+                title="Скролл вниз"
               >
-                <svg className="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -454,10 +702,10 @@ export default function ReaderPage({ params }: ReaderPageProps) {
 
       {/* Settings Panel */}
       {showSettings && showUI && (
-        <div className="fixed right-0 z-40 bg-card-bg border-l border-text-muted/20 overflow-y-auto w-64 md:w-80"
+        <div className="fixed right-0 z-40 bg-card-bg border-l border-text-muted/20 overflow-y-auto w-64 md:w-80 max-w-[80vw]"
           style={{
-            top: headerHeight,
-            bottom: footerHeight,
+            top: showUI ? '3rem' : '0',
+            bottom: showUI ? '4rem' : '0',
           }}
         >
           <div className="p-3 md:p-4 space-y-4">
@@ -482,16 +730,37 @@ export default function ReaderPage({ params }: ReaderPageProps) {
             >
               Сбросить
             </button>
+
+            <div className="border-t border-text-muted/20 pt-4">
+              <label className="flex items-center justify-between gap-2">
+                <span className="text-xs md:text-sm font-medium">Автопереход</span>
+                <button
+                  onClick={() => setAutoAdvance(!autoAdvance)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    autoAdvance
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-400'
+                  }`}
+                >
+                  {autoAdvance ? '✓ ВКЛ' : 'ВЫКЛ'}
+                </button>
+              </label>
+              <p className="text-xs text-gray-500 mt-2">
+                {autoAdvance
+                  ? 'Переход на следующую главу в конце'
+                  : 'Вручную переходите между главами'}
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {/* Chapter List Panel */}
       {showChapterList && showUI && (
-        <div className="fixed left-0 z-40 bg-card-bg border-r border-text-muted/20 overflow-y-auto w-64 md:w-80"
+        <div className="fixed left-0 z-40 bg-card-bg border-r border-text-muted/20 overflow-y-auto w-64 md:w-80 max-w-[80vw]"
           style={{
-            top: headerHeight,
-            bottom: footerHeight,
+            top: showUI ? '3rem' : '0',
+            bottom: showUI ? '4rem' : '0',
           }}
         >
           <div className="p-3 md:p-4 space-y-2">
@@ -500,7 +769,7 @@ export default function ReaderPage({ params }: ReaderPageProps) {
               <Link key={ch.id} href={`/manhwa/${params.id}/${ch.id}`}>
                 <div
                   className={`p-2 md:p-3 rounded-lg transition-colors cursor-pointer text-xs md:text-sm ${
-                    ch.id === params.chapterId
+                    ch.id === currentChapterId
                       ? 'bg-blue-600/20 border border-blue-500'
                       : 'bg-gray-800 hover:bg-gray-700'
                   }`}
@@ -519,26 +788,13 @@ export default function ReaderPage({ params }: ReaderPageProps) {
       )}
 
       {/* Comments Panel - Drawer */}
-      {showComments && (
-        <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={() => setShowComments(false)}
-          />
-          
-          {/* Drawer Container */}
-          <div className="fixed right-0 top-0 h-screen w-full max-w-full md:max-w-md bg-black border-l border-text-muted/20 shadow-xl z-50 flex flex-col">
-            <ChapterCommentsComponent
-              manhwaId={params.id}
-              chapterId={params.chapterId}
-              mode="drawer"
-              isOpen={showComments}
-              onClose={() => setShowComments(false)}
-            />
-          </div>
-        </>
-      )}
+      <ChapterCommentsComponent
+        manhwaId={params.id}
+        chapterId={currentChapterId}
+        mode="drawer"
+        isOpen={showComments}
+        onClose={() => setShowComments(false)}
+      />
     </div>
   );
 }

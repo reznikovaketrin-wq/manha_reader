@@ -155,10 +155,11 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
 
   return (
     <div className="min-h-screen bg-bg-primary">
-      <div className="w-full py-6 px-6">
-        <div className="flex gap-8">
+      <div className="w-full py-6 px-4 md:px-6">
+        {/* Desktop: flex row, Mobile: flex col */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
           {/* Левая панель - Обложка и кнопки */}
-          <div className="w-[250px] flex-shrink-0">
+          <div className="w-full md:w-[250px] md:flex-shrink-0">
             {/* Обложка */}
             <div className="mb-4 rounded-lg overflow-hidden bg-card-bg">
               <div
@@ -210,26 +211,37 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
           </div>
 
           {/* Правая часть - Основной контент */}
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             {/* Заголовок и мета-информация */}
-            <div className="mb-8">
-              <div className="flex items-start justify-between gap-6 mb-3">
+            <div className="mb-6 md:mb-8">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-6 mb-3">
                 <div className="flex-1">
-                  <h1 className="text-4xl font-extrabold text-text-main mb-2 leading-tight">
-                    {manhwa.title}
-                  </h1>
-                  <p className="text-text-muted text-sm mb-4">
-                    {new Date().getFullYear()} Манхва
-                  </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <h1 className="text-2xl md:text-4xl font-extrabold text-text-main mb-2 leading-tight">
+                        {manhwa.title}
+                      </h1>
+                      <p className="text-text-muted text-xs md:text-sm">
+                        {new Date().getFullYear()} Манхва
+                      </p>
+                    </div>
+                    {/* Рейтинг на мобильных - компактный */}
+                    <div className="md:hidden flex-shrink-0">
+                      <ManhwaRatingHeader manhwaId={params.id} />
+                    </div>
+                  </div>
                 </div>
-                <ManhwaRatingHeader manhwaId={params.id} />
+                {/* Рейтинг на десктопе - полный */}
+                <div className="hidden md:block md:ml-auto">
+                  <ManhwaRatingHeader manhwaId={params.id} />
+                </div>
               </div>
             </div>
 
             {/* Описание */}
-            <div className="mb-8">
+            <div className="mb-6 md:mb-8">
               <p
-                className={`text-text-main leading-relaxed mb-2 ${
+                className={`text-text-main leading-relaxed mb-2 text-sm md:text-base ${
                   !expandedDescription && isLongDescription ? 'line-clamp-3' : ''
                 }`}
               >
@@ -245,117 +257,227 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               )}
             </div>
 
-            {/* Метаданные - Компактная плашечка */}
-            <div className="mb-8 bg-card-bg border border-text-muted/20 rounded-lg p-4">
-              <div className="flex flex-wrap gap-6 text-sm">
-                {/* Статус тайтла */}
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center">
-                    <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                  </div>
-                  <div>
-                    <p className="text-text-muted text-xs uppercase tracking-wide">
-                      Статус тайтла
-                    </p>
-                    <p className="text-text-main font-semibold">{statusText}</p>
+            {/* Метаданные - Карусель на мобильных, сетка на десктопе */}
+            <div className="mb-6 md:mb-8">
+              {/* Мобильная версия - горизонтальная карусель */}
+              <div className="md:hidden">
+                <div className="bg-card-bg border border-text-muted/20 rounded-lg p-3 overflow-x-auto scrollbar-hide">
+                  <div className="flex gap-3 min-w-min">
+                    {/* Статус тайтла */}
+                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
+                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                      </div>
+                      <div className="whitespace-nowrap">
+                        <p className="text-text-muted text-xs uppercase tracking-wide">
+                          Статус
+                        </p>
+                        <p className="text-text-main font-semibold text-xs">{statusText}</p>
+                      </div>
+                    </div>
+
+                    {/* Главы */}
+                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
+                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-3 h-3 text-text-main"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="whitespace-nowrap">
+                        <p className="text-text-muted text-xs uppercase tracking-wide">Розділи</p>
+                        <p className="text-text-main font-semibold text-xs">{manhwa.chapters.length}</p>
+                      </div>
+                    </div>
+
+                    {/* Тип */}
+                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
+                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-3 h-3 text-text-main"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="whitespace-nowrap">
+                        <p className="text-text-muted text-xs uppercase tracking-wide">Тип</p>
+                        <p className="text-text-main font-semibold text-xs">
+                          {manhwa.tags && manhwa.tags.length > 0
+                            ? manhwa.tags.slice(0, 1).join(', ')
+                            : 'Не вказан'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Просмотры */}
+                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
+                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-3 h-3 text-text-main"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2.5}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="whitespace-nowrap">
+                        <p className="text-text-muted text-xs uppercase tracking-wide">
+                          Перегляди
+                        </p>
+                        <p className="text-text-main font-semibold text-xs">
+                          {totalViews > 1000000
+                            ? (totalViews / 1000000).toFixed(1) + 'M'
+                            : totalViews > 1000
+                              ? (totalViews / 1000).toFixed(1) + 'K'
+                              : totalViews}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Главы */}
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center">
-                    <svg
-                      className="w-3.5 h-3.5 text-text-main"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2.5}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
+              {/* Десктопная версия - сетка */}
+              <div className="hidden md:block bg-card-bg border border-text-muted/20 rounded-lg p-4">
+                <div className="flex flex-wrap gap-6 text-sm">
+                  {/* Статус тайтла */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                    </div>
+                    <div>
+                      <p className="text-text-muted text-xs uppercase tracking-wide">
+                        Статус тайтла
+                      </p>
+                      <p className="text-text-main font-semibold">{statusText}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-text-muted text-xs uppercase tracking-wide">Розділи</p>
-                    <p className="text-text-main font-semibold">{manhwa.chapters.length}</p>
-                  </div>
-                </div>
 
-                {/* Тип */}
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center">
-                    <svg
-                      className="w-3.5 h-3.5 text-text-main"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2.5}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                      />
-                    </svg>
+                  {/* Главы */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="w-3.5 h-3.5 text-text-main"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-text-muted text-xs uppercase tracking-wide">Розділи</p>
+                      <p className="text-text-main font-semibold">{manhwa.chapters.length}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-text-muted text-xs uppercase tracking-wide">Тип</p>
-                    <p className="text-text-main font-semibold">
-                      {manhwa.tags && manhwa.tags.length > 0
-                        ? manhwa.tags.slice(0, 2).join(', ')
-                        : 'Не вказан'}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Просмотры */}
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center">
-                    <svg
-                      className="w-3.5 h-3.5 text-text-main"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2.5}
-                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2.5}
-                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                      />
-                    </svg>
+                  {/* Тип */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="w-3.5 h-3.5 text-text-main"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-text-muted text-xs uppercase tracking-wide">Тип</p>
+                      <p className="text-text-main font-semibold">
+                        {manhwa.tags && manhwa.tags.length > 0
+                          ? manhwa.tags.slice(0, 2).join(', ')
+                          : 'Не вказан'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-text-muted text-xs uppercase tracking-wide">
-                      Перегляди
-                    </p>
-                    <p className="text-text-main font-semibold">
-                      {totalViews > 1000000
-                        ? (totalViews / 1000000).toFixed(1) + 'M'
-                        : totalViews > 1000
-                          ? (totalViews / 1000).toFixed(1) + 'K'
-                          : totalViews}
-                    </p>
+
+                  {/* Просмотры */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="w-3.5 h-3.5 text-text-main"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2.5}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-text-muted text-xs uppercase tracking-wide">
+                        Перегляди
+                      </p>
+                      <p className="text-text-main font-semibold">
+                        {totalViews > 1000000
+                          ? (totalViews / 1000000).toFixed(1) + 'M'
+                          : totalViews > 1000
+                            ? (totalViews / 1000).toFixed(1) + 'K'
+                            : totalViews}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Вкладки */}
+            {/* Вкладки - адаптивные */}
             <div className="mb-6">
-              <div className="flex gap-4 border-b border-text-muted/20">
+              <div className="flex gap-0 md:gap-4 border-b border-text-muted/20">
                 <button
                   onClick={() => setActiveTab('chapters')}
-                  className={`py-3 px-4 font-medium text-sm transition-colors border-b-2 ${
+                  className={`flex-1 md:flex-none py-3 px-3 md:px-4 font-medium text-xs md:text-sm transition-colors border-b-2 ${
                     activeTab === 'chapters'
                       ? 'text-text-main border-blue-500'
                       : 'text-text-muted border-transparent hover:text-text-main'
@@ -374,11 +496,12 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                       d="M4 6h16M4 12h16M4 18h16"
                     />
                   </svg>
-                  Розділи
+                  <span className="hidden md:inline">Розділи</span>
+                  <span className="md:hidden">Розділи</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('ratings')}
-                  className={`py-3 px-4 font-medium text-sm transition-colors border-b-2 ${
+                  className={`flex-1 md:flex-none py-3 px-3 md:px-4 font-medium text-xs md:text-sm transition-colors border-b-2 ${
                     activeTab === 'ratings'
                       ? 'text-text-main border-blue-500'
                       : 'text-text-muted border-transparent hover:text-text-main'
@@ -397,7 +520,8 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                       d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
                     />
                   </svg>
-                  Коментарі
+                  <span className="hidden md:inline">Коментарі</span>
+                  <span className="md:hidden">Коментарі</span>
                 </button>
               </div>
             </div>
@@ -412,7 +536,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                     placeholder="Номер або назва розділу"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-card-bg border border-text-muted/20 rounded-lg px-4 py-3 text-text-main placeholder-text-muted focus:outline-none focus:border-blue-500 transition-colors"
+                    className="w-full bg-card-bg border border-text-muted/20 rounded-lg px-4 py-3 text-text-main placeholder-text-muted focus:outline-none focus:border-blue-500 transition-colors text-sm md:text-base"
                   />
                   <svg
                     className="w-5 h-5 text-text-muted absolute right-3 top-1/2 -translate-y-1/2"
@@ -429,7 +553,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                   </svg>
                 </div>
 
-                {/* Список глав */}
+                {/* Список глав - компактный на мобильных */}
                 <div className="space-y-1">
                   {filteredChapters.length > 0 ? (
                     filteredChapters.map((chapter) => {
@@ -440,8 +564,8 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                           href={`/manhwa/${manhwa.id}/${chapter.id}`}
                           className="block"
                         >
-                          <div className="flex items-center justify-between px-4 py-3 bg-card-bg hover:bg-card-hover transition-colors duration-150 rounded-lg border border-transparent hover:border-blue-500/50">
-                            <div className="flex items-center gap-3 flex-1">
+                          <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 bg-card-bg hover:bg-card-hover transition-colors duration-150 rounded-lg border border-transparent hover:border-blue-500/50">
+                            <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
                               {isRead ? (
                                 <svg
                                   className="w-4 h-4 text-green-400 flex-shrink-0"
@@ -477,13 +601,13 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                                   />
                                 </svg>
                               )}
-                              <div>
-                                <p className="text-text-main font-medium">
+                              <div className="min-w-0">
+                                <p className="text-text-main font-medium text-sm md:text-base truncate">
                                   Том {Math.ceil(chapter.number / 20)} Розділ {chapter.number}
                                 </p>
                               </div>
                             </div>
-                            <p className="text-text-muted text-sm">
+                            <p className="text-text-muted text-xs md:text-sm flex-shrink-0 ml-2">
                               {new Date(chapter.publishedAt).toLocaleDateString('uk-UA')}
                             </p>
                           </div>
@@ -491,7 +615,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                       );
                     })
                   ) : (
-                    <div className="py-8 text-center text-text-muted">Розділи не знайдені</div>
+                    <div className="py-8 text-center text-text-muted text-sm">Розділи не знайдені</div>
                   )}
                 </div>
 

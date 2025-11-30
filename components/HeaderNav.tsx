@@ -11,11 +11,12 @@ export default function HeaderNav() {
   const isSchedule = pathname === '/schedule';
 
   return (
-    <nav className="flex items-center gap-8 max-[720px]:gap-4 w-full">
-      <div className="flex items-center gap-8 max-[720px]:gap-4">
+    <nav className="flex items-center gap-2 md:gap-8 w-full px-2 md:px-0">
+      {/* Ссылки - сжимаются на мобилке */}
+      <div className="flex items-center gap-2 md:gap-8 flex-1 min-w-0">
         <Link
           href="/"
-          className={`font-extrabold text-[34px] uppercase tracking-tight-2 transition-all duration-200 max-[720px]:text-[18px] ${
+          className={`font-extrabold text-xs md:text-sm lg:text-[34px] uppercase tracking-tight transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
             isLibrary
               ? 'text-white'
               : 'text-text-muted hover:text-white'
@@ -25,7 +26,7 @@ export default function HeaderNav() {
         </Link>
         <Link
           href="/schedule"
-          className={`font-extrabold text-[34px] uppercase tracking-tight-2 transition-all duration-200 max-[720px]:text-[18px] ${
+          className={`font-extrabold text-xs md:text-sm lg:text-[34px] uppercase tracking-tight transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
             isSchedule
               ? 'text-white'
               : 'text-text-muted hover:text-white'
@@ -35,8 +36,8 @@ export default function HeaderNav() {
         </Link>
       </div>
 
-      {/* UserMenu справа */}
-      <div className="ml-auto flex items-center">
+      {/* UserMenu - не сжимается, прижат вправо */}
+      <div className="ml-auto flex items-center flex-shrink-0">
         <UserMenu />
       </div>
     </nav>

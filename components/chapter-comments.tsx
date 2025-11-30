@@ -177,7 +177,7 @@ export function ChapterCommentsComponent({
         )}
 
         <div
-          className={`fixed right-0 top-0 h-screen w-full max-w-md bg-bg-primary border-l border-text-muted/20 shadow-xl z-50 transition-transform duration-300 ease-in-out transform ${
+          className={`fixed right-0 top-0 h-screen w-full max-w-full md:max-w-md bg-black border-l border-text-muted/20 shadow-xl z-50 transition-transform duration-300 ease-in-out transform ${
             isOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
