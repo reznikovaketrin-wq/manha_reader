@@ -1,0 +1,10 @@
+{
+  "crons": [
+    {
+      "path": "/api/admin/publish-scheduled",
+      "schedule": "0 * * * *"
+    }
+  ],
+  "buildCommand": "npm run build",
+  "framework": "nextjs"
+}

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { manhwaData } from '@/data/manhwa';
-import { Manhwa } from '@/types/manhwa';
 
-interface ScheduleItem extends Manhwa {
+interface ScheduleItem {
+  id: string;
+  title: string;
+  coverImage?: string;
   dayBig: string;
   dayLabel: string;
   scheduleNote: string;
@@ -14,29 +15,71 @@ interface ScheduleItem extends Manhwa {
 // Порядок дней недели для сортировки
 const DAY_ORDER = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'НД'];
 
-export default function SchedulePage() {
-  // Фильтруем только манхвы у которых есть scheduleDay
-  const scheduleItems = useMemo(() => {
-    return manhwaData
-      .filter((m) => m.scheduleDay) // Только если есть scheduleDay
-      .map((m) => ({
+interface ScheduleClientProps {
+  initialData: any[];
+}
+
+export default function ScheduleClient({ initialData }: ScheduleClientProps) {
+  const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    console.log('🔥 [ScheduleClient] Component mounted with initialData:', {
+      type: typeof initialData,
+      length: Array.isArray(initialData) ? initialData.length : 'not array',
+      firstItem: initialData?.[0],
+    });
+
+    if (!initialData || initialData.length === 0) {
+      console.log('⚠️ [ScheduleClient] No data or empty array');
+      setScheduleItems([]);
+      setLoading(false);
+      return;
+    }
+
+    // Фильтруем только манхвы у которых есть scheduleDay
+    console.log('📋 [ScheduleClient] Filtering items with scheduleDay...');
+    const items = initialData
+      .filter((m: any) => {
+        const has = m.scheduleDay;
+        if (has) {
+          console.log(`  ✅ ${m.id}: has scheduleDay`, m.scheduleDay);
+        } else {
+          console.log(`  ❌ ${m.id}: NO scheduleDay`);
+        }
+        return has;
+      })
+      .map((m: any) => ({
         ...m,
-        dayBig: m.scheduleDay!.dayBig,
-        dayLabel: m.scheduleDay!.dayLabel,
-        scheduleNote: m.scheduleDay!.note,
+        dayBig: m.scheduleDay.dayBig,
+        dayLabel: m.scheduleDay.dayLabel,
+        scheduleNote: m.scheduleDay.note || '',
       }))
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         // Сортируем по дню недели
         const dayA = DAY_ORDER.indexOf(a.dayBig);
         const dayB = DAY_ORDER.indexOf(b.dayBig);
         return dayA - dayB;
       });
-  }, []);
+
+    console.log(`✅ [ScheduleClient] Filtered ${items.length} items out of ${initialData.length}`);
+    console.log('📦 [ScheduleClient] Items:', items);
+    setScheduleItems(items);
+    setLoading(false);
+  }, [initialData]);
+
+  if (loading) {
+    return (
+      <div className="max-w-[1160px] mx-auto px-4 pb-10">
+        <div className="text-center py-16 text-[#b9b9b9]">
+          <p className="text-[18px]">Загрузка розкладу...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[1160px] mx-auto px-4 pb-10">
-      
-
       {scheduleItems.length > 0 ? (
         <div className="grid grid-cols-2 gap-7 max-[960px]:grid-cols-1">
           {scheduleItems.map((item) => (
@@ -46,7 +89,7 @@ export default function SchedulePage() {
       ) : (
         <div className="text-center py-16 text-[#b9b9b9]">
           <p className="text-[18px]">Розклад поки що порожній</p>
-          <p className="text-[14px] mt-2">Додайте scheduleDay до манхв у data/manhwa.json</p>
+          <p className="text-[14px] mt-2">Додайте розклад до манхв в адмінці</p>
         </div>
       )}
     </div>

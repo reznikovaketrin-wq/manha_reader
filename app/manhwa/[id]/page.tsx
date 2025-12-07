@@ -1,147 +1,109 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { notFound } from 'next/navigation';
-import { getManhwaById } from '@/data/manhwa';
-import { getChapterViews } from '@/lib/views-tracker';
-import { getRecentHistory } from '@/lib/reading-history';
-import { ReadingHistory } from '@/types/manhwa';
-import { supabase, getManhwaViewCount, getLastReadChapter } from '@/lib/supabase';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ManhwaRatingHeader } from '@/components/manhwa-comments-component';
 import { ManhwaCommentsComponent } from '@/components/manhwa-comments-component';
 
-interface ManhwaPageProps {
-  params: {
-    id: string;
+interface Chapter {
+  id: string;
+  chapterNumber: number;
+  title: string;
+  pagesCount: number;
+  status: string;
+  publishedAt: string;
+}
+
+interface Manhwa {
+  id: string;
+  title: string;
+  description: string;
+  coverImage: string;
+  bgImage: string;
+  charImage: string;
+  status: string;
+  rating: number;
+  tags: string[];
+  chapters: Chapter[];
+  scheduleDay?: {
+    dayBig: string;
+    dayLabel: string;
+    note: string;
   };
 }
 
-export default function ManhwaPage({ params }: ManhwaPageProps) {
+export default function ManhwaPage() {
+  const params = useParams();
+  const id = params?.id as string;
+
+  const [manhwa, setManhwa] = useState<Manhwa | null>(null);
   const [totalViews, setTotalViews] = useState(0);
-  const [chapterViews, setChapterViews] = useState<{ [key: string]: number }>({});
   const [activeTab, setActiveTab] = useState<'chapters' | 'ratings'>('chapters');
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDescription, setExpandedDescription] = useState(false);
   const [savedProgress, setSavedProgress] = useState<any>(null);
   const [readChapters, setReadChapters] = useState<Set<string>>(new Set());
-  const [user, setUser] = useState<{ id: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const manhwa = getManhwaById(params.id);
-
-  // Получить текущего пользователя
+  // Завантажити манхву з API
   useEffect(() => {
-    const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user as any);
+    if (!id) return;
+
+    const fetchManhwa = async () => {
+      try {
+        console.log(`📖 Завантаження манхви: ${id}`);
+        const response = await fetch(`/api/public/${id}`);
+
+        if (!response.ok) {
+          throw new Error(`Помилка завантаження: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(`✅ Манхва завантажена:`, data.title);
+        setManhwa(data);
+        setLoading(false);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Невідома помилка';
+        console.error(`❌ Помилка:`, errorMsg);
+        setManhwa(null);
+        setLoading(false);
+      }
     };
 
-    getUser();
-  }, []);
+    fetchManhwa();
+  }, [id]);
 
-  // Загрузить данные манхвы
-  useEffect(() => {
-    if (manhwa) {
-      const loadData = async () => {
-        try {
-          // Отследить просмотр через API
-          await fetch('/api/views/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ manhwaId: params.id }),
-          }).catch(error => console.error('Error tracking view:', error));
-
-          // Получить просмотры из Supabase
-          const views = await getManhwaViewCount(params.id);
-          setTotalViews(views);
-
-          // Загрузить просмотры глав из localStorage (пока)
-          const chapterViewsData: { [key: string]: number } = {};
-          manhwa.chapters.forEach(chapter => {
-            chapterViewsData[chapter.id] = getChapterViews(params.id, chapter.id);
-          });
-          setChapterViews(chapterViewsData);
-
-          // Загрузить прогресс чтения
-          if (user?.id) {
-            // Брать из Supabase если авторизован
-            const lastChapter = await getLastReadChapter(user.id, params.id);
-            if (lastChapter) {
-              setSavedProgress(lastChapter);
-
-              // Обновить прочитанные главы
-              const readChapterIds = new Set<string>();
-              const lastChapterObj = manhwa.chapters.find(
-                ch => ch.id === lastChapter.chapter_id
-              );
-              if (lastChapterObj) {
-                manhwa.chapters.forEach(chapter => {
-                  if (chapter.number <= lastChapterObj.number) {
-                    readChapterIds.add(chapter.id);
-                  }
-                });
-              }
-              setReadChapters(readChapterIds);
-            }
-          } else {
-            // Брать из localStorage если не авторизован
-            const history = getRecentHistory(100);
-            const lastProgress = history.find(h => h.manhwaId === params.id);
-            if (lastProgress) {
-              setSavedProgress(lastProgress);
-            }
-
-            const lastChapter = history
-              .filter(h => h.manhwaId === params.id)
-              .sort((a, b) => {
-                const chapterA = manhwa.chapters.find(ch => ch.id === a.chapterId);
-                const chapterB = manhwa.chapters.find(ch => ch.id === b.chapterId);
-                return (chapterB?.number || 0) - (chapterA?.number || 0);
-              })[0];
-
-            const readChapterIds = new Set<string>();
-            if (lastChapter) {
-              const lastChapterObj = manhwa.chapters.find(
-                ch => ch.id === lastChapter.chapterId
-              );
-              if (lastChapterObj) {
-                manhwa.chapters.forEach(chapter => {
-                  if (chapter.number <= lastChapterObj.number) {
-                    readChapterIds.add(chapter.id);
-                  }
-                });
-              }
-            }
-            setReadChapters(readChapterIds);
-          }
-        } catch (error) {
-          console.error('Ошибка при загрузке данных:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      loadData();
-    }
-  }, [params.id, manhwa, user]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
+        <div className="text-text-muted">Завантаження...</div>
+      </div>
+    );
+  }
 
   if (!manhwa) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center gap-4">
+        <div className="text-red-500 text-lg">❌ Помилка: Манхву не знайдено</div>
+        <Link href="/" className="text-blue-500 hover:text-blue-400">
+          ← На головну
+        </Link>
+      </div>
+    );
   }
 
   const statusText =
     manhwa.status === 'ongoing'
-      ? 'Онгоинг'
+      ? 'Онгоїнг'
       : manhwa.status === 'completed'
         ? 'Завершено'
-        : 'На паузе';
+        : 'На паузі';
 
-  const filteredChapters = manhwa.chapters.filter(chapter => {
+  const filteredChapters = manhwa.chapters.filter((chapter) => {
     const query = searchQuery.toLowerCase();
     return (
-      chapter.number.toString().includes(query) ||
+      chapter.chapterNumber.toString().includes(query) ||
       chapter.title.toLowerCase().includes(query)
     );
   });
@@ -158,9 +120,9 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
       <div className="w-full py-6 px-4 md:px-6">
         {/* Desktop: flex row, Mobile: flex col */}
         <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-          {/* Левая панель - Обложка и кнопки */}
+          {/* Ліва панель - Обкладинка та кнопки */}
           <div className="w-full md:w-[250px] md:flex-shrink-0">
-            {/* Обложка */}
+            {/* Обкладинка */}
             <div className="mb-4 rounded-lg overflow-hidden bg-card-bg">
               <div
                 className="w-full aspect-[2/3] bg-cover bg-center"
@@ -168,9 +130,9 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               />
             </div>
 
-            {/* Кнопка Читать */}
+            {/* Кнопка Читати */}
             <Link
-              href={`/manhwa/${params.id}/${
+              href={`/reader/${manhwa.id}/${
                 savedProgress?.chapter_id || savedProgress?.chapterId || manhwa.chapters[0]?.id
               }`}
               className="block"
@@ -183,7 +145,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               </button>
             </Link>
 
-            {/* Підказка про сохранену позицію */}
+            {/* Підказка про збережену позицію */}
             {savedProgress && (
               <p className="text-xs text-text-muted mb-3 px-2 text-center">
                 Продовжити з розділу{' '}
@@ -191,7 +153,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               </p>
             )}
 
-            {/* Кнопка Добавить в список */}
+            {/* Кнопка Додати в список */}
             <button className="w-full py-2 bg-card-bg hover:bg-card-hover text-text-main font-medium rounded-lg transition-colors flex items-center justify-center gap-2 border border-text-muted/20">
               <svg
                 className="w-5 h-5"
@@ -206,13 +168,13 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                   d="M12 4v16m8-8H4"
                 />
               </svg>
-              Добавить в список
+              Додати в список
             </button>
           </div>
 
-          {/* Правая часть - Основной контент */}
+          {/* Права частина - Основний контент */}
           <div className="flex-1 w-full">
-            {/* Заголовок и мета-информация */}
+            {/* Заголовок та мета-інформація */}
             <div className="mb-6 md:mb-8">
               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-6 mb-3">
                 <div className="flex-1">
@@ -225,20 +187,20 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                         {new Date().getFullYear()} Манхва
                       </p>
                     </div>
-                    {/* Рейтинг на мобильных - компактный */}
+                    {/* Рейтинг на мобільних - компактний */}
                     <div className="md:hidden flex-shrink-0">
-                      <ManhwaRatingHeader manhwaId={params.id} />
+                      <ManhwaRatingHeader manhwaId={id} />
                     </div>
                   </div>
                 </div>
-                {/* Рейтинг на десктопе - полный */}
+                {/* Рейтинг на десктопі - повний */}
                 <div className="hidden md:block md:ml-auto">
-                  <ManhwaRatingHeader manhwaId={params.id} />
+                  <ManhwaRatingHeader manhwaId={id} />
                 </div>
               </div>
             </div>
 
-            {/* Описание */}
+            {/* Опис */}
             <div className="mb-6 md:mb-8">
               <p
                 className={`text-text-main leading-relaxed mb-2 text-sm md:text-base ${
@@ -252,14 +214,14 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                   onClick={() => setExpandedDescription(!expandedDescription)}
                   className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors"
                 >
-                  {expandedDescription ? 'Скрити' : 'Розгорнути повністю'}
+                  {expandedDescription ? 'Сховати' : 'Розгорнути повністю'}
                 </button>
               )}
             </div>
 
-            {/* Метаданные - Карусель на мобильных, сетка на десктопе */}
+            {/* Метадані - Карусель на мобільних, сітка на десктопі */}
             <div className="mb-6 md:mb-8">
-              {/* Мобильная версия - горизонтальная карусель */}
+              {/* Мобільна версія - горизонтальна карусель */}
               <div className="md:hidden">
                 <div className="bg-card-bg border border-text-muted/20 rounded-lg p-3 overflow-x-auto scrollbar-hide">
                   <div className="flex gap-3 min-w-min">
@@ -276,7 +238,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                       </div>
                     </div>
 
-                    {/* Главы */}
+                    {/* Розділи */}
                     <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
                       <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
                         <svg
@@ -321,12 +283,12 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                         <p className="text-text-main font-semibold text-xs">
                           {manhwa.tags && manhwa.tags.length > 0
                             ? manhwa.tags.slice(0, 1).join(', ')
-                            : 'Не вказан'}
+                            : 'Не вказано'}
                         </p>
                       </div>
                     </div>
 
-                    {/* Просмотры */}
+                    {/* Перегляди */}
                     <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
                       <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
                         <svg
@@ -366,7 +328,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                 </div>
               </div>
 
-              {/* Десктопная версия - сетка */}
+              {/* Десктопна версія - сітка */}
               <div className="hidden md:block bg-card-bg border border-text-muted/20 rounded-lg p-4">
                 <div className="flex flex-wrap gap-6 text-sm">
                   {/* Статус тайтла */}
@@ -376,13 +338,13 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                     </div>
                     <div>
                       <p className="text-text-muted text-xs uppercase tracking-wide">
-                        Статус тайтла
+                        Статус тайтлу
                       </p>
                       <p className="text-text-main font-semibold">{statusText}</p>
                     </div>
                   </div>
 
-                  {/* Главы */}
+                  {/* Розділи */}
                   <div className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
                       <svg
@@ -427,12 +389,12 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                       <p className="text-text-main font-semibold">
                         {manhwa.tags && manhwa.tags.length > 0
                           ? manhwa.tags.slice(0, 2).join(', ')
-                          : 'Не вказан'}
+                          : 'Не вказано'}
                       </p>
                     </div>
                   </div>
 
-                  {/* Просмотры */}
+                  {/* Перегляди */}
                   <div className="flex items-center gap-3">
                     <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
                       <svg
@@ -472,7 +434,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               </div>
             </div>
 
-            {/* Вкладки - адаптивные */}
+            {/* Вкладки - адаптивні */}
             <div className="mb-6">
               <div className="flex gap-0 md:gap-4 border-b border-text-muted/20">
                 <button
@@ -526,10 +488,10 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
               </div>
             </div>
 
-            {/* Содержимое вкладок */}
+            {/* Вміст вкладок */}
             {activeTab === 'chapters' && (
               <div>
-                {/* Поисковое поле */}
+                {/* Поле пошуку */}
                 <div className="mb-6 relative">
                   <input
                     type="text"
@@ -553,7 +515,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                   </svg>
                 </div>
 
-                {/* Список глав - компактный на мобильных */}
+                {/* Список розділів */}
                 <div className="space-y-1">
                   {filteredChapters.length > 0 ? (
                     filteredChapters.map((chapter) => {
@@ -561,7 +523,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                       return (
                         <Link
                           key={chapter.id}
-                          href={`/manhwa/${manhwa.id}/${chapter.id}`}
+                          href={`/reader/${manhwa.id}/${chapter.id}`}
                           className="block"
                         >
                           <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 bg-card-bg hover:bg-card-hover transition-colors duration-150 rounded-lg border border-transparent hover:border-blue-500/50">
@@ -603,7 +565,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                               )}
                               <div className="min-w-0">
                                 <p className="text-text-main font-medium text-sm md:text-base truncate">
-                                  Том {Math.ceil(chapter.number / 20)} Розділ {chapter.number}
+                                  Том {Math.ceil(chapter.chapterNumber / 20)} Розділ {chapter.chapterNumber}
                                 </p>
                               </div>
                             </div>
@@ -619,7 +581,7 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
                   )}
                 </div>
 
-                {/* Кнопка показать первые */}
+                {/* Кнопка показати спочатку */}
                 <div className="mt-6 text-right">
                   <button className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors flex items-center gap-1 ml-auto">
                     Показати спочатку
@@ -643,8 +605,8 @@ export default function ManhwaPage({ params }: ManhwaPageProps) {
 
             {activeTab === 'ratings' && (
               <div>
-                {/* Компонент комментариев к манхве */}
-                <ManhwaCommentsComponent manhwaId={params.id} />
+                {/* Компонент коментарів манхви */}
+                <ManhwaCommentsComponent manhwaId={id} />
               </div>
             )}
           </div>

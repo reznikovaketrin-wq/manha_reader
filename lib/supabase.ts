@@ -1,9 +1,16 @@
+// supabase.ts
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
 
 // ===== READING HISTORY =====
 
@@ -192,6 +199,55 @@ export async function createUserProfile(userId: string, email: string, username:
     return { success: true };
   } catch (error) {
     console.error('Error creating user profile:', error);
+    return { success: false, error };
+  }
+}
+
+// ===== ADMIN FUNCTIONS =====
+
+export async function getUserRole(userId: string): Promise<'user' | 'admin' | null> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.role || 'user';
+  } catch (error) {
+    console.error('Error fetching user role:', error);
+    return null;
+  }
+}
+
+export async function isUserAdmin(userId: string): Promise<boolean> {
+  const role = await getUserRole(userId);
+  return role === 'admin';
+}
+
+export async function getCurrentUserRole(): Promise<'user' | 'admin' | null> {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    return getUserRole(data.user.id);
+  } catch (error) {
+    console.error('Error getting current user role:', error);
+    return null;
+  }
+}
+
+export async function setUserRole(userId: string, role: 'user' | 'admin') {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting user role:', error);
     return { success: false, error };
   }
 }

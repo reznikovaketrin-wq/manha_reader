@@ -17,9 +17,11 @@ interface User {
 export default function UserMenu() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -34,6 +36,19 @@ export default function UserMenu() {
           data: { user: authUser },
         } = await supabase.auth.getUser();
         setUser(authUser as User);
+
+        // Проверить роль если пользователь залогинен
+        if (authUser?.id) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', authUser.id)
+            .single();
+
+          if (userData?.role === 'admin') {
+            setIsAdmin(true);
+          }
+        }
       } catch (error) {
         console.error('Error getting user:', error);
       } finally {
@@ -45,11 +60,25 @@ export default function UserMenu() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUser(session.user as User);
+
+        // Проверить роль при смене сессии
+        const { data: userData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (userData?.role === 'admin') {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
       } else {
         setUser(null);
+        setIsAdmin(false);
       }
     });
 
@@ -59,11 +88,36 @@ export default function UserMenu() {
   }, [mounted]);
 
   const handleSignOut = async () => {
-    const result = await signOut();
-    if (result.success) {
-      setUser(null);
-      setOpen(false);
-      router.push('/');
+    try {
+      setSigningOut(true);
+      console.log('👋 [UserMenu] Starting sign out...');
+      
+      const result = await signOut();
+      
+      if (result.success) {
+        console.log('✅ [UserMenu] Sign out successful');
+        setUser(null);
+        setIsAdmin(false);
+        setOpen(false);
+        
+        // Добавляем небольшую задержку перед редиректом
+        setTimeout(() => {
+          console.log('→ [UserMenu] Redirecting to home...');
+          router.push('/');
+          // Полная перезагрузка для уверенности
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 500);
+        }, 300);
+      } else {
+        console.error('❌ [UserMenu] Sign out failed:', result.error);
+        alert('Помилка при виході. Спробуйте ще раз.');
+      }
+    } catch (error) {
+      console.error('❌ [UserMenu] Unexpected error:', error);
+      alert('Неочікувана помилка');
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -121,6 +175,7 @@ export default function UserMenu() {
         onClick={() => setOpen(!open)}
         className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold transition-colors flex-shrink-0"
         title={username}
+        disabled={signingOut}
       >
         {username[0].toUpperCase()}
       </button>
@@ -128,7 +183,8 @@ export default function UserMenu() {
       {/* 💻 Десктоп - полное меню */}
       <button
         onClick={() => setOpen(!open)}
-        className="hidden md:inline-flex items-center gap-2 px-3 py-2 bg-card-bg hover:bg-card-hover border border-text-muted/20 rounded-lg transition-colors flex-shrink-0"
+        className="hidden md:inline-flex items-center gap-2 px-3 py-2 bg-card-bg hover:bg-card-hover border border-text-muted/20 rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
+        disabled={signingOut}
       >
         <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
           {username[0].toUpperCase()}
@@ -152,6 +208,9 @@ export default function UserMenu() {
           <div className="px-4 py-3 border-b border-text-muted/10 bg-card-hover/50">
             <p className="text-text-main font-semibold">{username}</p>
             <p className="text-text-muted text-xs">{user.email}</p>
+            {isAdmin && (
+              <p className="text-blue-400 text-xs mt-1">👑 Адміністратор</p>
+            )}
           </div>
 
           <Link
@@ -186,9 +245,32 @@ export default function UserMenu() {
             Історія читання
           </Link>
 
+          {/* Admin Panel Link (только для админов) */}
+          {isAdmin && (
+            <>
+              <div className="border-t border-text-muted/10" />
+              <Link
+                href="/admin/manhwa"
+                onClick={() => setOpen(false)}
+                className="block w-full text-left px-4 py-3 text-blue-400 hover:bg-blue-600/20 transition-colors text-sm flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                  />
+                </svg>
+                Адмін-панель
+              </Link>
+            </>
+          )}
+
           <button
             onClick={handleSignOut}
-            className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors text-sm border-t border-text-muted/10 flex items-center gap-2"
+            disabled={signingOut}
+            className="w-full text-left px-4 py-3 text-red-400 hover:bg-red-500/10 transition-colors text-sm border-t border-text-muted/10 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -198,7 +280,7 @@ export default function UserMenu() {
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
               />
             </svg>
-            Вийти
+            {signingOut ? 'Выход...' : 'Вийти'}
           </button>
         </div>
       )}

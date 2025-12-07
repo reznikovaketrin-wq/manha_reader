@@ -1,3 +1,4 @@
+// auth.ts
 import { supabase } from './supabase';
 
 // ===== EMAIL & PASSWORD =====
@@ -13,13 +14,14 @@ export async function signUpWithEmail(email: string, password: string, username:
     if (authError) throw authError;
     if (!authData.user) throw new Error('User creation failed');
 
-    // Создаём профиль в таблице users
+    // Создаём профиль в таблице users с role = 'user'
     const { error: profileError } = await supabase
       .from('users')
       .insert({
         id: authData.user.id,
         email,
         username,
+        role: 'user', // По умолчанию обычный пользователь
       });
 
     if (profileError) throw profileError;
@@ -87,8 +89,15 @@ export async function signInWithGithub() {
 
 // ===== SESSION =====
 
+/**
+ * Возвращает актуальную сессию/пользователя.
+ * Гарантированно вызывает refreshSession() перед чтением.
+ */
 export async function getCurrentUser() {
   try {
+    // Обновляем сессию (если есть refresh token)
+    await supabase.auth.refreshSession();
+
     const { data, error } = await supabase.auth.getUser();
 
     if (error) throw error;
@@ -100,16 +109,36 @@ export async function getCurrentUser() {
   }
 }
 
-export async function signOut() {
+/**
+ * Получить актуальный access token (или null).
+ * Используй перед fetch('/api/...') чтобы быть уверенным, что токен свежий.
+ */
+export async function getAccessToken(): Promise<string | null> {
   try {
+    await supabase.auth.refreshSession();
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token ?? null;
+    return token;
+  } catch (error) {
+    console.error('Error getting access token:', error);
+    return null;
+  }
+}
+
+export async function signOut(): Promise<{ success: boolean; error?: any }> {
+  try {
+    // Попробуем корректно выйти
     const { error } = await supabase.auth.signOut();
-
-    if (error) throw error;
-
+    if (error) {
+      console.error('❌ [Auth] signOut error:', error);
+      return { success: false, error };
+    }
+    console.log('✅ [Auth] signOut completed successfully');
     return { success: true };
   } catch (error) {
-    console.error('Signout error:', error);
-    return { success: false, error };
+    console.error('❌ [Auth] signOut exception:', error);
+    // Даже если что-то сломалось — считаем, что клиент должен уйти с защищённых страниц
+    return { success: true };
   }
 }
 
@@ -143,9 +172,63 @@ export async function checkUsernameAvailable(username: string) {
       return { available: true };
     }
 
+    if (error) throw error;
+
+    // если вернулось что-то — username занят
     return { available: false };
   } catch (error) {
     console.error('Check username error:', error);
     return { available: false };
+  }
+}
+
+// ===== ADMIN FUNCTIONS =====
+
+export async function getUserRole(userId: string): Promise<'user' | 'admin' | null> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.role || 'user';
+  } catch (error) {
+    console.error('Error fetching user role:', error);
+    return null;
+  }
+}
+
+export async function isUserAdmin(userId: string): Promise<boolean> {
+  const role = await getUserRole(userId);
+  return role === 'admin';
+}
+
+export async function getCurrentUserRole(): Promise<'user' | 'admin' | null> {
+  try {
+    // Обновляем сессию перед чтением пользователя
+    await supabase.auth.refreshSession();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    return getUserRole(data.user.id);
+  } catch (error) {
+    console.error('Error getting current user role:', error);
+    return null;
+  }
+}
+
+export async function setUserRole(userId: string, role: 'user' | 'admin') {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('Error setting user role:', error);
+    return { success: false, error };
   }
 }

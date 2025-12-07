@@ -1,78 +1,135 @@
-import { Manhwa, Chapter } from '@/types/manhwa';
-import manhwaJsonData from './manhwa.json';
-import { ManhwaDataJSON } from '@/types/manhwa-json';
+/**
+ * 📁 /data/manhwa.ts
+ * 
+ * 🔄 Функции для работы с данными манхв из API
+ * 
+ * Используется в браузере и на сервере
+ */
 
-const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || 'https://your-bucket.r2.dev';
+import { fetchManhwas, fetchManhwaById as fetchById, fetchChapterPages } from '@/lib/api';
 
-console.log('🔧 R2_BASE_URL:', R2_BASE_URL);
+/**
+ * Получить все манхвы из API (только с расписанием)
+ */
+export async function getManhwaData() {
+  console.log('🔥 [getManhwaData] FUNCTION CALLED AT:', new Date().toISOString());
+  
+  try {
+    console.log('📚 [getManhwaData] Starting to fetch data...');
+    const response = await fetchManhwas();
 
-// Привести JSON до правильного типу
-const manhwaJson = manhwaJsonData as ManhwaDataJSON;
+    console.log('📚 [getManhwaData] Got response, length:', response?.length);
+    console.log('📚 [getManhwaData] First item scheduleDay:', response?.[0]?.scheduleDay);
 
-// Функція для генерації шляхів до сторінок
-function generatePageUrls(manhwaId: string, chapterId: string, pagesCount: number): string[] {
-  const pages: string[] = [];
-  for (let i = 1; i <= pagesCount; i++) {
-    const pageNum = String(i).padStart(2, '0'); // 01, 02, 03...
-    pages.push(`${R2_BASE_URL}/${manhwaId}/chapters/${chapterId}/${pageNum}.jpg`);
+    if (!response || !Array.isArray(response)) {
+      console.error('❌ [getManhwaData] Response is not an array:', typeof response);
+      return [];
+    }
+
+    // Проверяем какие манхвы имеют расписание
+    console.log('📋 [getManhwaData] Checking all items:');
+    response.forEach((m: any, idx: number) => {
+      console.log(`  [${idx}] ${m.id}:`, {
+        schedule_label: m.scheduleDay?.dayLabel,
+        schedule_note: m.scheduleDay?.note,
+        has_scheduleDay: !!m.scheduleDay,
+      });
+    });
+
+    // Преобразуем формат API в формат приложения
+    const transformed = response
+      .filter((m: any) => {
+        const hasSchedule = m.scheduleDay && m.scheduleDay.dayLabel;
+        if (hasSchedule) {
+          console.log(`✅ [getManhwaData] PASSING FILTER: ${m.id} has schedule: ${m.scheduleDay.dayLabel}`);
+        }
+        return hasSchedule;
+      })
+      .map((m: any) => {
+        console.log('🔄 [getManhwaData] Transforming:', m.id, '→', m.title);
+        return {
+          id: m.id,
+          title: m.title,
+          description: m.description,
+          coverImage: m.coverImage,
+          status: m.status,
+          rating: m.rating,
+          tags: m.tags || [],
+          scheduleDay: m.scheduleDay,
+        };
+      });
+
+    console.log(`✅ [getManhwaData] RESULT: ${transformed.length} out of ${response.length} manhwas have schedule`);
+    console.log('📦 Filtered data:', JSON.stringify(transformed, null, 2));
+    return transformed;
+  } catch (error) {
+    console.error('❌ [getManhwaData] Error:', error);
+    return [];
   }
-  console.log(`📖 ${manhwaId}/${chapterId}: ${pagesCount} страниц - ${pages[0]}`);
-  return pages;
 }
 
-// Конвертувати JSON дані в Manhwa об'єкти
-export const manhwaData: Manhwa[] = manhwaJson.manhwa.map(m => {
-  console.log(`📚 Загрузка: ${m.id} - ${m.title}${m.scheduleDay ? ' (в розкладі)' : ''}`);
-  return {
-    id: m.id,
-    title: m.title,
-    alternativeTitles: [],
-    description: m.description,
-    coverImage: `${R2_BASE_URL}${m.coverImage}`,
-    author: '',
-    artist: '',
-    genres: [],
-    status: m.status as 'ongoing' | 'completed' | 'hiatus',
-    rating: m.rating,
-    totalViews: 0,
-    updatedAt: new Date().toISOString().split('T')[0],
-    chapters: m.chapters.map(ch => {
-      const pages = generatePageUrls(m.id, ch.id, ch.pagesCount);
-      return {
+/**
+ * Получить манхву по ID
+ */
+export async function getManhwaById(id: string) {
+  try {
+    console.log(`🔍 Getting manhwa: ${id}`);
+
+    const response = await fetchById(id);
+
+    // Преобразуем формат API
+    const transformed = {
+      id: response.id,
+      title: response.title,
+      description: response.description,
+      coverImage: response.coverImage,
+      bgImage: response.bgImage,
+      charImage: response.charImage,
+      status: response.status,
+      rating: response.rating,
+      tags: response.tags || [],
+      scheduleDay: response.scheduleDay,
+      chapters: (response.chapters || []).map((ch: any) => ({
         id: ch.id,
-        number: ch.number,
-        title: `Розділ ${ch.number}`,
-        pages: pages,
-        publishedAt: new Date().toISOString().split('T')[0],
-        views: 0,
-      };
-    }),
-    scheduleDay: m.scheduleDay, // ✅ ДОБАВЛЕНО: передаём scheduleDay из JSON
-    tags: m.tags || [], // ✅ ДОБАВЛЕНО: передаём tags из JSON
-  };
-});
+        number: ch.chapterNumber,
+        title: ch.title,
+        pagesCount: ch.pagesCount,
+        status: ch.status,
+      })),
+    };
 
-console.log(`✅ Загружено манхвы: ${manhwaData.length}`);
-console.log(`📅 У розкладі: ${manhwaData.filter(m => m.scheduleDay).length}`);
-
-export function getManhwaById(id: string): Manhwa | undefined {
-  const result = manhwaData.find(manhwa => manhwa.id === id);
-  console.log(`🔍 getManhwaById("${id}"):`, result ? `найдена - ${result.title}` : 'НЕ НАЙДЕНА');
-  return result;
-}
-
-export function getChapterByIds(manhwaId: string, chapterId: string) {
-  const manhwa = getManhwaById(manhwaId);
-  if (!manhwa) {
-    console.log(`❌ Манхва не найдена: ${manhwaId}`);
+    console.log(`✅ Loaded manhwa: ${transformed.title}`);
+    return transformed;
+  } catch (error) {
+    console.error(`❌ Error getting manhwa ${id}:`, error);
     return undefined;
   }
-  const chapter = manhwa.chapters.find(ch => ch.id === chapterId);
-  console.log(`🔍 getChapterByIds("${manhwaId}", "${chapterId}"):`, 
-    chapter ? `найдена - Розділ ${chapter.number}, ${chapter.pages.length} сторінок` : 'НЕ НАЙДЕНА'
-  );
-  if (chapter) {
-    console.log(`   Перша сторінка:`, chapter.pages[0]);
+}
+
+/**
+ * Получить сторінки розділа
+ */
+export async function getChapterPages(manhwaId: string, chapterId: string) {
+  try {
+    console.log(`📖 Getting chapter pages: ${manhwaId}/${chapterId}`);
+
+    const response = await fetchChapterPages(manhwaId, chapterId);
+
+    const transformed = {
+      id: response.id,
+      number: response.chapterNumber,
+      title: response.title,
+      pages: (response.pages || []).map((p: any) => ({
+        number: p.number,
+        url: p.imageUrl,
+      })),
+      pagesCount: response.pagesCount,
+    };
+
+    console.log(`✅ Loaded ${transformed.pages.length} pages`);
+    return transformed;
+  } catch (error) {
+    console.error(`❌ Error getting chapter pages:`, error);
+    return undefined;
   }
-  return chapter;
 }
