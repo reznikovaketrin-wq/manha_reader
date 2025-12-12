@@ -29,7 +29,7 @@ async function verifyAdmin(token: string) {
   return { user: authData.user, userData };
 }
 
-// GET - список глав манхвы
+// GET - получить список глав манхвы
 export async function GET(request: NextRequest, { params }: any) {
   try {
     const manhwaId = params.id;
@@ -109,6 +109,23 @@ export async function POST(request: NextRequest, { params }: any) {
     if (error) throw error;
 
     console.log('✅ [API] Chapter created:', chapterId);
+
+    // 🆕 ОБНОВЛЯЕМ last_chapter_date в манхве
+    console.log('🔄 [API] Updating last_chapter_date for:', manhwaId);
+    const now = new Date().toISOString();
+    
+    const { error: updateError } = await supabase
+      .from('admin_manhwa')
+      .update({ last_chapter_date: now })
+      .eq('id', manhwaId);
+
+    if (updateError) {
+      console.error('⚠️ [API] Warning: Could not update last_chapter_date:', updateError);
+      // Не прерываем процесс, глава уже создана
+    } else {
+      console.log('✅ [API] Updated last_chapter_date for:', manhwaId);
+    }
+
     return NextResponse.json({ data });
   } catch (error) {
     console.error('❌ [API] Error:', error);

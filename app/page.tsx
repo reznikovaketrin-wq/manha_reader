@@ -1,14 +1,16 @@
 import { fetchManhwas } from '@/lib/api';
-import ManhwaCard from '@/components/manhwa/ManhwaCard';
 import ContinueReading from '@/components/manhwa/ContinueReading';
+import ManhwaFilterDisplay from '@/components/ManhwaFilterDisplay';
 
 interface ManhwaDisplay {
   id: string;
   title: string;
-  description: string;
+  shortDescription: string;
   coverImage: string;
   status: 'ongoing' | 'completed' | 'hiatus';
   rating: number;
+  publicationType?: 'censored' | 'uncensored';
+  type?: 'manhwa' | 'manga' | 'manhua';
   tags?: string[];
   scheduleDay?: {
     dayBig: string;
@@ -36,10 +38,12 @@ export default async function HomePage() {
         return {
           id: m.id,
           title: m.title,
-          description: m.description,
+          shortDescription: m.shortDescription,
           coverImage: m.coverImage,
           status: m.status,
           rating: m.rating,
+          publicationType: m.publicationType,
+          type: m.type,
           tags: m.tags || [],
           scheduleDay: m.scheduleDay,
         } as ManhwaDisplay;
@@ -57,23 +61,19 @@ export default async function HomePage() {
   }
 
   return (
-    <div className="max-w-[1160px] mx-auto px-4 pb-10 overflow-visible">
-      {/* Continue Reading Section */}
+    <>
+      {/* === CONTINUE READING SECTION === */}
       <ContinueReading />
 
-      {/* All Manhwa Section */}
+      {/* === ALL MANHWA WITH FILTER === */}
       {transformedManhwa.length > 0 ? (
-        <div className="flex flex-col gap-20 max-[900px]:gap-12 max-[640px]:gap-8 w-full overflow-visible">
-          {transformedManhwa.map((manhwa) => (
-            <ManhwaCard key={manhwa.id} manhwa={manhwa} />
-          ))}
-        </div>
+        <ManhwaFilterDisplay initialData={transformedManhwa} />
       ) : (
         <div className="text-center py-16 text-text-muted">
           <p className="text-lg">Тайтлів не знайдено</p>
           <p className="text-sm mt-2">Спробуйте пізніше</p>
         </div>
       )}
-    </div>
+    </>
   );
 }

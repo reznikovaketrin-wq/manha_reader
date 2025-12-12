@@ -3,207 +3,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
-// ============================================
-// ManhwaRatingHeader - Компактный рейтинг для заголовка
-// ============================================
-
-interface ManhwaRatingHeaderProps {
-  manhwaId: string;
-}
-
-export function ManhwaRatingHeader({ manhwaId }: ManhwaRatingHeaderProps) {
-  const [averageRating, setAverageRating] = useState(0);
-  const [totalRatings, setTotalRatings] = useState(0);
-  const [userRating, setUserRating] = useState<number | null>(null);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => {
-    const loadRatings = async () => {
-      try {
-        const { data: userData } = await supabase.auth.getUser();
-        setUser(userData?.user);
-
-        const { data: allRatings } = await supabase
-          .from('manhwa_ratings')
-          .select('rating')
-          .eq('manhwa_id', manhwaId);
-
-        if (allRatings) {
-          const avgRating =
-            allRatings.length > 0
-              ? allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length
-              : 0;
-
-          setAverageRating(avgRating);
-          setTotalRatings(allRatings.length);
-
-          if (userData?.user?.id) {
-            const { data: userRatingData } = await supabase
-              .from('manhwa_ratings')
-              .select('rating')
-              .eq('user_id', userData.user.id)
-              .eq('manhwa_id', manhwaId)
-              .single();
-
-            if (userRatingData) {
-              setUserRating(userRatingData.rating);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error loading ratings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadRatings();
-  }, [manhwaId]);
-
-  const handleRate = async (rating: number) => {
-    if (!user?.id) {
-      alert('Будь ласка, увійдіть щоб оцінити манхву');
-      return;
-    }
-
-    try {
-      if (userRating) {
-        await supabase
-          .from('manhwa_ratings')
-          .update({ rating })
-          .eq('user_id', user.id)
-          .eq('manhwa_id', manhwaId);
-      } else {
-        await supabase
-          .from('manhwa_ratings')
-          .insert([
-            {
-              user_id: user.id,
-              manhwa_id: manhwaId,
-              rating,
-            },
-          ]);
-      }
-
-      const { data: allRatings } = await supabase
-        .from('manhwa_ratings')
-        .select('rating')
-        .eq('manhwa_id', manhwaId);
-
-      if (allRatings) {
-        const avgRating =
-          allRatings.length > 0
-            ? allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length
-            : 0;
-
-        setAverageRating(avgRating);
-        setTotalRatings(allRatings.length);
-        setUserRating(rating);
-      }
-
-      setShowModal(false);
-    } catch (err) {
-      console.error('Error rating:', err);
-    }
-  };
-
-  if (loading) {
-    return null;
-  }
-
-  return (
-    <>
-      <div className="text-right flex-shrink-0">
-        <div className="mb-3">
-          <p className="text-green-400 text-3xl font-bold">{averageRating.toFixed(2)}</p>
-          <p className="text-text-muted text-sm">
-            {totalRatings} оцінок
-          </p>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold text-sm"
-        >
-          Оцінити
-        </button>
-      </div>
-
-      {showModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card-bg rounded-lg border border-text-muted/20 p-8 max-w-md w-full mx-4">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Оцініть цю манхву</h2>
-              <p className="text-gray-400 text-sm">Виберіть кількість зірок від 1 до 10</p>
-            </div>
-
-            <div className="flex justify-center gap-3 mb-8">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => handleRate(star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <svg
-                    className={`w-8 h-8 ${
-                      star <= (hoverRating || userRating || 0)
-                        ? 'text-yellow-500'
-                        : 'text-gray-600'
-                    }`}
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                </button>
-              ))}
-            </div>
-
-            {hoverRating > 0 && (
-              <div className="text-center mb-6">
-                <p className="text-2xl font-bold text-yellow-500">{hoverRating}</p>
-                <p className="text-gray-400 text-sm">зірок</p>
-              </div>
-            )}
-
-            {userRating && !hoverRating && (
-              <div className="text-center mb-6">
-                <p className="text-gray-400 text-sm">Ваша оцінка:</p>
-                <p className="text-2xl font-bold text-yellow-500">{userRating}</p>
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2 bg-card-bg hover:bg-card-hover rounded-lg transition-colors font-semibold border border-text-muted/20"
-              >
-                Скасувати
-              </button>
-              {hoverRating > 0 && (
-                <button
-                  onClick={() => handleRate(hoverRating)}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors font-semibold"
-                >
-                  Підтвердити
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-// ============================================
-// ManhwaCommentsComponent - Общие коментарии к манхве
-// ============================================
-
 interface ManhwaComment {
   id: string;
   user_id: string;
@@ -218,9 +17,15 @@ interface ManhwaComment {
 
 interface ManhwaCommentsComponentProps {
   manhwaId: string;
+  hideHeader?: boolean;
+  onCommentsCountChange?: (count: number) => void;
 }
 
-export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentProps) {
+export function ManhwaCommentsComponent({ 
+  manhwaId, 
+  hideHeader = false, 
+  onCommentsCountChange 
+}: ManhwaCommentsComponentProps) {
   const [comments, setComments] = useState<ManhwaComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [user, setUser] = useState<any>(null);
@@ -237,7 +42,6 @@ export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentPro
         const { data: userData } = await supabase.auth.getUser();
         setUser(userData?.user);
 
-        // Загрузить все комментарии к манхве (включая ответы)
         const { data: commentsData, error } = await supabase
           .from('manhwa_comments')
           .select(
@@ -254,7 +58,6 @@ export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentPro
           .order('created_at', { ascending: false });
 
         if (!error && commentsData) {
-          // Получить данные о лайках текущего пользователя
           let userLikes = new Set<string>();
           if (userData?.user?.id) {
             const { data: likesData } = await supabase
@@ -267,7 +70,6 @@ export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentPro
 
           const enrichedComments = await Promise.all(
             commentsData.map(async (c) => {
-              // Получить количество лайков
               const { count: likesCount } = await supabase
                 .from('comment_likes')
                 .select('*', { count: 'exact' })
@@ -293,6 +95,11 @@ export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentPro
 
     loadData();
   }, [manhwaId]);
+
+  useEffect(() => {
+    const mainCommentsList = comments.filter(c => !c.parent_comment_id);
+    onCommentsCountChange?.(mainCommentsList.length);
+  }, [comments, onCommentsCountChange]);
 
   const handleSubmitComment = async () => {
     if (!user?.id) {
@@ -372,9 +179,6 @@ export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentPro
         setComments([...comments, newReply]);
         setReplyText('');
         setReplyingTo(null);
-
-        // Раскрыть ответы
-        setExpandedReplies(new Set([...expandedReplies, parentCommentId]));
       }
     } catch (err) {
       console.error('Error submitting reply:', err);
@@ -385,38 +189,40 @@ export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentPro
 
   const handleLikeComment = async (commentId: string, isLiked: boolean) => {
     if (!user?.id) {
-      alert('Будь ласка, увійдіть щоб лайкнути коментар');
+      alert('Будь ласка, увійдіть щоб лайкнути');
       return;
     }
 
     try {
       if (isLiked) {
-        // Удалить лайк
         await supabase
           .from('comment_likes')
           .delete()
-          .eq('user_id', user.id)
-          .eq('comment_id', commentId);
+          .eq('comment_id', commentId)
+          .eq('user_id', user.id);
       } else {
-        // Добавить лайк
         await supabase
           .from('comment_likes')
           .insert([
             {
-              user_id: user.id,
               comment_id: commentId,
+              user_id: user.id,
             },
           ]);
       }
 
-      // Обновить локальное состояние
+      const { count: newCount } = await supabase
+        .from('comment_likes')
+        .select('*', { count: 'exact' })
+        .eq('comment_id', commentId);
+
       setComments(
-        comments.map((c) =>
+        comments.map(c =>
           c.id === commentId
             ? {
                 ...c,
+                likes_count: newCount || 0,
                 user_liked: !isLiked,
-                likes_count: (c.likes_count || 0) + (isLiked ? -1 : 1),
               }
             : c
         )
@@ -440,248 +246,495 @@ export function ManhwaCommentsComponent({ manhwaId }: ManhwaCommentsComponentPro
   });
 
   return (
-    <div className="bg-card-bg rounded-lg border border-text-muted/20 p-6">
-      <h3 className="text-xl font-semibold mb-6">Коментарі до тайтла ({mainComments.length})</h3>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+      {/* Заголовок */}
+      {!hideHeader && (
+        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#FFFFFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="/icons/comments-icon.png" alt="Comments" style={{ width: '20px', height: '20px' }} />
+          Коментарі ({mainComments.length})
+        </h3>
+      )}
 
-      {/* New Comment Form */}
+      {/* Поле для ввода коментария */}
       {user?.id && (
-        <div className="mb-6 pb-6 border-b border-text-muted/20">
-          <textarea
+        <div style={{ marginBottom: '20px', position: 'relative', display: 'flex', alignItems: 'center', backgroundColor: 'transparent', border: '1px solid #3A3A3A', borderRadius: '8px', padding: '0 12px' }}>
+          <input
+            type="text"
+            placeholder="Прокоментуй..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Поділіться своєю думкою про цю манхву..."
-            className="w-full bg-black border border-text-muted/20 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
-            rows={3}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && newComment.trim()) {
+                handleSubmitComment();
+              }
+            }}
+            style={{
+              flex: 1,
+              backgroundColor: 'transparent',
+              border: 'none',
+              padding: '12px 16px',
+              color: '#CFCFCF',
+              fontSize: '14px',
+              boxSizing: 'border-box',
+              outline: 'none',
+            }}
           />
-          <div className="flex justify-end mt-3 gap-2">
-            <button
-              onClick={() => setNewComment('')}
-              className="px-6 py-2 bg-card-bg hover:bg-card-hover rounded-lg transition-colors font-semibold"
-            >
-              Скасувати
-            </button>
-            <button
-              onClick={handleSubmitComment}
-              disabled={submitting || !newComment.trim()}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors font-semibold"
-            >
-              {submitting ? 'Надсилання...' : 'Надіслати'}
-            </button>
-          </div>
+          <button
+            onClick={handleSubmitComment}
+            disabled={submitting || !newComment.trim()}
+            style={{
+              padding: '7px 14px',
+              backgroundColor: 'transparent',
+              border: '1px solid #3A3A3A',
+              borderRadius: '6px',
+              color: '#CFCFCF',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: submitting || !newComment.trim() ? 'not-allowed' : 'pointer',
+              transition: 'all 0.2s',
+              opacity: submitting || !newComment.trim() ? '0.5' : '1',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              if (!submitting && newComment.trim()) {
+                const btn = e.currentTarget as HTMLButtonElement;
+                btn.style.borderColor = '#A259FF';
+                btn.style.color = '#A259FF';
+              }
+            }}
+            onMouseLeave={(e) => {
+              const btn = e.currentTarget as HTMLButtonElement;
+              btn.style.borderColor = '#3A3A3A';
+              btn.style.color = '#CFCFCF';
+            }}
+          >
+            {submitting ? 'Надсилання...' : 'Надіслати'}
+          </button>
         </div>
       )}
 
-      {!user?.id && (
-        <div className="mb-6 pb-6 border-b border-text-muted/20 bg-blue-600/10 border-blue-500/30 rounded-lg p-4">
-          <p className="text-sm text-gray-300">
-            Щоб залишити коментар, будь ласка{' '}
-            <a href="/auth/login" className="text-blue-400 hover:text-blue-300 font-semibold">
-              увійдіть в свій акаунт
-            </a>
-          </p>
-        </div>
-      )}
-
-      {/* Sort Buttons */}
+      {/* Кнопки сортировки */}
       {mainComments.length > 0 && (
-        <div className="mb-6 flex gap-2">
+        <div style={{ marginBottom: '16px', display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setSortBy('recent')}
-            className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-              sortBy === 'recent'
-                ? 'bg-blue-600 text-white'
-                : 'bg-card-bg text-gray-400 hover:text-gray-300'
-            }`}
+            style={{
+              padding: '7px 14px',
+              backgroundColor: 'transparent',
+              border: '1px solid #3A3A3A',
+              borderRadius: '6px',
+              color: '#CFCFCF',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              const btn = e.currentTarget as HTMLButtonElement;
+              btn.style.borderColor = '#A259FF';
+              btn.style.color = '#A259FF';
+            }}
+            onMouseLeave={(e) => {
+              const btn = e.currentTarget as HTMLButtonElement;
+              btn.style.borderColor = '#3A3A3A';
+              btn.style.color = '#CFCFCF';
+            }}
           >
             Нові
           </button>
           <button
             onClick={() => setSortBy('popular')}
-            className={`px-4 py-2 rounded-lg transition-colors text-sm font-medium ${
-              sortBy === 'popular'
-                ? 'bg-blue-600 text-white'
-                : 'bg-card-bg text-gray-400 hover:text-gray-300'
-            }`}
+            style={{
+              padding: '7px 14px',
+              backgroundColor: 'transparent',
+              border: '1px solid #3A3A3A',
+              borderRadius: '6px',
+              color: '#CFCFCF',
+              fontSize: '13px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              const btn = e.currentTarget as HTMLButtonElement;
+              btn.style.borderColor = '#A259FF';
+              btn.style.color = '#A259FF';
+            }}
+            onMouseLeave={(e) => {
+              const btn = e.currentTarget as HTMLButtonElement;
+              btn.style.borderColor = '#3A3A3A';
+              btn.style.color = '#CFCFCF';
+            }}
           >
             Популярні
           </button>
         </div>
       )}
 
-      {/* Comments List */}
-      {loading ? (
-        <div className="text-gray-400 text-center py-8">Завантаження коментарів...</div>
-      ) : sortedComments.length === 0 ? (
-        <div className="text-gray-400 text-center py-8">
-          Коментарів ще немає. Будьте першим!
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {sortedComments.map((comment) => {
+      {/* Список коментариев */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '600px', overflowY: 'auto' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#9A9A9A' }}>
+            Завантаження коментарів...
+          </div>
+        ) : sortedComments.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px', color: '#9A9A9A' }}>
+            Коментарів ще немає. Будьте першим!
+          </div>
+        ) : (
+          sortedComments.map((comment) => {
             const replies = getReplies(comment.id);
             const isExpanded = expandedReplies.has(comment.id);
 
             return (
-              <div key={comment.id} className="border-l-2 border-blue-500 pl-4">
-                {/* Comment Header */}
-                <div className="flex items-center justify-between mb-2">
-                  <p className="font-semibold text-sm text-gray-200">
-                    {comment.user_email?.split('@')[0] || 'Анонім'}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(comment.created_at).toLocaleDateString('uk-UA', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                </div>
+              <div
+                key={comment.id}
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                  paddingBottom: '16px',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                }}
+              >
+                {/* User Icon */}
+                <svg
+                  style={{
+                    width: '24px',
+                    height: '24px',
+                    color: '#9A9A9A',
+                    flexShrink: 0,
+                    marginTop: '2px',
+                  }}
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                </svg>
 
                 {/* Comment Content */}
-                <p className="text-gray-300 text-sm mb-3 leading-relaxed">{comment.content}</p>
-
-                {/* Comment Actions */}
-                <div className="flex items-center gap-4 text-xs mb-3">
-                  <button
-                    onClick={() =>
-                      handleLikeComment(comment.id, comment.user_liked || false)
-                    }
-                    className={`flex items-center gap-1 transition-colors ${
-                      comment.user_liked
-                        ? 'text-red-500 hover:text-red-400'
-                        : 'text-gray-500 hover:text-gray-400'
-                    }`}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p
+                    style={{
+                      color: '#FFFFFF',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      marginBottom: '4px',
+                    }}
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill={comment.user_liked ? 'currentColor' : 'none'}
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                      />
-                    </svg>
-                    {comment.likes_count || 0}
-                  </button>
+                    {comment.user_email?.split('@')[0] || 'Анонім'}
+                  </p>
+                  <p
+                    style={{
+                      color: '#CFCFCF',
+                      fontSize: '14px',
+                      lineHeight: '1.5',
+                      wordBreak: 'break-word',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    {comment.content}
+                  </p>
 
-                  {/* Reply Button */}
-                  {user?.id && (
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
                     <button
-                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      className="text-blue-400 hover:text-blue-300 font-medium"
-                    >
-                      ↳ Відповісти
-                    </button>
-                  )}
-                </div>
-
-                {/* Reply Form */}
-                {replyingTo === comment.id && (
-                  <div className="mb-4 pl-4 border-l-2 border-blue-400">
-                    <textarea
-                      value={replyText}
-                      onChange={(e) => setReplyText(e.target.value)}
-                      placeholder="Напишіть відповідь..."
-                      className="w-full bg-black border border-text-muted/20 rounded-lg px-4 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors resize-none"
-                      rows={2}
-                    />
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => handleSubmitReply(comment.id)}
-                        disabled={submitting || !replyText.trim()}
-                        className="px-4 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded text-sm font-semibold"
-                      >
-                        Відправити
-                      </button>
-                      <button
-                        onClick={() => {
-                          setReplyingTo(null);
-                          setReplyText('');
-                        }}
-                        className="px-4 py-1 bg-card-bg hover:bg-card-hover border border-text-muted/20 rounded text-sm font-semibold"
-                      >
-                        Скасувати
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Replies Section */}
-                {replies.length > 0 && (
-                  <div className="mt-3">
-                    <button
-                      onClick={() => {
-                        if (isExpanded) {
-                          const newExpanded = new Set(expandedReplies);
-                          newExpanded.delete(comment.id);
-                          setExpandedReplies(newExpanded);
-                        } else {
-                          setExpandedReplies(new Set([...expandedReplies, comment.id]));
+                      onClick={() =>
+                        handleLikeComment(comment.id, comment.user_liked || false)
+                      }
+                      style={{
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        color: comment.user_liked ? '#FF1B6D' : '#9A9A9A',
+                        cursor: 'pointer',
+                        padding: '0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'color 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!comment.user_liked) {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#CFCFCF';
                         }
                       }}
-                      className="text-xs text-gray-400 hover:text-gray-300 font-medium"
+                      onMouseLeave={(e) => {
+                        if (!comment.user_liked) {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#9A9A9A';
+                        }
+                      }}
                     >
-                      {isExpanded ? '▼' : '▶'} Відповідей: {replies.length}
+                      <svg
+                        style={{ width: '16px', height: '16px' }}
+                        fill={comment.user_liked ? 'currentColor' : 'none'}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                        />
+                      </svg>
+                      {comment.likes_count || 0}
                     </button>
 
-                    {/* Replies List */}
-                    {isExpanded && (
-                      <div className="mt-3 space-y-3 pl-4 border-l-2 border-blue-400">
-                        {replies.map((reply) => (
-                          <div key={reply.id} className="border-l-2 border-green-500 pl-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <p className="font-semibold text-xs">
-                                {reply.user_email?.split('@')[0] || 'Анонім'}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(reply.created_at).toLocaleDateString('uk-UA')}
-                              </p>
-                            </div>
-                            <p className="text-gray-300 text-sm">{reply.content}</p>
-
-                            {/* Reply Actions */}
-                            <button
-                              onClick={() =>
-                                handleLikeComment(reply.id, reply.user_liked || false)
-                              }
-                              className={`mt-2 flex items-center gap-1 text-xs transition-colors ${
-                                reply.user_liked
-                                  ? 'text-red-500 hover:text-red-400'
-                                  : 'text-gray-500 hover:text-gray-400'
-                              }`}
-                            >
-                              <svg
-                                className="w-3 h-3"
-                                fill={reply.user_liked ? 'currentColor' : 'none'}
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-                                />
-                              </svg>
-                              {reply.likes_count || 0}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                    {user?.id && (
+                      <button
+                        onClick={() =>
+                          setReplyingTo(
+                            replyingTo === comment.id ? null : comment.id
+                          )
+                        }
+                        style={{
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          color: '#9A9A9A',
+                          cursor: 'pointer',
+                          padding: '0',
+                          transition: 'color 0.2s',
+                          fontSize: '12px',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#A259FF';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#9A9A9A';
+                        }}
+                      >
+                        ↳ Відповісти
+                      </button>
                     )}
                   </div>
-                )}
+
+                  {/* Reply Form */}
+                  {replyingTo === comment.id && (
+                    <div
+                      style={{
+                        marginTop: '12px',
+                        paddingLeft: '12px',
+                        borderLeft: '2px solid #A259FF',
+                        display: 'flex',
+                        gap: '8px',
+                        flexDirection: 'column',
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        placeholder="Напишіть відповідь..."
+                        style={{
+                          backgroundColor: 'transparent',
+                          border: '1px solid #3A3A3A',
+                          borderRadius: '6px',
+                          padding: '8px 12px',
+                          color: '#CFCFCF',
+                          fontSize: '12px',
+                          boxSizing: 'border-box',
+                          outline: 'none',
+                        }}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && replyText.trim()) {
+                            handleSubmitReply(comment.id);
+                          }
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => handleSubmitReply(comment.id)}
+                          disabled={submitting || !replyText.trim()}
+                          style={{
+                            padding: '7px 14px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid #3A3A3A',
+                            borderRadius: '6px',
+                            color: '#CFCFCF',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            cursor: submitting || !replyText.trim() ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s',
+                            opacity: submitting || !replyText.trim() ? '0.5' : '1',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!submitting && replyText.trim()) {
+                              const btn = e.currentTarget as HTMLButtonElement;
+                              btn.style.borderColor = '#A259FF';
+                              btn.style.color = '#A259FF';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            const btn = e.currentTarget as HTMLButtonElement;
+                            btn.style.borderColor = '#3A3A3A';
+                            btn.style.color = '#CFCFCF';
+                          }}
+                        >
+                          Відправити
+                        </button>
+                        <button
+                          onClick={() => {
+                            setReplyingTo(null);
+                            setReplyText('');
+                          }}
+                          style={{
+                            padding: '7px 14px',
+                            backgroundColor: 'transparent',
+                            border: '1px solid #3A3A3A',
+                            borderRadius: '6px',
+                            color: '#CFCFCF',
+                            fontSize: '13px',
+                            fontWeight: '500',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            const btn = e.currentTarget as HTMLButtonElement;
+                            btn.style.borderColor = '#A259FF';
+                            btn.style.color = '#A259FF';
+                          }}
+                          onMouseLeave={(e) => {
+                            const btn = e.currentTarget as HTMLButtonElement;
+                            btn.style.borderColor = '#3A3A3A';
+                            btn.style.color = '#CFCFCF';
+                          }}
+                        >
+                          Скасувати
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Replies */}
+                  {replies.length > 0 && (
+                    <div style={{ marginTop: '12px' }}>
+                      <button
+                        onClick={() => {
+                          if (isExpanded) {
+                            const newExpanded = new Set(expandedReplies);
+                            newExpanded.delete(comment.id);
+                            setExpandedReplies(newExpanded);
+                          } else {
+                            setExpandedReplies(
+                              new Set([...expandedReplies, comment.id])
+                            );
+                          }
+                        }}
+                        style={{
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          color: '#9A9A9A',
+                          cursor: 'pointer',
+                          padding: '0',
+                          fontSize: '12px',
+                          transition: 'color 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#A259FF';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLButtonElement).style.color = '#9A9A9A';
+                        }}
+                      >
+                        {isExpanded ? '▼' : '▶'} Відповідей: {replies.length}
+                      </button>
+
+                      {/* Replies List */}
+                      {isExpanded && (
+                        <div
+                          style={{
+                            marginTop: '8px',
+                            paddingLeft: '20px',
+                            borderLeft: '1px solid rgba(255, 255, 255, 0.05)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                          }}
+                        >
+                          {replies.map((reply) => (
+                            <div key={reply.id}>
+                              <p
+                                style={{
+                                  color: '#FFFFFF',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  marginBottom: '4px',
+                                }}
+                              >
+                                {reply.user_email?.split('@')[0] || 'Анонім'}
+                              </p>
+                              <p
+                                style={{
+                                  color: '#CFCFCF',
+                                  fontSize: '12px',
+                                  lineHeight: '1.4',
+                                  wordBreak: 'break-word',
+                                  marginBottom: '6px',
+                                }}
+                              >
+                                {reply.content}
+                              </p>
+                              <button
+                                onClick={() =>
+                                  handleLikeComment(
+                                    reply.id,
+                                    reply.user_liked || false
+                                  )
+                                }
+                                style={{
+                                  backgroundColor: 'transparent',
+                                  border: 'none',
+                                  color: reply.user_liked
+                                    ? '#FF1B6D'
+                                    : '#9A9A9A',
+                                  cursor: 'pointer',
+                                  padding: '0',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  fontSize: '11px',
+                                  transition: 'color 0.2s',
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (!reply.user_liked) {
+                                    (e.currentTarget as HTMLButtonElement).style.color = '#CFCFCF';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!reply.user_liked) {
+                                    (e.currentTarget as HTMLButtonElement).style.color = '#9A9A9A';
+                                  }
+                                }}
+                              >
+                                <svg
+                                  style={{ width: '12px', height: '12px' }}
+                                  fill={reply.user_liked ? 'currentColor' : 'none'}
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                                  />
+                                </svg>
+                                {reply.likes_count || 0}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             );
-          })}
-        </div>
-      )}
+          })
+        )}
+      </div>
     </div>
   );
 }

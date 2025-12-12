@@ -3,15 +3,12 @@
  * 
  * 📅 КОМПОНЕНТ ДЛЯ РЕДАКТИРОВАНИЯ РАСПИСАНИЯ
  * 
- * Позволяет:
- * - Выбрать день недели
- * - Добавить примечание
- * - Удалить расписание
+ * ✅ ИСПРАВЛЕНО: Правильная обработка примечания при смене дня
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export interface ScheduleDay {
   dayBig: string;
@@ -37,7 +34,23 @@ interface ScheduleEditorProps {
 export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedDay, setSelectedDay] = useState(scheduleDay?.dayBig || '');
-  const [note, setNote] = useState(scheduleDay?.note || '');
+  const [note, setNote] = useState(''); // ✅ ИСПРАВЛЕНО: Не инициализируем со старым значением
+  const [hasNoteChanged, setHasNoteChanged] = useState(false);
+
+  // ✅ ИСПРАВЛЕНО: При открытии модали устанавливаем текущее примечание
+  const handleOpenModal = () => {
+    if (scheduleDay) {
+      // Если редактируем существующее расписание
+      setSelectedDay(scheduleDay.dayBig);
+      setNote(scheduleDay.note); // Установим текущее значение
+    } else {
+      // Если добавляем новое расписание
+      setSelectedDay('');
+      setNote('');
+    }
+    setHasNoteChanged(false);
+    setIsOpen(true);
+  };
 
   const handleSave = () => {
     if (!selectedDay) {
@@ -45,10 +58,20 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
     } else {
       const day = DAYS.find(d => d.dayBig === selectedDay);
       if (day) {
+        // ✅ ИСПРАВЛЕНО: Используем примечание как есть, или генерируем дефолтное
+        const finalNote = note.trim() 
+          ? note 
+          : `Нове оновлення кожного ${day.dayLabel.toLowerCase()}`;
+        
+        console.log('💾 [ScheduleEditor] Saving with:', {
+          day: day.dayLabel,
+          note: finalNote,
+        });
+
         onSave({
           dayBig: day.dayBig,
           dayLabel: day.dayLabel,
-          note: note || `Нове оновлення кожного ${day.dayLabel.toLowerCase()}`,
+          note: finalNote,
         });
       }
     }
@@ -58,6 +81,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
   const handleRemove = () => {
     setSelectedDay('');
     setNote('');
+    setHasNoteChanged(false);
     onSave(null);
     setIsOpen(false);
   };
@@ -78,7 +102,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
               <p className="text-sm text-text-muted">{scheduleDay.note}</p>
             </div>
             <button
-              onClick={() => setIsOpen(true)}
+              onClick={handleOpenModal}
               className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
             >
               Изменить
@@ -87,7 +111,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
         </div>
       ) : (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={handleOpenModal}
           className="w-full p-3 border-2 border-dashed border-text-muted/50 hover:border-blue-500 rounded-lg text-text-muted hover:text-blue-400 transition-colors font-semibold"
         >
           + Добавить в расписание
@@ -138,7 +162,10 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
                 </label>
                 <textarea
                   value={note}
-                  onChange={e => setNote(e.target.value)}
+                  onChange={e => {
+                    setNote(e.target.value);
+                    setHasNoteChanged(true);
+                  }}
                   placeholder="Например: Новое обновление каждый понедельник"
                   className="w-full px-3 py-2 bg-bg-main border border-text-muted/30 rounded-lg text-text-main placeholder-text-muted/50 focus:outline-none focus:border-blue-500"
                   rows={3}
@@ -153,7 +180,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
                     {selectedDay} — {DAYS.find(d => d.dayBig === selectedDay)?.dayLabel}
                   </p>
                   <p className="text-sm text-text-muted">
-                    {note || `Нове оновлення кожного ${DAYS.find(d => d.dayBig === selectedDay)?.dayLabel.toLowerCase()}`}
+                    {note.trim() || `Нове оновлення кожного ${DAYS.find(d => d.dayBig === selectedDay)?.dayLabel.toLowerCase()}`}
                   </p>
                 </div>
               )}

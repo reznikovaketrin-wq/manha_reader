@@ -24,6 +24,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+export const revalidate = 60;       // кэшируем данные на 60 секунд
+export const dynamic = "force-static"; // заставляем Next.js кэшировать API
 
 // Инициализация Supabase с проверкой ключей
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -114,6 +116,7 @@ export async function GET(request: NextRequest) {
         type: manhwa.type,
         publicationType: manhwa.publication_type,
         scheduleDay: scheduleDay,
+        lastChapterDate: manhwa.last_chapter_date,
         chaptersCount: 0,
       };
       

@@ -1,5 +1,12 @@
+/**
+ * 📁 /app/api/admin/chapters/[chapterId]/publish/route.ts
+ * 
+ * ✅ ОПТИМИЗАЦИЯ: Очищаем кеш при публикации/планировании глав
+ */
+
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -84,8 +91,17 @@ export async function PUT(request: NextRequest, { params }: any) {
 
     if (error) throw error;
 
+    // ✅ Очищаем кеш при публикации
+    console.log(`🔄 [Cache] Revalidating schedule cache after publish`);
+    revalidateTag('schedule-data');
+    
+    if (data?.manhwa_id) {
+      revalidateTag(`manhwa-${data.manhwa_id}`);
+      revalidateTag(`chapters-${data.manhwa_id}`);
+    }
+
     console.log('✅ [API] Chapter status updated:', data.status);
-    return NextResponse.json({ data });
+    return NextResponse.json({ data, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);
     return NextResponse.json(
@@ -123,8 +139,16 @@ export async function DELETE(request: NextRequest, { params }: any) {
 
     if (error) throw error;
 
+    // ✅ Очищаем кеш при отмене
+    console.log(`🔄 [Cache] Revalidating schedule cache after cancel`);
+    revalidateTag('schedule-data');
+    
+    if (data?.manhwa_id) {
+      revalidateTag(`manhwa-${data.manhwa_id}`);
+    }
+
     console.log('✅ [API] Scheduled publish cancelled');
-    return NextResponse.json({ data });
+    return NextResponse.json({ data, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);
     return NextResponse.json(

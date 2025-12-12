@@ -1,35 +1,7 @@
 /**
  * 📁 /app/admin/manhwa/[id]/page.tsx
  * 
- * ✏️ СТРАНИЦА РЕДАКТИРОВАНИЯ МАНХВЫ - ВСЕ В ОДНОМ
- * 
- * Показывает:
- *   СЛЕВА:
- *     - Обложка (можно загрузить/заменить)
- *     - Фон (можно загрузить/заменить)
- *     - Персонаж (можно загрузить/заменить)
- * 
- *   СПРАВА:
- *     - Название (редактируемое)
- *     - Описание (редактируемое)
- *     - Короткое описание
- *     - Плашка: Статус, Тип публикации, Тип
- *     - Теги (редактируемые)
- * 
- *   ВНИЗУ:
- *     - Список розділів с кнопками управления
- *     - Загрузка сторінок
- *     - Публикация/планирование
- * 
- * Использует API:
- *   - GET /api/admin/manhwa/:id
- *   - PUT /api/admin/manhwa/:id
- *   - POST /api/admin/upload
- *   - GET /api/admin/manhwa/:id/chapters
- *   - POST /api/admin/manhwa/:id/chapters
- *   - POST /api/admin/chapters/:id/upload-pages
- *   - PUT /api/admin/chapters/:id/publish
- *   - DELETE /api/admin/chapters/:id
+ * ✏️ СТРАНИЦА РЕДАКТИРОВАНИЯ МАНХВЫ - ВОССТАНОВЛЕННЫЙ ФАЙЛ
  */
 
 'use client';
@@ -43,6 +15,7 @@ import { EditableDescription } from '@/components/admin/EditableDescription';
 import { EditableTags } from '@/components/admin/EditableTags';
 import { EditableStatus } from '@/components/admin/EditableStatus';
 import { ScheduleEditor, type ScheduleDay } from '@/components/admin/ScheduleEditor';
+import { invalidateManhwaCache } from '@/app/admin/server-actions';
 
 interface Chapter {
   id: number;
@@ -86,17 +59,15 @@ export default function AdminManhwaDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
-  const [manhwa, setManwhwa] = useState<Manhwa | null>(null);
+  const [manhwa, setManhwa] = useState<Manhwa | null>(null);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  // Модальные окна для розділів
   const [modal, setModal] = useState<ModalType>('none');
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
 
-  // Данные форм
   const [createFormData, setCreateFormData] = useState({ title: '', description: '' });
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [publishMode, setPublishMode] = useState<'now' | 'schedule'>('now');
@@ -123,7 +94,6 @@ export default function AdminManhwaDetailPage() {
 
       setToken(accessToken);
 
-      // Загрузить манхву
       const manhwaRes = await fetch(`/api/admin/manhwa/${id}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -133,7 +103,6 @@ export default function AdminManhwaDetailPage() {
       const manhwaData = await manhwaRes.json();
       let data = manhwaData.data;
 
-      // Конвертировать schedule_label в schedule_day для отображения
       if (data.schedule_label) {
         const dayMapping: Record<string, string> = {
           'Понеділок': 'ПН',
@@ -156,9 +125,8 @@ export default function AdminManhwaDetailPage() {
       }
 
       console.log('✅ Manhwa loaded:', data.title);
-      setManwhwa(data);
+      setManhwa(data);
 
-      // Загрузить главы
       const chaptersRes = await fetch(`/api/admin/manhwa/${id}/chapters`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
@@ -179,8 +147,7 @@ export default function AdminManhwaDetailPage() {
 
   const handleUpdate = (field: string, value: any) => {
     if (manhwa) {
-      setManwhwa((prev) => (prev ? { ...prev, [field]: value } : null));
-      // Сохранить на сервер
+      setManhwa((prev: Manhwa | null) => prev ? { ...prev, [field]: value } : null);
       saveToServer(field, value);
     }
   };
@@ -191,13 +158,17 @@ export default function AdminManhwaDetailPage() {
 
       const payload: any = {};
 
-      // Преобразовать название поля для API
       if (field === 'schedule_day') {
         if (value && value.dayLabel) {
-          // value приходит из ScheduleEditor с dayBig, dayLabel и note
           payload.schedule_label = value.dayLabel;
-          payload.schedule_note = value.note;
-          console.log(`💾 Saving schedule:`, { label: value.dayLabel, note: value.note });
+          payload.schedule_note = value.note || '';
+          
+          console.log(`💾 Saving schedule:`, { 
+            dayLabel: value.dayLabel,
+            note: value.note,
+            payloadLabel: payload.schedule_label,
+            payloadNote: payload.schedule_note,
+          });
         } else {
           payload.schedule_label = null;
           payload.schedule_note = null;
@@ -210,6 +181,8 @@ export default function AdminManhwaDetailPage() {
         payload[field] = value;
         console.log(`💾 Saving ${field}:`, value);
       }
+
+      console.log(`📤 [Page] Sending payload to API:`, JSON.stringify(payload));
 
       const res = await fetch(`/api/admin/manhwa/${id}`, {
         method: 'PUT',
@@ -227,7 +200,50 @@ export default function AdminManhwaDetailPage() {
       }
 
       const result = await res.json();
-      console.log(`✅ ${field} saved successfully`, result.data);
+      console.log(`✅ ${field} saved successfully`, {
+        title: result.data?.title,
+        schedule_label: result.data?.schedule_label,
+        schedule_note: result.data?.schedule_note,
+      });
+
+      await invalidateManhwaCache(id);
+
+      if (field === 'schedule_day' && result.data) {
+        const dayMapping: Record<string, string> = {
+          'Понеділок': 'ПН',
+          'Вівторок': 'ВТ',
+          'Середа': 'СР',
+          'Четвер': 'ЧТ',
+          "П'ятниця": 'ПТ',
+          'Субота': 'СБ',
+          'Неділя': 'НД',
+        };
+
+        let updatedScheduleDay = null;
+        if (result.data.schedule_label) {
+          const dayBig = dayMapping[result.data.schedule_label] || '';
+          if (dayBig) {
+            updatedScheduleDay = {
+              dayBig,
+              dayLabel: result.data.schedule_label,
+              note: result.data.schedule_note || '',
+            };
+          }
+        }
+
+        setManhwa((prev) =>
+          prev
+            ? {
+                ...prev,
+                schedule_day: updatedScheduleDay,
+                schedule_label: result.data.schedule_label,
+                schedule_note: result.data.schedule_note,
+              }
+            : null
+        );
+
+        console.log(`✅ [Page] schedule_day recalculated:`, updatedScheduleDay);
+      }
     } catch (err) {
       console.error(`❌ Error saving ${field}:`, err);
     }
@@ -265,7 +281,6 @@ export default function AdminManhwaDetailPage() {
 
       console.log('✅ Image uploaded:', imageUrl);
 
-      // Сохранить на сервер
       const updateRes = await fetch(`/api/admin/manhwa/${id}`, {
         method: 'PUT',
         headers: {
@@ -280,7 +295,9 @@ export default function AdminManhwaDetailPage() {
       if (!updateRes.ok) throw new Error('Failed to update');
 
       const imageField = `${type}_image` as keyof Manhwa;
-      setManwhwa((prev) => (prev ? { ...prev, [imageField]: imageUrl } : null));
+      setManhwa((prev) => (prev ? { ...prev, [imageField]: imageUrl } : null));
+
+      await invalidateManhwaCache(id);
 
       console.log(`✅ ${type} image updated`);
     } catch (err) {
@@ -314,7 +331,7 @@ export default function AdminManhwaDetailPage() {
       setChapters((prev) => [...prev, data.data]);
       setCreateFormData({ title: '', description: '' });
       setModal('none');
-
+      await invalidateManhwaCache(id);
       console.log('✅ Chapter created');
     } catch (err) {
       console.error('❌ Error:', err);
@@ -363,7 +380,7 @@ export default function AdminManhwaDetailPage() {
 
       setUploadFiles([]);
       setModal('none');
-
+      await invalidateManhwaCache(id);
       console.log('✅ Pages uploaded');
     } catch (err) {
       console.error('❌ Error:', err);
@@ -418,7 +435,7 @@ export default function AdminManhwaDetailPage() {
       setPublishDate('');
       setPublishTime('12:00');
       setPublishMode('now');
-
+      await invalidateManhwaCache(id);
       console.log('✅ Chapter published');
     } catch (err) {
       console.error('❌ Error:', err);
@@ -444,14 +461,39 @@ export default function AdminManhwaDetailPage() {
       if (!response.ok) throw new Error('Delete failed');
 
       setChapters((prev) => prev.filter((ch) => ch.id !== chapterId));
-
+      await invalidateManhwaCache(id);
       console.log('✅ Chapter deleted');
     } catch (err) {
       console.error('❌ Error:', err);
       alert('Помилка при видаленні');
     }
   };
+const handleDeleteManhwa = async () => {
+  if (!confirm('⚠️ ВИДАЛИТИ ЦЮ МАНГУ ПОВНІСТЮ? Це незворотна дія!')) return;
+  if (!confirm('🔴 ВИ ВПЕВНЕНІ? ВСІ РОЗДІЛИ ТА ДАНІ БУДУТЬ ВИДАЛЕНІ!')) return;
 
+  try {
+    if (!token) throw new Error('No token');
+
+    const response = await fetch(`/api/admin/manhwa/${id}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error('Delete failed');
+
+    console.log('✅ Manhwa deleted successfully');
+    await invalidateManhwaCache(id);
+    
+    // Перенаправляем на список манг
+    router.push('/admin/manhwa');
+  } catch (err) {
+    console.error('❌ Error deleting manhwa:', err);
+    alert('Помилка при видаленні манги');
+  }
+};
   const getStatusBadge = (status: string) => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
       draft: { bg: 'bg-gray-600', text: 'text-gray-100', label: 'Чернетка' },
@@ -480,56 +522,59 @@ export default function AdminManhwaDetailPage() {
   }
 
   if (error || !manhwa || !token) {
-    return (
-      <AdminGuard>
-        <div className="min-h-screen bg-bg-main p-6">
-          <div className="max-w-2xl mx-auto">
-            <button
-              onClick={() => router.push('/admin/manhwa')}
-              className="mb-4 text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              ← Назад
-            </button>
-            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-6 text-center">
-              <h2 className="text-2xl font-bold text-red-500 mb-2">Помилка</h2>
-              <p className="text-text-muted mb-4">{error || 'Манхву не знайдено'}</p>
-            </div>
-          </div>
-        </div>
-      </AdminGuard>
-    );
-  }
-
   return (
     <AdminGuard>
-      <div className="min-h-screen bg-bg-main">
-        {/* Кнопка назад */}
-        <div className="sticky top-0 z-40 bg-card-bg border-b border-text-muted/20 p-4">
-          <div className="max-w-7xl mx-auto">
-            <button
-              onClick={() => router.push('/admin/manhwa')}
-              className="text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              ← Назад
-            </button>
+      <div className="min-h-screen bg-bg-main p-6">
+        <div className="max-w-2xl mx-auto">
+          <button
+            onClick={() => router.push('/admin/manhwa')}
+            className="mb-4 text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            ← Назад
+          </button>
+          <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-6 text-center">
+            <h2 className="text-2xl font-bold text-red-500 mb-2">Помилка</h2>
+            <p className="text-text-muted mb-4">{error || 'Манхву не знайдено'}</p>
           </div>
         </div>
+      </div>
+    </AdminGuard>
+  );
+}
 
-        {/* Основной контент */}
-        <div className="p-6">
-          <div className="max-w-7xl mx-auto">
-            {/* Ошибка */}
-            {error && (
-              <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg">
-                {error}
-              </div>
+// ✅ ВТОРОЙ RETURN - основной контент (С кнопкой удаления)
+return (
+  <AdminGuard>
+    <div className="min-h-screen bg-bg-main">
+      <div className="sticky top-0 z-40 bg-card-bg border-b border-text-muted/20 p-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <button
+            onClick={() => router.push('/admin/manhwa')}
+            className="text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            ← Назад
+          </button>
+          
+          {/* 🆕 КНОПКА УДАЛЕНИЯ */}
+          <button
+            onClick={handleDeleteManhwa}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
+          >
+            🗑️ Видалити мангу
+          </button>
+        </div>
+      </div>
+
+      <div className="p-6">
+        <div className="max-w-7xl mx-auto">
+          {error && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg">
+              {error}
+            </div>
             )}
 
-            {/* ГЛАВНЫЙ КОНТЕНТ: Обложка + Информация */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-              {/* ЛЕВАЯ КОЛОНКА: Обложка, фон, персонаж */}
               <div className="lg:col-span-1 space-y-4">
-                {/* Обложка */}
                 <div
                   className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-blue-500 transition-colors group cursor-pointer bg-gray-700 aspect-[3/4]"
                   onClick={() => document.getElementById('cover-input')?.click()}
@@ -567,7 +612,6 @@ export default function AdminManhwaDetailPage() {
                   )}
                 </div>
 
-                {/* Фон */}
                 <div
                   className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-blue-500 transition-colors group cursor-pointer bg-gray-700 h-32"
                   onClick={() => document.getElementById('bg-input')?.click()}
@@ -605,7 +649,6 @@ export default function AdminManhwaDetailPage() {
                   )}
                 </div>
 
-                {/* Персонаж */}
                 <div
                   className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-blue-500 transition-colors group cursor-pointer bg-gray-700 aspect-square"
                   onClick={() => document.getElementById('char-input')?.click()}
@@ -644,9 +687,7 @@ export default function AdminManhwaDetailPage() {
                 </div>
               </div>
 
-              {/* ПРАВАЯ КОЛОНКА: Информация */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Название */}
                 <div>
                   <EditableTitle
                     value={manhwa.title}
@@ -656,7 +697,6 @@ export default function AdminManhwaDetailPage() {
                   />
                 </div>
 
-                {/* Описание */}
                 <div className="bg-card-bg/50 p-4 rounded-lg border border-text-muted/20">
                   <p className="text-sm text-text-muted mb-2">Опис:</p>
                   <EditableDescription
@@ -667,15 +707,18 @@ export default function AdminManhwaDetailPage() {
                   />
                 </div>
 
-                {/* Короткое описание */}
                 <div className="bg-card-bg/50 p-4 rounded-lg border border-text-muted/20">
                   <p className="text-sm text-text-muted mb-2">Короткий опис:</p>
-                  <p className="text-text-main">{manhwa.short_description || 'Не вказано'}</p>
+                  <EditableDescription
+                    value={manhwa.short_description}
+                    fieldName="short_description"
+                    manhwaId={id}
+                    token={token}
+                    onUpdate={(value) => handleUpdate('short_description', value)}
+                  />
                 </div>
 
-                {/* Плашка: Статус, тип цензури, тип */}
                 <div className="bg-card-bg border border-text-muted/20 rounded-lg p-4 space-y-3">
-                  {/* Статус */}
                   <div>
                     <label className="text-xs text-text-muted mb-1 block">Статус:</label>
                     <EditableStatus
@@ -686,32 +729,27 @@ export default function AdminManhwaDetailPage() {
                     />
                   </div>
 
-                  {/* Тип публікації */}
                   <div>
                     <label className="text-xs text-text-muted mb-1 block">Тип публікації:</label>
                     <select
                       value={manhwa.publication_type || 'uncensored'}
-                      onChange={async (e) => {
-                        try {
-                          if (!token) throw new Error('No token');
-
-                          const response = await fetch(`/api/admin/manhwa/${id}`, {
+                      onChange={(e) => {
+                        // 1️⃣ Сразу обновляем state (оптимистично)
+                        setManhwa(prev => prev ? { ...prev, publication_type: e.target.value as 'censored' | 'uncensored' } : null);
+                        
+                        // 2️⃣ Потом отправляем на сервер
+                        if (token) {
+                          fetch(`/api/admin/manhwa/${id}`, {
                             method: 'PUT',
                             headers: {
                               'Content-Type': 'application/json',
                               Authorization: `Bearer ${token}`,
                             },
-                            body: JSON.stringify({
-                              publication_type: e.target.value,
-                            }),
-                          });
-
-                          if (!response.ok) throw new Error('Failed to update');
-
-                          handleUpdate('publication_type', e.target.value);
-                        } catch (err) {
-                          console.error('Error:', err);
-                          setError('Помилка при оновленні');
+                            body: JSON.stringify({ publication_type: e.target.value }),
+                          })
+                            .then(res => res.ok ? res.json() : Promise.reject())
+                            .then(() => invalidateManhwaCache(id))
+                            .catch(() => setError('Помилка при оновленні'));
                         }
                       }}
                       className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded text-sm focus:outline-none focus:border-blue-500"
@@ -721,32 +759,27 @@ export default function AdminManhwaDetailPage() {
                     </select>
                   </div>
 
-                  {/* Тип */}
                   <div>
                     <label className="text-xs text-text-muted mb-1 block">Тип:</label>
                     <select
                       value={manhwa.type || 'manhwa'}
-                      onChange={async (e) => {
-                        try {
-                          if (!token) throw new Error('No token');
-
-                          const response = await fetch(`/api/admin/manhwa/${id}`, {
+                      onChange={(e) => {
+                        // 1️⃣ Сразу обновляем state (оптимистично)
+                        setManhwa(prev => prev ? { ...prev, type: e.target.value as 'manhwa' | 'manga' | 'manhua' } : null);
+                        
+                        // 2️⃣ Потом отправляем на сервер
+                        if (token) {
+                          fetch(`/api/admin/manhwa/${id}`, {
                             method: 'PUT',
                             headers: {
                               'Content-Type': 'application/json',
                               Authorization: `Bearer ${token}`,
                             },
-                            body: JSON.stringify({
-                              type: e.target.value,
-                            }),
-                          });
-
-                          if (!response.ok) throw new Error('Failed to update');
-
-                          handleUpdate('type', e.target.value);
-                        } catch (err) {
-                          console.error('Error:', err);
-                          setError('Помилка при оновленні');
+                            body: JSON.stringify({ type: e.target.value }),
+                          })
+                            .then(res => res.ok ? res.json() : Promise.reject())
+                            .then(() => invalidateManhwaCache(id))
+                            .catch(() => setError('Помилка при оновленні'));
                         }
                       }}
                       className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded text-sm focus:outline-none focus:border-blue-500"
@@ -758,7 +791,6 @@ export default function AdminManhwaDetailPage() {
                   </div>
                 </div>
 
-                {/* Теги */}
                 <div className="bg-card-bg/50 p-4 rounded-lg border border-text-muted/20">
                   <p className="text-sm text-text-muted mb-2">Теги:</p>
                   <EditableTags
@@ -769,7 +801,6 @@ export default function AdminManhwaDetailPage() {
                   />
                 </div>
 
-                {/* Расписание */}
                 {manhwa && (
                   <div className="bg-card-bg/50 p-4 rounded-lg border border-text-muted/20">
                     <ScheduleEditor
@@ -781,7 +812,6 @@ export default function AdminManhwaDetailPage() {
               </div>
             </div>
 
-            {/* РОЗДІЛИ: Управление главами */}
             <div className="bg-card-bg border border-text-muted/20 rounded-lg p-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-text-main">📚 Розділи</h2>
@@ -796,7 +826,6 @@ export default function AdminManhwaDetailPage() {
                 </button>
               </div>
 
-              {/* Список розділів */}
               {chapters.length === 0 ? (
                 <div className="text-center py-12 text-text-muted">
                   <p className="mb-4">Поки немає розділів</p>
@@ -882,243 +911,177 @@ export default function AdminManhwaDetailPage() {
             </div>
           </div>
         </div>
-
-        {/* МОДАЛЬ: Создание розділа */}
-        {modal === 'create' && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-card-bg border border-text-muted/20 rounded-xl w-full max-w-md">
-              <div className="border-b border-text-muted/20 p-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-text-main">➕ Новий розділ</h2>
-                <button
-                  onClick={() => setModal('none')}
-                  className="text-text-muted hover:text-text-main text-2xl transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateChapter} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-main mb-2">Назва</label>
-                  <input
-                    type="text"
-                    value={createFormData.title}
-                    onChange={(e) =>
-                      setCreateFormData((prev) => ({ ...prev, title: e.target.value }))
-                    }
-                    placeholder="Наприклад: Початок авантюри"
-                    className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-text-main mb-2">Опис</label>
-                  <textarea
-                    value={createFormData.description}
-                    onChange={(e) =>
-                      setCreateFormData((prev) => ({ ...prev, description: e.target.value }))
-                    }
-                    placeholder="Опис..."
-                    rows={3}
-                    className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500 resize-none"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    disabled={uploading}
-                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {uploading ? '⏳ Створення...' : '➕ Створити'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModal('none')}
-                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
-                  >
-                    Скасувати
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* МОДАЛЬ: Загрузка сторінок */}
-        {modal === 'upload' && activeChapter && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-card-bg border border-text-muted/20 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-              <div className="sticky top-0 border-b border-text-muted/20 p-6 flex justify-between items-center bg-card-bg">
-                <h2 className="text-2xl font-bold text-text-main">📤 Сторінки: Розділ {activeChapter.chapter_number}</h2>
-                <button
-                  onClick={() => setModal('none')}
-                  className="text-text-muted hover:text-text-main text-2xl transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleUploadPages} className="p-6 space-y-4">
-                <div
-                  className="p-8 border-2 border-dashed border-text-muted/50 rounded-lg text-center cursor-pointer hover:border-text-muted/80 transition-colors"
-                  onClick={() => document.getElementById('file-input')?.click()}
-                >
-                  <input
-                    id="file-input"
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
-                    className="hidden"
-                  />
-                  <div className="text-4xl mb-2">📸</div>
-                  <p className="text-text-main font-medium mb-1">Перетягніть сюди зображення</p>
-                  <p className="text-sm text-text-muted">або клікніть для вибору</p>
-                </div>
-
-                {uploadFiles.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2">
-                    {uploadFiles.map((file, i) => (
-                      <div key={i} className="relative group">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`Page ${i + 1}`}
-                          className="w-full h-24 object-cover rounded border border-text-muted/20"
-                        />
-                        <div className="absolute top-1 right-1 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                          {i + 1}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="opacity-0 group-hover:opacity-100 absolute inset-0 flex items-center justify-center bg-black/50 rounded transition-opacity"
-                        >
-                          🗑️
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    disabled={uploading || uploadFiles.length === 0}
-                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {uploading ? '⏳ Завантаження...' : `📤 Завантажити (${uploadFiles.length})`}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModal('none')}
-                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
-                  >
-                    Скасувати
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* МОДАЛЬ: Публикация */}
-        {modal === 'publish' && activeChapter && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-card-bg border border-text-muted/20 rounded-xl w-full max-w-md">
-              <div className="border-b border-text-muted/20 p-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-text-main">⏰ Публікація</h2>
-                <button
-                  onClick={() => setModal('none')}
-                  className="text-text-muted hover:text-text-main text-2xl transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handlePublishChapter} className="p-6 space-y-4">
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3 border border-text-muted/20 rounded-lg cursor-pointer hover:bg-card-hover transition-colors">
-                    <input
-                      type="radio"
-                      name="mode"
-                      value="now"
-                      checked={publishMode === 'now'}
-                      onChange={() => setPublishMode('now')}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-text-main font-medium">📤 Опублікувати зараз</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-3 border border-text-muted/20 rounded-lg cursor-pointer hover:bg-card-hover transition-colors">
-                    <input
-                      type="radio"
-                      name="mode"
-                      value="schedule"
-                      checked={publishMode === 'schedule'}
-                      onChange={() => setPublishMode('schedule')}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-text-main font-medium">⏰ Запланувати</span>
-                  </label>
-                </div>
-
-                {publishMode === 'schedule' && (
-                  <div className="p-4 bg-card-hover rounded-lg space-y-3 border border-yellow-500/30">
-                    <div>
-                      <label className="block text-sm font-medium text-text-main mb-2">Дата</label>
-                      <input
-                        type="date"
-                        value={publishDate}
-                        onChange={(e) => setPublishDate(e.target.value)}
-                        min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                        className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-text-main mb-2">Час</label>
-                      <input
-                        type="time"
-                        value={publishTime}
-                        onChange={(e) => setPublishTime(e.target.value)}
-                        className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {activeChapter.pages_count === 0 && (
-                  <div className="p-3 bg-yellow-500/10 border border-yellow-500/50 rounded text-yellow-600 text-sm">
-                    ⚠️ Спочатку завантажте хоча б одну сторінку
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    disabled={uploading || (publishMode === 'schedule' && !publishDate) || activeChapter.pages_count === 0}
-                    className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    {uploading
-                      ? '⏳...'
-                      : publishMode === 'now'
-                      ? '📤 Опублікувати'
-                      : '⏰ Запланувати'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setModal('none')}
-                    className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
-                  >
-                    Скасувати
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
+      {/* 🆕 МОДАЛЬНОЕ ОКНО - СОЗДАНИЕ ГЛАВЫ */}
+      {modal === 'create' && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-card-bg rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-text-main mb-4">Створити розділ</h2>
+            <form onSubmit={handleCreateChapter} className="space-y-4">
+              <div>
+                <label className="block text-sm text-text-muted mb-2">Назва:</label>
+                <input
+                  type="text"
+                  value={createFormData.title}
+                  onChange={(e) => setCreateFormData({...createFormData, title: e.target.value})}
+                  className="w-full px-3 py-2 bg-bg-main text-text-main border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+                  placeholder="Назва розділу"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-text-muted mb-2">Опис:</label>
+                <textarea
+                  value={createFormData.description}
+                  onChange={(e) => setCreateFormData({...createFormData, description: e.target.value})}
+                  className="w-full px-3 py-2 bg-bg-main text-text-main border border-text-muted/20 rounded focus:outline-none focus:border-blue-500 resize-none"
+                  rows={4}
+                  placeholder="Опис розділу"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-semibold transition-colors disabled:opacity-50"
+                >
+                  ✅ Створити
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModal('none')}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition-colors"
+                >
+                  ❌ Скасувати
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🆕 МОДАЛЬНОЕ ОКНО - ЗАГРУЗКА СТРАНИЦ */}
+      {modal === 'upload' && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-card-bg rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-text-main mb-4">Завантажити сторінки</h2>
+            <form onSubmit={handleUploadPages} className="space-y-4">
+              <div>
+                <label className="block text-sm text-text-muted mb-2">Розділ: {activeChapter?.chapter_number}</label>
+              </div>
+              <div className="border-2 border-dashed border-text-muted/50 rounded p-6 text-center">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
+                  className="hidden"
+                  id="pages-input"
+                />
+                <label htmlFor="pages-input" className="cursor-pointer">
+                  <div className="text-3xl mb-2">📁</div>
+                  <p className="text-text-muted text-sm mb-1">Виберіть зображення</p>
+                  <p className="text-text-muted text-xs">{uploadFiles.length} файлів обрано</p>
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={uploading || uploadFiles.length === 0}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded font-semibold transition-colors disabled:opacity-50"
+                >
+                  📤 Завантажити
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModal('none');
+                    setUploadFiles([]);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition-colors"
+                >
+                  ❌ Скасувати
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🆕 МОДАЛЬНОЕ ОКНО - ПУБЛИКАЦИЯ */}
+      {modal === 'publish' && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-card-bg rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold text-text-main mb-4">Опублікувати розділ</h2>
+            <form onSubmit={handlePublishChapter} className="space-y-4">
+              <div>
+                <label className="block text-sm text-text-muted mb-2">Розділ: {activeChapter?.chapter_number}</label>
+              </div>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="now"
+                    checked={publishMode === 'now'}
+                    onChange={(e) => setPublishMode(e.target.value as 'now' | 'schedule')}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-text-main">Опублікувати зараз</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    value="schedule"
+                    checked={publishMode === 'schedule'}
+                    onChange={(e) => setPublishMode(e.target.value as 'now' | 'schedule')}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-text-main">Запланувати публікацію</span>
+                </label>
+              </div>
+              
+              {publishMode === 'schedule' && (
+                <>
+                  <div>
+                    <label className="block text-sm text-text-muted mb-2">Дата:</label>
+                    <input
+  type="date"
+  value={publishDate}
+  onChange={(e) => setPublishDate(e.target.value)}
+  className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+/>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-text-muted mb-2">Час:</label>
+                    <input
+  type="time"
+  value={publishTime}
+  onChange={(e) => setPublishTime(e.target.value)}
+  className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+/>
+                  </div>
+                </>
+              )}
+
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  disabled={uploading}
+                  className="flex-1 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded font-semibold transition-colors disabled:opacity-50"
+                >
+                  ⏰ Опублікувати
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModal('none')}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded font-semibold transition-colors"
+                >
+                  ❌ Скасувати
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AdminGuard>
   );
 }

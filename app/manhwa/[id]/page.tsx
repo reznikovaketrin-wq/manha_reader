@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ManhwaRatingHeader } from '@/components/manhwa-comments-component';
+import { createClient } from '@supabase/supabase-js';
 import { ManhwaCommentsComponent } from '@/components/manhwa-comments-component';
+import buttonStyles from '@/components/ReadButton.module.css';
 
 interface Chapter {
   id: string;
@@ -26,6 +27,8 @@ interface Manhwa {
   rating: number;
   tags: string[];
   chapters: Chapter[];
+  type?: 'manhwa' | 'manga' | 'manhua';
+  publicationType?: 'censored' | 'uncensored';
   scheduleDay?: {
     dayBig: string;
     dayLabel: string;
@@ -33,39 +36,145 @@ interface Manhwa {
   };
 }
 
+type TabType = 'info' | 'chapters' | 'comments';
+
+const styles = `
+  * {
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 1024px) {
+    .left-column {
+      width: 250px !important;
+    }
+    .cover-image {
+      width: 250px !important;
+    }
+    .title {
+      font-size: 28px !important;
+    }
+    .description {
+      font-size: 13px !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .content-grid {
+      grid-template-columns: 1fr !important;
+      gap: 24px !important;
+    }
+    .left-column {
+      width: 200px !important;
+      margin: 0 auto !important;
+    }
+    .cover-image {
+      width: 200px !important;
+    }
+    .title {
+      font-size: 24px !important;
+    }
+    .description {
+      font-size: 13px !important;
+    }
+    .button {
+      padding: 12px 18px !important;
+      font-size: 14px !important;
+    }
+    .chapter-item {
+      padding: 10px 12px !important;
+      font-size: 12px !important;
+    }
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
 export default function ManhwaPage() {
   const params = useParams();
   const id = params?.id as string;
+  const [isMobile, setIsMobile] = useState(false);
+  const [screenSize, setScreenSize] = useState<'xs' | 'sm' | 'md' | 'lg'>('md');
+  const [activeTab, setActiveTab] = useState<TabType>('info');
+  const [commentsCount, setCommentsCount] = useState(0);
 
   const [manhwa, setManhwa] = useState<Manhwa | null>(null);
   const [totalViews, setTotalViews] = useState(0);
-  const [activeTab, setActiveTab] = useState<'chapters' | 'ratings'>('chapters');
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [expandedDescription, setExpandedDescription] = useState(false);
   const [savedProgress, setSavedProgress] = useState<any>(null);
   const [readChapters, setReadChapters] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [currentRating, setCurrentRating] = useState(0);
+  const [totalRating, setTotalRating] = useState(0);
+  const [ratingCount, setRatingCount] = useState(0);
+  const [userId, setUserId] = useState<string | null>(null);
 
-  // Завантажити манхву з API
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      
+      if (width < 360) {
+        setScreenSize('xs');
+      } else if (width < 480) {
+        setScreenSize('sm');
+      } else if (width < 600) {
+        setScreenSize('md');
+      } else {
+        setScreenSize('lg');
+      }
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const getUser = async () => {
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+        );
+        
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          setUserId(user.id);
+          console.log('👤 User ID получен:', user.id.substring(0, 8) + '...');
+        }
+      } catch (err) {
+        console.error('⚠️ Ошибка получения user:', err);
+      }
+    };
+
+    getUser();
+  }, []);
+
   useEffect(() => {
     if (!id) return;
 
     const fetchManhwa = async () => {
       try {
-        console.log(`📖 Завантаження манхви: ${id}`);
         const response = await fetch(`/api/public/${id}`);
-
-        if (!response.ok) {
-          throw new Error(`Помилка завантаження: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`Помилка: ${response.status}`);
         const data = await response.json();
-        console.log(`✅ Манхва завантажена:`, data.title);
+        console.log(`✅ Манхва завантажена:`, data);
         setManhwa(data);
+        setTotalRating(data.rating || data.averageRating || data.score || 0);
+        setRatingCount(data.ratingCount || data.ratingsCount || 0);
         setLoading(false);
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Невідома помилка';
-        console.error(`❌ Помилка:`, errorMsg);
+        console.error(`❌ Помилка:`, err);
         setManhwa(null);
         setLoading(false);
       }
@@ -76,69 +185,69 @@ export default function ManhwaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-primary flex items-center justify-center">
-        <div className="text-text-muted">Завантаження...</div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#9A9A9A' }}>Завантаження...</div>
       </div>
     );
   }
 
   if (!manhwa) {
     return (
-      <div className="min-h-screen bg-bg-primary flex flex-col items-center justify-center gap-4">
-        <div className="text-red-500 text-lg">❌ Помилка: Манхву не знайдено</div>
-        <Link href="/" className="text-blue-500 hover:text-blue-400">
-          ← На головну
-        </Link>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+        <div style={{ color: '#FF6B6B', fontSize: '18px' }}>❌ Помилка: Манхву не знайдено</div>
       </div>
     );
   }
 
-  const statusText =
-    manhwa.status === 'ongoing'
-      ? 'Онгоїнг'
-      : manhwa.status === 'completed'
-        ? 'Завершено'
-        : 'На паузі';
+  const statusText = manhwa.status === 'ongoing' ? 'ОНГОІНГ' : manhwa.status === 'completed' ? 'ЗАВЕРШЕНО' : 'НА ПАУЗІ';
+  const getCensorshipText = (publicationType?: string) => publicationType === 'uncensored' ? 'ВІДСУТНЯ' : 'ПРИСУТНЯ';
+  const getTypeText = (type?: string) => {
+    const typeLabels: Record<string, string> = {
+      'manhwa': 'МАНХВА',
+      'manga': 'МАНГА',
+      'manhua': 'МАНЬХУА',
+    };
+    return typeLabels[type || 'manhwa'];
+  };
 
-  const filteredChapters = manhwa.chapters.filter((chapter) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      chapter.chapterNumber.toString().includes(query) ||
-      chapter.title.toLowerCase().includes(query)
-    );
-  });
+  const filteredChapters = (() => {
+    let chapters = manhwa.chapters.filter((chapter) => {
+      const query = searchQuery.toLowerCase();
+      return (
+        chapter.chapterNumber.toString().includes(query) ||
+        chapter.title.toLowerCase().includes(query)
+      );
+    });
+
+    if (sortOrder) {
+      chapters = [...chapters].sort((a, b) =>
+        sortOrder === 'asc' ? a.chapterNumber - b.chapterNumber : b.chapterNumber - a.chapterNumber
+      );
+    }
+
+    return chapters;
+  })();
 
   const descriptionLines = manhwa.description.split('\n');
-  const isLongDescription =
-    descriptionLines.length > 3 || manhwa.description.length > 200;
-  const displayDescription = expandedDescription
-    ? manhwa.description
-    : descriptionLines.slice(0, 2).join('\n');
+  const isLongDescription = descriptionLines.length > 3 || manhwa.description.length > 200;
+  const displayDescription = expandedDescription ? manhwa.description : descriptionLines.slice(0, 2).join('\n');
 
   return (
-    <div className="min-h-screen bg-bg-primary">
-      <div className="w-full py-6 px-4 md:px-6">
-        {/* Desktop: flex row, Mobile: flex col */}
-        <div className="flex flex-col md:flex-row gap-4 md:gap-8">
-          {/* Ліва панель - Обкладинка та кнопки */}
-          <div className="w-full md:w-[250px] md:flex-shrink-0">
+    <div style={{ fontFamily: 'Inter, sans-serif' }}>
+      <style>{styles}</style>
+      <div className="content-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '300px 1fr', gap: isMobile ? '0' : '40px', width: '100%', boxSizing: 'border-box' }}>
+        {!isMobile && <div style={{ display: 'none' }} />}
+        
+        {/* Ліва панель - Обкладинка та кнопки */}
+        {!isMobile && (
+          <div className="left-column" style={{ width: '300px' }}>
             {/* Обкладинка */}
-            <div className="mb-4 rounded-lg overflow-hidden bg-card-bg">
-              <div
-                className="w-full aspect-[2/3] bg-cover bg-center"
-                style={{ backgroundImage: `url(${manhwa.coverImage})` }}
-              />
-            </div>
+            <div className="cover-image" style={{ marginBottom: '18px', borderRadius: '16px', overflow: 'hidden', backgroundColor: '#2A2A2A', width: '300px', aspectRatio: '9/11', backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url(${manhwa.coverImage})` }} />
 
             {/* Кнопка Читати */}
-            <Link
-              href={`/reader/${manhwa.id}/${
-                savedProgress?.chapter_id || savedProgress?.chapterId || manhwa.chapters[0]?.id
-              }`}
-              className="block"
-            >
-              <button className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg mb-3 transition-colors flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <Link href={`/reader/${manhwa.id}/${savedProgress?.chapter_id || savedProgress?.chapterId || manhwa.chapters[0]?.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+              <button className={buttonStyles.readButtonGradient}>
+                <svg viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
                 {savedProgress ? 'Продовжити читання' : 'Читати'}
@@ -147,471 +256,674 @@ export default function ManhwaPage() {
 
             {/* Підказка про збережену позицію */}
             {savedProgress && (
-              <p className="text-xs text-text-muted mb-3 px-2 text-center">
-                Продовжити з розділу{' '}
-                {Math.ceil((savedProgress.page_number || savedProgress.pageNumber || 1) / 5)}
+              <p style={{ fontSize: '12px', color: '#9A9A9A', marginBottom: '12px', textAlign: 'center' }}>
+                Продовжити з розділу {Math.ceil((savedProgress.page_number || savedProgress.pageNumber || 1) / 5)}
               </p>
             )}
 
             {/* Кнопка Додати в список */}
-            <button className="w-full py-2 bg-card-bg hover:bg-card-hover text-text-main font-medium rounded-lg transition-colors flex items-center justify-center gap-2 border border-text-muted/20">
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
+            <button className="button" style={{ width: '100%', padding: '14px 22px', backgroundColor: 'transparent', color: '#FFFFFF', border: '1px solid #3A3A3A', borderRadius: '12px', transition: 'all 0.2s', fontSize: '16px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#A259FF'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#3A3A3A'}>
+              <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
               Додати в список
             </button>
           </div>
+        )}
 
-          {/* Права частина - Основний контент */}
-          <div className="flex-1 w-full">
-            {/* Заголовок та мета-інформація */}
-            <div className="mb-6 md:mb-8">
-              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3 md:gap-6 mb-3">
-                <div className="flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <h1 className="text-2xl md:text-4xl font-extrabold text-text-main mb-2 leading-tight">
-                        {manhwa.title}
-                      </h1>
-                      <p className="text-text-muted text-xs md:text-sm">
-                        {new Date().getFullYear()} Манхва
-                      </p>
-                    </div>
-                    {/* Рейтинг на мобільних - компактний */}
-                    <div className="md:hidden flex-shrink-0">
-                      <ManhwaRatingHeader manhwaId={id} />
-                    </div>
-                  </div>
-                </div>
-                {/* Рейтинг на десктопі - повний */}
-                <div className="hidden md:block md:ml-auto">
-                  <ManhwaRatingHeader manhwaId={id} />
-                </div>
-              </div>
-            </div>
+        {/* Права частина - Основний контент */}
+        <div style={{ minWidth: 0 }}>
+          {/* Мобильная обложка */}
+          {isMobile && (
+            <div style={{ marginBottom: '20px', borderRadius: '16px', overflow: 'hidden', backgroundColor: '#2A2A2A', width: '100%', maxWidth: '300px', aspectRatio: '9/11', backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: `url(${manhwa.coverImage})`, margin: '0 auto 20px auto' }} />
+          )}
 
-            {/* Опис */}
-            <div className="mb-6 md:mb-8">
-              <p
-                className={`text-text-main leading-relaxed mb-2 text-sm md:text-base ${
-                  !expandedDescription && isLongDescription ? 'line-clamp-3' : ''
-                }`}
-              >
+          {/* Заголовок */}
+          <h1 className="title" style={{ fontSize: isMobile ? '24px' : '38px', fontWeight: '700', color: '#FFFFFF', marginBottom: '20px', lineHeight: '1.2' }}>
+            {manhwa.title}
+          </h1>
+
+          {/* Описание - ТОЛЬКО ДЕСКТОП */}
+          {!isMobile && (
+            <div style={{ marginBottom: '28px' }}>
+              <p className="description" style={{ color: '#CFCFCF', lineHeight: '1.45', marginBottom: '12px', fontSize: '17px', fontWeight: '400', maxWidth: '780px', display: !expandedDescription && isLongDescription ? '-webkit-box' : 'block', WebkitLineClamp: !expandedDescription && isLongDescription ? 3 : 'unset', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {displayDescription}
               </p>
               {isLongDescription && (
-                <button
-                  onClick={() => setExpandedDescription(!expandedDescription)}
-                  className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors"
-                >
+                <button onClick={() => setExpandedDescription(!expandedDescription)} style={{ color: '#A259FF', background: 'none', border: 'none', fontSize: '14px', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s' }}>
                   {expandedDescription ? 'Сховати' : 'Розгорнути повністю'}
                 </button>
               )}
             </div>
+          )}
 
-            {/* Метадані - Карусель на мобільних, сітка на десктопі */}
-            <div className="mb-6 md:mb-8">
-              {/* Мобільна версія - горизонтальна карусель */}
-              <div className="md:hidden">
-                <div className="bg-card-bg border border-text-muted/20 rounded-lg p-3 overflow-x-auto scrollbar-hide">
-                  <div className="flex gap-3 min-w-min">
-                    {/* Статус тайтла */}
-                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
-                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                        <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                      </div>
-                      <div className="whitespace-nowrap">
-                        <p className="text-text-muted text-xs uppercase tracking-wide">
-                          Статус
-                        </p>
-                        <p className="text-text-main font-semibold text-xs">{statusText}</p>
-                      </div>
-                    </div>
-
-                    {/* Розділи */}
-                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
-                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                        <svg
-                          className="w-3 h-3 text-text-main"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                      </div>
-                      <div className="whitespace-nowrap">
-                        <p className="text-text-muted text-xs uppercase tracking-wide">Розділи</p>
-                        <p className="text-text-main font-semibold text-xs">{manhwa.chapters.length}</p>
-                      </div>
-                    </div>
-
-                    {/* Тип */}
-                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
-                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                        <svg
-                          className="w-3 h-3 text-text-main"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          />
-                        </svg>
-                      </div>
-                      <div className="whitespace-nowrap">
-                        <p className="text-text-muted text-xs uppercase tracking-wide">Тип</p>
-                        <p className="text-text-main font-semibold text-xs">
-                          {manhwa.tags && manhwa.tags.length > 0
-                            ? manhwa.tags.slice(0, 1).join(', ')
-                            : 'Не вказано'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Перегляди */}
-                    <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 bg-card-hover rounded-lg border border-text-muted/20">
-                      <div className="w-5 h-5 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                        <svg
-                          className="w-3 h-3 text-text-main"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2.5}
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                          />
-                        </svg>
-                      </div>
-                      <div className="whitespace-nowrap">
-                        <p className="text-text-muted text-xs uppercase tracking-wide">
-                          Перегляди
-                        </p>
-                        <p className="text-text-main font-semibold text-xs">
-                          {totalViews > 1000000
-                            ? (totalViews / 1000000).toFixed(1) + 'M'
-                            : totalViews > 1000
-                              ? (totalViews / 1000).toFixed(1) + 'K'
-                              : totalViews}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+          {/* ПОСТОЯННЫЙ БЛОК МЕТАДАННЫХ */}
+          {!isMobile && (
+            // ДЕСКТОПНАЯ ВЕРСИЯ - 6 элементов в строку
+            <div style={{ display: 'flex', alignItems: 'center', gap: '28px', marginBottom: '32px', borderRadius: '12px', padding: '12px 14px', height: '56px', border: '2px solid rgba(255, 255, 255, 0.2)' }}>
+              {/* Статус */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/status-icon.png" alt="Status" style={{ width: '28px', height: '28px', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: '600', color: '#FFFFFF', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Статус</p>
+                  <p style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>{statusText}</p>
                 </div>
               </div>
 
-              {/* Десктопна версія - сітка */}
-              <div className="hidden md:block bg-card-bg border border-text-muted/20 rounded-lg p-4">
-                <div className="flex flex-wrap gap-6 text-sm">
-                  {/* Статус тайтла */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs uppercase tracking-wide">
-                        Статус тайтлу
-                      </p>
-                      <p className="text-text-main font-semibold">{statusText}</p>
-                    </div>
-                  </div>
+              {/* Тип */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/type-icon.png" alt="Type" style={{ width: '28px', height: '28px', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: '600', color: '#FFFFFF', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Тип</p>
+                  <p style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>{getTypeText(manhwa.type)}</p>
+                </div>
+              </div>
 
-                  {/* Розділи */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-3.5 h-3.5 text-text-main"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs uppercase tracking-wide">Розділи</p>
-                      <p className="text-text-main font-semibold">{manhwa.chapters.length}</p>
-                    </div>
-                  </div>
+              {/* Цензура */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/censorship-icon.png" alt="Censorship" style={{ width: '28px', height: '28px', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: '600', color: '#FFFFFF', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Цензура</p>
+                  <p style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>{getCensorshipText(manhwa.publicationType)}</p>
+                </div>
+              </div>
 
-                  {/* Тип */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-3.5 h-3.5 text-text-main"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs uppercase tracking-wide">Тип</p>
-                      <p className="text-text-main font-semibold">
-                        {manhwa.tags && manhwa.tags.length > 0
-                          ? manhwa.tags.slice(0, 2).join(', ')
-                          : 'Не вказано'}
-                      </p>
-                    </div>
-                  </div>
+              {/* Розділи */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/chapters-icon.png" alt="Chapters" style={{ width: '28px', height: '28px', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: '600', color: '#FFFFFF', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Розділи</p>
+                  <p style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>{manhwa.chapters.length}</p>
+                </div>
+              </div>
 
-                  {/* Перегляди */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded border border-text-muted/40 flex items-center justify-center flex-shrink-0">
-                      <svg
-                        className="w-3.5 h-3.5 text-text-main"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-text-muted text-xs uppercase tracking-wide">
-                        Перегляди
-                      </p>
-                      <p className="text-text-main font-semibold">
-                        {totalViews > 1000000
-                          ? (totalViews / 1000000).toFixed(1) + 'M'
-                          : totalViews > 1000
-                            ? (totalViews / 1000).toFixed(1) + 'K'
-                            : totalViews}
-                      </p>
-                    </div>
-                  </div>
+              {/* Перегляди */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/views-icon.png" alt="Views" style={{ width: '28px', height: '28px', flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: '600', color: '#FFFFFF', opacity: 0.7, textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>Перегляди</p>
+                  <p style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>
+                    {totalViews > 1000000 ? (totalViews / 1000000).toFixed(1) + 'M' : totalViews > 1000 ? (totalViews / 1000).toFixed(1) + 'K' : totalViews}
+                  </p>
+                </div>
+              </div>
+
+              {/* Оцінка */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <img src="/icons/rating-bubble.png" alt="Rating" style={{ width: '28px', height: '28px', flexShrink: 0, borderRadius: '8px' }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: '10px', fontWeight: '600', color: '#FFFFFF', opacity: 0.7, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Оцінка</p>
+                  <p style={{ fontSize: '15px', fontWeight: '700', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>
+                    {totalRating.toFixed(1)} <span style={{ color: '#FFFFFF', opacity: 0.6, fontSize: '12px' }}>({ratingCount})</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Пустое место */}
+              <div style={{ flex: 1 }}></div>
+
+              {/* Кнопка */}
+              <button 
+                onClick={() => setShowRatingModal(true)}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: 'transparent',
+                  border: '1px solid #3A3A3A',
+                  borderRadius: '6px',
+                  color: '#CFCFCF',
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => { 
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  btn.style.borderColor = '#A259FF';
+                  btn.style.color = '#A259FF';
+                }}
+                onMouseLeave={(e) => { 
+                  const btn = e.currentTarget as HTMLButtonElement;
+                  btn.style.borderColor = '#3A3A3A';
+                  btn.style.color = '#CFCFCF';
+                }}
+              >
+                Оцінити
+              </button>
+            </div>
+          )}
+
+          {/* МОБИЛЬНАЯ ВЕРСИЯ - 3 элемента компактно с адаптивом */}
+          {isMobile && (
+            <div style={{ 
+              display: 'flex', 
+              gap: screenSize === 'xs' ? '6px' : screenSize === 'sm' ? '10px' : screenSize === 'md' ? '14px' : '18px',
+              marginBottom: '24px', 
+              padding: screenSize === 'xs' ? '6px 10px' : screenSize === 'sm' ? '8px 12px' : screenSize === 'md' ? '10px 14px' : '12px 16px',
+              backgroundColor: '#0A0A0A', 
+              borderRadius: '12px', 
+              border: '1px solid #3A3A3A', 
+              alignItems: 'center', 
+              justifyContent: 'space-around' 
+            }}>
+              {/* Статус */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: screenSize === 'xs' ? '5px' : screenSize === 'sm' ? '6px' : screenSize === 'md' ? '7px' : '8px', flex: 1, minWidth: 0 }}>
+                <img src="/icons/status-icon.png" alt="Status" style={{ 
+                  width: screenSize === 'xs' ? '14px' : screenSize === 'sm' ? '16px' : screenSize === 'md' ? '18px' : '20px', 
+                  height: screenSize === 'xs' ? '14px' : screenSize === 'sm' ? '16px' : screenSize === 'md' ? '18px' : '20px', 
+                  flexShrink: 0 
+                }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ 
+                    fontSize: screenSize === 'xs' ? '7px' : screenSize === 'sm' ? '8px' : screenSize === 'md' ? '9px' : '10px', 
+                    fontWeight: '600', 
+                    color: '#FFFFFF', 
+                    opacity: 0.6, 
+                    textTransform: 'uppercase', 
+                    margin: '0', 
+                    letterSpacing: '0.05em' 
+                  }}>Статус</p>
+                  <p style={{ 
+                    fontSize: screenSize === 'xs' ? '9px' : screenSize === 'sm' ? '10px' : screenSize === 'md' ? '11px' : '12px', 
+                    fontWeight: '700', 
+                    color: '#FFFFFF', 
+                    margin: 0, 
+                    lineHeight: '1.2', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis' 
+                  }}>{statusText}</p>
+                </div>
+              </div>
+
+              {/* Тип */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: screenSize === 'xs' ? '5px' : screenSize === 'sm' ? '6px' : screenSize === 'md' ? '7px' : '8px', flex: 1, minWidth: 0 }}>
+                <img src="/icons/type-icon.png" alt="Type" style={{ 
+                  width: screenSize === 'xs' ? '14px' : screenSize === 'sm' ? '16px' : screenSize === 'md' ? '18px' : '20px', 
+                  height: screenSize === 'xs' ? '14px' : screenSize === 'sm' ? '16px' : screenSize === 'md' ? '18px' : '20px', 
+                  flexShrink: 0 
+                }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ 
+                    fontSize: screenSize === 'xs' ? '7px' : screenSize === 'sm' ? '8px' : screenSize === 'md' ? '9px' : '10px', 
+                    fontWeight: '600', 
+                    color: '#FFFFFF', 
+                    opacity: 0.6, 
+                    textTransform: 'uppercase', 
+                    margin: '0', 
+                    letterSpacing: '0.05em' 
+                  }}>Тип</p>
+                  <p style={{ 
+                    fontSize: screenSize === 'xs' ? '9px' : screenSize === 'sm' ? '10px' : screenSize === 'md' ? '11px' : '12px', 
+                    fontWeight: '700', 
+                    color: '#FFFFFF', 
+                    margin: 0, 
+                    lineHeight: '1.2', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis' 
+                  }}>{getTypeText(manhwa.type)}</p>
+                </div>
+              </div>
+
+              {/* Цензура */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: screenSize === 'xs' ? '5px' : screenSize === 'sm' ? '6px' : screenSize === 'md' ? '7px' : '8px', flex: 1, minWidth: 0 }}>
+                <img src="/icons/censorship-icon.png" alt="Censorship" style={{ 
+                  width: screenSize === 'xs' ? '14px' : screenSize === 'sm' ? '16px' : screenSize === 'md' ? '18px' : '20px', 
+                  height: screenSize === 'xs' ? '14px' : screenSize === 'sm' ? '16px' : screenSize === 'md' ? '18px' : '20px', 
+                  flexShrink: 0 
+                }} />
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ 
+                    fontSize: screenSize === 'xs' ? '7px' : screenSize === 'sm' ? '8px' : screenSize === 'md' ? '9px' : '10px', 
+                    fontWeight: '600', 
+                    color: '#FFFFFF', 
+                    opacity: 0.6, 
+                    textTransform: 'uppercase', 
+                    margin: '0', 
+                    letterSpacing: '0.05em' 
+                  }}>Цензура</p>
+                  <p style={{ 
+                    fontSize: screenSize === 'xs' ? '9px' : screenSize === 'sm' ? '10px' : screenSize === 'md' ? '11px' : '12px', 
+                    fontWeight: '700', 
+                    color: '#FFFFFF', 
+                    margin: 0, 
+                    lineHeight: '1.2', 
+                    overflow: 'hidden', 
+                    textOverflow: 'ellipsis' 
+                  }}>{getCensorshipText(manhwa.publicationType)}</p>
                 </div>
               </div>
             </div>
+          )}
+        
 
-            {/* Вкладки - адаптивні */}
-            <div className="mb-6">
-              <div className="flex gap-0 md:gap-4 border-b border-text-muted/20">
+          {/* ДЕСКТОПНАЯ ВЕРСИЯ - без табов */}
+          {!isMobile && (
+            <>
+              {/* Два блока рядом - Розділи и Коментарі */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px', minWidth: 0 }}>
+                
+                {/* Левый блок - Розділи */}
+                <div style={{ border: '1px solid #3A3A3A', borderRadius: '12px', padding: '20px', backgroundColor: '#0A0A0A', minWidth: 0 }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#FFFFFF', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <img src="/icons/chapters-icon.png" alt="Chapters" style={{ width: '20px', height: '20px' }} />
+                    Розділи ({filteredChapters.length})
+                  </h3>
+
+                  {/* Поле пошуку з сортировкою */}
+                  <div style={{ marginBottom: '20px', display: 'flex', gap: '5px', alignItems: 'center', backgroundColor: 'transparent', border: '1px solid #3A3A3A', borderRadius: '8px', padding: '0 12px' }}>
+                    <input type="text" placeholder="Номер або назва розділу..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, backgroundColor: 'transparent', border: 'none', padding: '12px 16px', color: '#CFCFCF', fontSize: '14px', outline: 'none' }} />
+                    <button onClick={() => setSortOrder(sortOrder === 'desc' ? null : 'desc')} style={{ padding: '0', backgroundColor: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      <img src="/icons/arrow-up-icon.png" alt="Sort Up" style={{ width: sortOrder === 'desc' ? '25px' : '23px', height: sortOrder === 'desc' ? '25px' : '23px', filter: sortOrder === 'desc' ? 'brightness(3)' : 'brightness(1)' }} />
+                    </button>
+                    <button onClick={() => setSortOrder(sortOrder === 'asc' ? null : 'asc')} style={{ padding: '0', backgroundColor: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      <img src="/icons/arrow-down-icon.png" alt="Sort Down" style={{ width: sortOrder === 'asc' ? '25px' : '23px', height: sortOrder === 'asc' ? '25px' : '23px', filter: sortOrder === 'asc' ? 'brightness(3)' : 'brightness(1)' }} />
+                    </button>
+                  </div>
+
+                  {/* Список розділів */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '500px', overflowY: 'auto' }}>
+                    {filteredChapters.length > 0 ? (
+                      filteredChapters.map((chapter) => {
+                        const isRead = readChapters.has(chapter.id);
+                        return (
+                          <Link key={chapter.id} href={`/reader/${manhwa.id}/${chapter.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                            <div className="chapter-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                                {isRead ? (
+                                  <svg style={{ width: '20px', height: '20px', color: '#00C2C8', flexShrink: 0 }} fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                ) : (
+                                  <svg style={{ width: '20px', height: '20px', color: '#9A9A9A', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                  </svg>
+                                )}
+                                <div style={{ minWidth: 0 }}>
+                                  <p style={{ color: '#CFCFCF', fontSize: '14px', fontWeight: '500' }}>
+                                    Том {Math.ceil(chapter.chapterNumber / 20)} Розділ {chapter.chapterNumber}
+                                  </p>
+                                </div>
+                              </div>
+                              <p style={{ color: '#9A9A9A', fontSize: '13px', flexShrink: 0, marginLeft: '8px' }}>
+                                {new Date(chapter.publishedAt).toLocaleDateString('uk-UA')}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '32px', color: '#9A9A9A' }}>Розділи не знайдені</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Правый блок - Коментарі */}
+                <div style={{ border: '1px solid #3A3A3A', borderRadius: '12px', padding: '20px', backgroundColor: '#0A0A0A', minWidth: 0 }}>
+                  <ManhwaCommentsComponent manhwaId={id} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* МОБИЛЬНАЯ ВЕРСИЯ - Табы */}
+          {isMobile && (
+            <div style={{ border: '1px solid #3A3A3A', borderRadius: '12px', backgroundColor: '#0A0A0A', overflow: 'hidden', minWidth: 0, marginBottom: '24px' }}>
+              {/* Навигация табов с иконками */}
+              <div style={{ display: 'flex', gap: '0', borderBottom: '1px solid #3A3A3A', backgroundColor: 'transparent' }}>
+                <button
+                  onClick={() => setActiveTab('info')}
+                  style={{
+                    flex: 1,
+                    padding: screenSize === 'xs' ? '10px 8px' : screenSize === 'sm' ? '12px 10px' : screenSize === 'md' ? '14px 12px' : '16px 14px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: activeTab === 'info' ? '3px solid #A259FF' : 'none',
+                    color: activeTab === 'info' ? '#A259FF' : '#9A9A9A',
+                    fontSize: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    textTransform: 'none',
+                    letterSpacing: '0.05em',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: screenSize === 'xs' ? '4px' : '6px',
+                  }}
+                >
+                  <svg style={{ width: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px', height: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Інформація
+                </button>
                 <button
                   onClick={() => setActiveTab('chapters')}
-                  className={`flex-1 md:flex-none py-3 px-3 md:px-4 font-medium text-xs md:text-sm transition-colors border-b-2 ${
-                    activeTab === 'chapters'
-                      ? 'text-text-main border-blue-500'
-                      : 'text-text-muted border-transparent hover:text-text-main'
-                  }`}
+                  style={{
+                    flex: 1,
+                    padding: screenSize === 'xs' ? '10px 8px' : screenSize === 'sm' ? '12px 10px' : screenSize === 'md' ? '14px 12px' : '16px 14px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: activeTab === 'chapters' ? '3px solid #A259FF' : 'none',
+                    color: activeTab === 'chapters' ? '#A259FF' : '#9A9A9A',
+                    fontSize: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    textTransform: 'none',
+                    letterSpacing: '0.05em',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: screenSize === 'xs' ? '4px' : '6px',
+                  }}
                 >
-                  <svg
-                    className="w-4 h-4 inline mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                  <span className="hidden md:inline">Розділи</span>
-                  <span className="md:hidden">Розділи</span>
+                  <img src="/icons/chapters-icon.png" alt="Chapters" style={{ width: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px', height: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px' }} />
+                  Розділи ({manhwa.chapters.length})
                 </button>
                 <button
-                  onClick={() => setActiveTab('ratings')}
-                  className={`flex-1 md:flex-none py-3 px-3 md:px-4 font-medium text-xs md:text-sm transition-colors border-b-2 ${
-                    activeTab === 'ratings'
-                      ? 'text-text-main border-blue-500'
-                      : 'text-text-muted border-transparent hover:text-text-main'
-                  }`}
+                  onClick={() => setActiveTab('comments')}
+                  style={{
+                    flex: 1,
+                    padding: screenSize === 'xs' ? '10px 8px' : screenSize === 'sm' ? '12px 10px' : screenSize === 'md' ? '14px 12px' : '16px 14px',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    borderBottom: activeTab === 'comments' ? '3px solid #A259FF' : 'none',
+                    color: activeTab === 'comments' ? '#A259FF' : '#9A9A9A',
+                    fontSize: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s',
+                    textTransform: 'none',
+                    letterSpacing: '0.05em',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: screenSize === 'xs' ? '4px' : '6px',
+                  }}
                 >
-                  <svg
-                    className="w-4 h-4 inline mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                    />
+                  <svg style={{ width: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px', height: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '14px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                   </svg>
-                  <span className="hidden md:inline">Коментарі</span>
-                  <span className="md:hidden">Коментарі</span>
+                  Коментарі ({commentsCount})
                 </button>
               </div>
-            </div>
 
-            {/* Вміст вкладок */}
-            {activeTab === 'chapters' && (
-              <div>
-                {/* Поле пошуку */}
-                <div className="mb-6 relative">
-                  <input
-                    type="text"
-                    placeholder="Номер або назва розділу"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-card-bg border border-text-muted/20 rounded-lg px-4 py-3 text-text-main placeholder-text-muted focus:outline-none focus:border-blue-500 transition-colors text-sm md:text-base"
-                  />
-                  <svg
-                    className="w-5 h-5 text-text-muted absolute right-3 top-1/2 -translate-y-1/2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                </div>
+              {/* Содержимое табов */}
+              <div style={{ padding: '20px', minWidth: 0 }}>
 
-                {/* Список розділів */}
-                <div className="space-y-1">
-                  {filteredChapters.length > 0 ? (
-                    filteredChapters.map((chapter) => {
-                      const isRead = readChapters.has(chapter.id);
-                      return (
-                        <Link
-                          key={chapter.id}
-                          href={`/reader/${manhwa.id}/${chapter.id}`}
-                          className="block"
-                        >
-                          <div className="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 bg-card-bg hover:bg-card-hover transition-colors duration-150 rounded-lg border border-transparent hover:border-blue-500/50">
-                            <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
-                              {isRead ? (
-                                <svg
-                                  className="w-4 h-4 text-green-400 flex-shrink-0"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                  />
-                                </svg>
-                              ) : (
-                                <svg
-                                  className="w-4 h-4 text-text-muted flex-shrink-0"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-                                  />
-                                </svg>
-                              )}
-                              <div className="min-w-0">
-                                <p className="text-text-main font-medium text-sm md:text-base truncate">
-                                  Том {Math.ceil(chapter.chapterNumber / 20)} Розділ {chapter.chapterNumber}
-                                </p>
-                              </div>
-                            </div>
-                            <p className="text-text-muted text-xs md:text-sm flex-shrink-0 ml-2">
-                              {new Date(chapter.publishedAt).toLocaleDateString('uk-UA')}
-                            </p>
-                          </div>
-                        </Link>
-                      );
-                    })
-                  ) : (
-                    <div className="py-8 text-center text-text-muted text-sm">Розділи не знайдені</div>
-                  )}
-                </div>
+              {/* ТАБ 1: ІНФОРМАЦІЯ */}
+              {activeTab === 'info' && (
+                <div>
+                  {/* Статистика: Просмотры, Оценка, Кнопка */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: screenSize === 'xs' ? '4px' : screenSize === 'sm' ? '6px' : screenSize === 'md' ? '8px' : '10px', marginBottom: '16px', padding: screenSize === 'xs' ? '4px 8px' : screenSize === 'sm' ? '5px 10px' : screenSize === 'md' ? '6px 12px' : '7px 14px', backgroundColor: '#1A1A1A', borderRadius: '6px', border: '1px solid #3A3A3A', height: 'fit-content' }}>
+                    {/* Просмотры */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: screenSize === 'xs' ? '3px' : screenSize === 'sm' ? '4px' : '5px', flex: 1, minWidth: 0 }}>
+                      <svg style={{ width: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '13px', height: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '13px', color: '#9A9A9A', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <p style={{ fontSize: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '11px' : '12px', fontWeight: '600', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>
+                        Перегляди: <span style={{ fontWeight: '700' }}>
+                          {totalViews > 1000000 ? (totalViews / 1000000).toFixed(1) + 'M' : totalViews > 1000 ? (totalViews / 1000).toFixed(1) + 'K' : totalViews}
+                        </span>
+                      </p>
+                    </div>
 
-                {/* Кнопка показати спочатку */}
-                <div className="mt-6 text-right">
-                  <button className="text-blue-500 hover:text-blue-400 text-sm font-medium transition-colors flex items-center gap-1 ml-auto">
-                    Показати спочатку
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    {/* Оценка */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: screenSize === 'xs' ? '3px' : screenSize === 'sm' ? '4px' : '5px', flex: 1, minWidth: 0 }}>
+                      <img src="/icons/rating-bubble.png" alt="Rating" style={{ width: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '13px', height: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '12px' : '13px', borderRadius: '3px', flexShrink: 0 }} />
+                      <p style={{ fontSize: screenSize === 'xs' ? '10px' : screenSize === 'sm' ? '11px' : screenSize === 'md' ? '11px' : '12px', fontWeight: '600', color: '#FFFFFF', margin: 0, whiteSpace: 'nowrap' }}>
+                        Оцінка: <span style={{ fontWeight: '700' }}>{totalRating.toFixed(1)}</span> <span style={{ color: '#FFFFFF', opacity: 0.6, fontSize: screenSize === 'xs' ? '9px' : '10px' }}>({ratingCount})</span>
+                      </p>
+                    </div>
+
+                    {/* Кнопка Оцінити */}
+                    <button 
+                      onClick={() => setShowRatingModal(true)}
+                      style={{
+                        padding: screenSize === 'xs' ? '4px 8px' : screenSize === 'sm' ? '4px 9px' : screenSize === 'md' ? '5px 10px' : '5px 11px',
+                        backgroundColor: 'transparent',
+                        border: '1px solid #3A3A3A',
+                        borderRadius: '4px',
+                        color: '#CFCFCF',
+                        fontSize: screenSize === 'xs' ? '9px' : screenSize === 'sm' ? '10px' : screenSize === 'md' ? '10px' : '11px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        lineHeight: '1.2',
+                      }}
+                      onMouseEnter={(e) => { 
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.borderColor = '#A259FF';
+                        btn.style.color = '#A259FF';
+                      }}
+                      onMouseLeave={(e) => { 
+                        const btn = e.currentTarget as HTMLButtonElement;
+                        btn.style.borderColor = '#3A3A3A';
+                        btn.style.color = '#CFCFCF';
+                      }}
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 11l5-5m0 0l5 5m-5-5v12"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            )}
+                      Оцінити
+                    </button>
+                  </div>
 
-            {activeTab === 'ratings' && (
-              <div>
-                {/* Компонент коментарів манхви */}
-                <ManhwaCommentsComponent manhwaId={id} />
+                  {/* Опис */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <p className="description" style={{ color: '#CFCFCF', lineHeight: '1.45', marginBottom: '12px', fontSize: '14px', fontWeight: '400', display: !expandedDescription && isLongDescription ? '-webkit-box' : 'block', WebkitLineClamp: !expandedDescription && isLongDescription ? 3 : 'unset', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {displayDescription}
+                    </p>
+                    {isLongDescription && (
+                      <button onClick={() => setExpandedDescription(!expandedDescription)} style={{ color: '#A259FF', background: 'none', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer', transition: 'color 0.2s' }}>
+                        {expandedDescription ? 'Сховати' : 'Розгорнути повністю'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ТАБ 2: РОЗДІЛИ */}
+              {activeTab === 'chapters' && (
+                <div>
+                  {/* Поле пошуку з сортировкою */}
+                  <div style={{ marginBottom: '20px', display: 'flex', gap: '5px', alignItems: 'center', backgroundColor: 'transparent', border: '1px solid #3A3A3A', borderRadius: '8px', padding: '0 12px' }}>
+                    <input type="text" placeholder="Розділ..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ flex: 1, backgroundColor: 'transparent', border: 'none', padding: '12px 16px', color: '#CFCFCF', fontSize: '14px', outline: 'none' }} />
+                    <button onClick={() => setSortOrder(sortOrder === 'desc' ? null : 'desc')} style={{ padding: '0', backgroundColor: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      <img src="/icons/arrow-up-icon.png" alt="Sort Up" style={{ width: sortOrder === 'desc' ? '25px' : '23px', height: sortOrder === 'desc' ? '25px' : '23px', filter: sortOrder === 'desc' ? 'brightness(3)' : 'brightness(1)' }} />
+                    </button>
+                    <button onClick={() => setSortOrder(sortOrder === 'asc' ? null : 'asc')} style={{ padding: '0', backgroundColor: 'transparent', border: 'none', outline: 'none', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+                      <img src="/icons/arrow-down-icon.png" alt="Sort Down" style={{ width: sortOrder === 'asc' ? '25px' : '23px', height: sortOrder === 'asc' ? '25px' : '23px', filter: sortOrder === 'asc' ? 'brightness(3)' : 'brightness(1)' }} />
+                    </button>
+                  </div>
+
+                  {/* Список розділів */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '600px', overflowY: 'auto' }}>
+                    {filteredChapters.length > 0 ? (
+                      filteredChapters.map((chapter) => {
+                        const isRead = readChapters.has(chapter.id);
+                        return (
+                          <Link key={chapter.id} href={`/reader/${manhwa.id}/${chapter.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+                            <div className="chapter-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#0A0A0A', borderRadius: '8px', border: '1px solid #3A3A3A', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                                {isRead ? (
+                                  <svg style={{ width: '20px', height: '20px', color: '#00C2C8', flexShrink: 0 }} fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                  </svg>
+                                ) : (
+                                  <svg style={{ width: '20px', height: '20px', color: '#9A9A9A', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                                  </svg>
+                                )}
+                                <div style={{ minWidth: 0 }}>
+                                  <p style={{ color: '#CFCFCF', fontSize: '13px', fontWeight: '500', margin: 0 }}>
+                                    Розділ {chapter.chapterNumber}
+                                  </p>
+                                </div>
+                              </div>
+                              <p style={{ color: '#9A9A9A', fontSize: '12px', flexShrink: 0, marginLeft: '8px' }}>
+                                {new Date(chapter.publishedAt).toLocaleDateString('uk-UA')}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '32px', color: '#9A9A9A' }}>Розділи не знайдені</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ТАБ 3: КОМЕНТАРІ */}
+              {activeTab === 'comments' && (
+                <div>
+                  <ManhwaCommentsComponent manhwaId={id} hideHeader={true} onCommentsCountChange={setCommentsCount} />
+                </div>
+              )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Модал оценки */}
+      {showRatingModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#1F1F1F',
+            borderRadius: '16px',
+            padding: '32px',
+            maxWidth: '400px',
+            width: '90%',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
+          }}>
+            <h2 style={{ color: '#FFFFFF', marginTop: 0, marginBottom: '20px', fontSize: '20px', fontWeight: '700' }}>
+              Оцініть манхву
+            </h2>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '24px' }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setUserRating(star)}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    backgroundColor: userRating >= star ? '#F6C945' : '#3A3A3A',
+                    cursor: 'pointer',
+                    fontSize: '18px',
+                    fontWeight: '700',
+                    color: userRating >= star ? '#1F1F1F' : '#9A9A9A',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F6C945'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = userRating >= star ? '#F6C945' : '#3A3A3A'}
+                >
+                  {star}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={async () => {
+                  if (userRating === 0) {
+                    alert('Виберіть оцінку!');
+                    return;
+                  }
+
+                  if (!userId) {
+                    alert('Будь ласка, увійдіть в аккаунт щоб оцінити манхву');
+                    return;
+                  }
+                  try {
+                    const endpoint = `/api/public/${id}/rate`;
+                    
+                    const response = await fetch(endpoint, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ rating: userRating, userId: userId })
+                    });
+                    
+                    if (response.ok) {
+                      const data = await response.json();
+                      setCurrentRating(userRating);
+                      setTotalRating(data.newAverageRating || data.rating || totalRating);
+                      setRatingCount((data.totalRatings || data.ratingCount || ratingCount) + 1);
+                      
+                      setShowRatingModal(false);
+                      setUserRating(0);
+                    } else {
+                      const errorData = await response.json().catch(() => ({}));
+                      alert('Помилка: ' + (errorData.message || 'невідома помилка'));
+                    }
+                  } catch (err) {
+                    alert('Помилка при відправленні оцінки: ' + (err as Error).message);
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#A259FF',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#B370FF'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#A259FF'}
+              >
+                Оцінити
+              </button>
+              <button
+                onClick={() => {
+                  setShowRatingModal(false);
+                  setUserRating(0);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: 'transparent',
+                  color: '#FFFFFF',
+                  border: '1px solid #3A3A3A',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#A259FF'; e.currentTarget.style.color = '#A259FF'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#3A3A3A'; e.currentTarget.style.color = '#FFFFFF'; }}
+              >
+                Скасувати
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,20 +1,33 @@
 /**
- * 📁 /app/api/admin/manhwa/[id]/route.ts
+ * 🗑️ /app/api/admin/manhwa/[id]/route.ts
  * 
- * Эндпоинт для РЕДАКТИРОВАНИЯ КОНКРЕТНОЙ манхвы
- * [id] = ID манхвы (например: "lycar-ta-vidma")
- * 
- * GET    /api/admin/manhwa/:id → получить манхву по ID
- * PUT    /api/admin/manhwa/:id → обновить все поля манхвы
- * DELETE /api/admin/manhwa/:id → удалить манхву
+ * ✅ Включает удаление файлов из R2 при удалении манги
  */
 
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
+import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+// R2 конфиг
+const R2_BUCKET = process.env.R2_BUCKET_NAME || 'manhwa-storage';
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '';
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '';
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '';
+
+// S3 клиент для R2
+const s3Client = new S3Client({
+  region: 'auto',
+  credentials: {
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY,
+  },
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+});
 
 async function verifyAdmin(token: string) {
   const supabaseUser = createClient(URL, ANON_KEY, {
@@ -122,8 +135,13 @@ export async function PUT(request: NextRequest, { params }: any) {
 
     if (error) throw error;
 
+    console.log(`🔄 [Cache] Invalidating paths for ${id}`);
+    revalidatePath('/schedule');
+    revalidatePath('/');
+    revalidatePath('/api/public');
+
     console.log('✅ [API] Updated:', data.title);
-    return NextResponse.json({ data });
+    return NextResponse.json({ data, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);
     return NextResponse.json(
@@ -133,7 +151,7 @@ export async function PUT(request: NextRequest, { params }: any) {
   }
 }
 
-// DELETE - удалить манхву
+// DELETE - удалить манхву И её файлы из R2
 export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const id = params.id;
@@ -149,16 +167,70 @@ export async function DELETE(request: NextRequest, { params }: any) {
 
     const supabase = createClient(URL, SERVICE_ROLE_KEY);
 
-    // Только удаляем из БД, не трогаем R2 (временно)
-    const { error } = await supabase
+    // 1️⃣ Удаляем манхву из БД
+    console.log(`📋 [API] Deleting manhwa from database: ${id}`);
+    const { error: dbError } = await supabase
       .from('admin_manhwa')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (dbError) throw dbError;
+    console.log('✅ [API] Deleted from database');
+
+    // 2️⃣ Удаляем все файлы с этим ID из R2
+    console.log(`📦 [R2] Listing files for: ${id}`);
+    
+    try {
+      // Ищем все файлы с префиксом {id}/
+      const listCommand = new ListObjectsV2Command({
+        Bucket: R2_BUCKET,
+        Prefix: `${id}/`, // Все файлы в папке {id}/
+      });
+
+      const listResponse = await s3Client.send(listCommand);
+      const objects = listResponse.Contents || [];
+
+      if (objects.length > 0) {
+        console.log(`📦 [R2] Found ${objects.length} files to delete`);
+
+        // Удаляем по 1000 объектов за раз (лимит S3)
+        for (let i = 0; i < objects.length; i += 1000) {
+          const batch = objects.slice(i, i + 1000).map(obj => ({
+            Key: obj.Key!,
+          }));
+
+          const deleteCommand = new DeleteObjectsCommand({
+            Bucket: R2_BUCKET,
+            Delete: {
+              Objects: batch,
+            },
+          });
+
+          await s3Client.send(deleteCommand);
+          console.log(`📦 [R2] Deleted batch: ${batch.length} files`);
+        }
+
+        console.log(`✅ [R2] All files deleted for: ${id}`);
+      } else {
+        console.log('📦 [R2] No files found for this ID');
+      }
+    } catch (r2Error) {
+      console.error('⚠️ [R2] Error deleting files:', r2Error);
+      // Не прерываем процесс если ошибка с R2, манга уже удалена из БД
+    }
+
+    // 3️⃣ Очищаем кеш
+    console.log(`🔄 [Cache] Invalidating paths after deletion of ${id}`);
+    revalidatePath('/schedule');
+    revalidatePath('/');
+    revalidatePath('/api/public');
 
     console.log('✅ [API] Deleted: ' + id);
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Manhwa and all associated files deleted successfully',
+      cacheRevalidated: true 
+    });
   } catch (error) {
     console.error('❌ [API] Delete error:', error);
     return NextResponse.json(

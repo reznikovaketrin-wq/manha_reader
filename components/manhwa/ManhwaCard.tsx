@@ -3,15 +3,17 @@
 import Link from 'next/link';
 import { useRef, useEffect, useState, useCallback } from 'react';
 import AutoFitTitle from './AutoFitTitle';
+import AutoFitStatusGroup from './AutoFitStatusGroup';
 
 interface ManhwaCardProps {
   manhwa: {
     id: string;
     title: string;
-    description: string;
-    status: 'ongoing' | 'completed' | 'hiatus';
+    shortDescription: string;
     coverImage: string;
-    tags?: string[];
+    status: 'ongoing' | 'completed' | 'hiatus';
+    publicationType?: 'censored' | 'uncensored';
+    type?: 'manhwa' | 'manga' | 'manhua';
   };
 }
 
@@ -51,8 +53,19 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
   const statusText = manhwa.status === 'ongoing'
     ? 'ОНГОЇНГ'
     : manhwa.status === 'completed'
-    ? 'ЗАВЕРШЕНА'
-    : 'HIATUS';
+    ? 'ЗАВЕРШЕНО'
+    : 'ВАНШОТ';
+
+  const typeLabels: Record<string, string> = {
+    'manhwa': 'МАНХВА',
+    'manga': 'МАНГА',
+    'manhua': 'МАНХУА',
+  };
+
+  const publicationLabels: Record<string, string> = {
+    'uncensored': 'БЕЗ ЦЕНЗУРИ',
+    'censored': 'ЦЕНЗУРОВАНО',
+  };
 
   const lastSlashIndex = manhwa.coverImage.lastIndexOf('/');
   const baseImageUrl = lastSlashIndex !== -1
@@ -72,7 +85,7 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
     const aspectRatio = originalWidth / originalHeight;
 
     const maxWidth = sectionWidth;
-    const maxHeight = isMobile ? sectionHeight * 1.15 : sectionHeight * 1.2;
+    const maxHeight = isMobile ? sectionHeight * 1.15 : sectionHeight * 1.15;
 
     let width: number;
     let height: number;
@@ -211,22 +224,44 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
           style={{ display: 'none' }}
         />
 
-        <div
-          className="
-            flex flex-wrap gap-4
-            text-white font-medium tracking-tight uppercase
-            md:absolute md:top-0 md:left-[var(--spacing-xl)]
-            md:pt-[var(--spacing-xl)]
-            md:gap-12
-            z-[20]     /* ← ДОБАВИТЬ */
-            drop-shadow-[0_0_6px_rgba(0,0,0,1)]
-          "
-        >
-          <span className="drop-shadow-[3px_2px_6px_rgba(0,0,0,1)]">{statusText}</span>
-          {manhwa.tags?.map(tag => (
-            <span key={tag}>{tag}</span>
-          ))}
-        </div>
+        {/* 🏷️ ТЕГИ: publicationType и type с использованием AutoFitStatusGroup */}
+        {(() => {
+          const statusItems = [
+            { id: 'status', label: statusText },
+          ];
+          
+          if (manhwa.publicationType) {
+            statusItems.push({
+              id: 'publication',
+              label: publicationLabels[manhwa.publicationType],
+            });
+          }
+          
+          if (manhwa.type) {
+            statusItems.push({
+              id: 'type',
+              label: typeLabels[manhwa.type],
+            });
+          }
+
+          return (
+            <div className="md:absolute md:top-0 md:left-[var(--spacing-xl)] md:pt-[var(--spacing-xl)] z-[20] text-white uppercase">
+              <AutoFitStatusGroup
+                statuses={statusItems}
+                isMobile={isMobile}
+                mobileMaxHeight={16}
+                mobileMaxWidth={280}
+                mobileMinFontSize={7}
+                mobileMaxFontSize={9}
+                desktopMaxHeight={38}
+                desktopMaxWidth={800}
+                desktopMinFontSize={14}
+                desktopMaxFontSize={30}
+                gap={isMobile ? '8px' : '24px'}
+              />
+            </div>
+          );
+        })()}
 
         <img
           ref={imgRef}
@@ -245,22 +280,21 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
         />
 
         <div
-  ref={contentRef}
-  className="
-    relative z-20 flex flex-col
-    mt-auto           /* <-- ДОБАВЛЯЕМ ЭТО НА МОБИЛЬНОЙ ВЕРСИИ */
-    md:mt-0
-    md:absolute md:left-[var(--spacing-xl)] md:bottom-[var(--spacing-xl)]
-  "
-  style={{
-  gap: isMobile
-    ? (titleLineCount === 1 ? '4px' : '4px')   // мобильная версия
-    : (titleLineCount === 1 ? '14px' : '8px'), // десктопная версия
-  transform: getAdaptiveTransform(),
-  transition: 'transform 150ms ease-linear, gap 150ms ease-linear',
-}}
->
-
+          ref={contentRef}
+          className="
+            relative z-20 flex flex-col
+            mt-auto
+            md:mt-0
+            md:absolute md:left-[var(--spacing-xl)] md:bottom-[var(--spacing-xl)]
+          "
+          style={{
+            gap: isMobile
+              ? (titleLineCount === 1 ? '4px' : '4px')
+              : (titleLineCount === 1 ? '14px' : '8px'),
+            transform: getAdaptiveTransform(),
+            transition: 'transform 150ms ease-linear, gap 150ms ease-linear',
+          }}
+        >
           {isMobile ? (
             <>
               <div className="max-w-[280px]">
@@ -277,8 +311,9 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 </AutoFitTitle>
               </div>
 
+              {/* 📄 shortDescription */}
               <p className="text-white/80 [text-shadow:1px_1px_1px_rgba(0,0,0,0.9)] text-[7px] leading-tight line-clamp-3 max-w-[270px]">
-                {manhwa.description}
+                {manhwa.shortDescription}
               </p>
             </>
           ) : (
@@ -297,8 +332,9 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 </AutoFitTitle>
               </div>
 
+              {/* 📄 shortDescription */}
               <p className="text-white/85 [text-shadow:3px_2px_4px_rgba(0,0,0,0.9)] text-[clamp(12px,1.8vw,18px)] leading-tight max-w-[65%] pb-0">
-                {manhwa.description}
+                {manhwa.shortDescription}
               </p>
             </>
           )}

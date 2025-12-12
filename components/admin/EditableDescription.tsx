@@ -6,6 +6,7 @@ interface EditableDescriptionProps {
   value: string;
   manhwaId: string;
   token: string;
+  fieldName?: 'description' | 'short_description'; // 🆕 Параметр для имени поля
   onUpdate: (value: string) => void;
 }
 
@@ -13,6 +14,7 @@ export function EditableDescription({
   value,
   manhwaId,
   token,
+  fieldName = 'description', // По умолчанию 'description'
   onUpdate,
 }: EditableDescriptionProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -23,19 +25,24 @@ export function EditableDescription({
     try {
       setLoading(true);
 
+      // 🎯 Динамически выбираем поле
+      const payload = {
+        [fieldName]: editValue,
+      };
+
       const response = await fetch(`/api/admin/manhwa/${manhwaId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ description: editValue }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error('Save failed');
 
       const data = await response.json();
-      onUpdate(data.data.description);
+      onUpdate(data.data[fieldName] || editValue);
       setIsEditing(false);
     } catch (error) {
       console.error('Error:', error);

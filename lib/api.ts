@@ -3,7 +3,12 @@
  * 
  * 🌐 УТИЛИТЫ ДЛЯ РАБОТЫ С ПУБЛИЧНЫМ API
  * 
- * Содержит функции для получения данных манхв из БД вместо JSON
+ * ✅ ОПТИМИЗАЦИЯ: ISR + revalidateTag комбо
+ * - Кеш хранится 60 секунд
+ * - Очищается НЕМЕДЛЕННО при обновлении в админке через revalidateTag()
+ * - Гарантирует видимость обновлений за 1-60 секунд
+ * 
+ * 🔄 СОРТИРОВКА: по последней главе (новые главы вверх)
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
@@ -27,6 +32,7 @@ export interface Manhwa {
     note: string;
   } | null;
   chaptersCount: number;
+  lastChapterDate?: string;
 }
 
 export interface Chapter {
@@ -49,37 +55,64 @@ export interface ChapterWithPages extends Chapter {
 
 /**
  * 📚 Получить все манхвы
+ * 
+ * ✅ ОПТИМИЗАЦИЯ:
+ * - Кеш с тегом 'schedule-data' для немедленной очистки
+ * - ISR: переизменяется каждые 60 секунд
+ * - Очищается НЕМЕДЛЕННО при обновлении в админке
+ * 
+ * 🔄 СОРТИРОВКА: по дате последней главы (новые первыми)
  */
 export async function fetchManhwas(): Promise<Manhwa[]> {
   try {
     const apiUrl = `${API_BASE}/api/public`;
     console.log('📚 [API Client] Fetching all manhwas...');
     console.log('📍 [API Client] URL:', apiUrl);
+    console.log('⏰ [API Client] Timestamp:', new Date().toISOString());
 
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      // ✅ ОПТИМИЗАЦИЯ: ISR + revalidateTag комбо
+      next: { 
+        tags: ['schedule-data'],  // Очищается при revalidateTag() в админке
+        revalidate: 60,            // Автоматически переизменяется каждые 60 секунд
+      },
     });
 
     console.log('📡 [API Client] Response status:', response.status);
-    console.log('📡 [API Client] Response headers:', response.headers);
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ [API Client] Response not ok:', {
         status: response.status,
         statusText: response.statusText,
-        body: errorText,
       });
       throw new Error(`Failed to fetch manhwas: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log(`✅ [API Client] Loaded ${data.length} manhwas`);
-    console.log('📦 [API Client] Data sample:', data.length > 0 ? data[0] : 'No data');
-    return data;
+
+    // 🔄 СОРТИРОВКА: по дате последней главы (новые первыми)
+    const sorted = data.sort((a: any, b: any) => {
+      const dateA = new Date(a.lastChapterDate || a.createdAt || 0).getTime();
+      const dateB = new Date(b.lastChapterDate || b.createdAt || 0).getTime();
+      
+      // dateB - dateA = новые первыми (убывающий порядок)
+      return dateB - dateA;
+    });
+
+    console.log(`✅ [API Client] Loaded ${sorted.length} manhwas at ${new Date().toISOString()}`);
+    console.log('🔄 [API Client] Sorted by last chapter date (newest first)');
+    console.log('📦 [API Client] First item:', sorted.length > 0 ? {
+      id: sorted[0].id,
+      title: sorted[0].title,
+      lastChapterDate: sorted[0].lastChapterDate,
+    } : 'No data');
+    
+    return sorted;
   } catch (error) {
     console.error('❌ [API Client] Error fetching manhwas:', error);
     throw error;
@@ -97,6 +130,10 @@ export async function fetchManhwaById(id: string): Promise<Manhwa & { chapters: 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+      },
+      next: { 
+        tags: ['schedule-data', `manhwa-${id}`],
+        revalidate: 60,
       },
     });
 
@@ -132,6 +169,10 @@ export async function fetchChapterPages(
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+        },
+        next: { 
+          tags: ['schedule-data', `chapters-${manhwaId}`],
+          revalidate: 60,
         },
       }
     );

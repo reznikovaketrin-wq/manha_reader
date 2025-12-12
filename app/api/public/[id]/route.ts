@@ -1,7 +1,7 @@
 /**
  * 📁 /app/api/public/[id]/route.ts
  * 
- * 🌐 PUBLIC API - ПОЛУЧИТЬ ОДНУ МАНХВУ С РОЗДІЛАМИ
+ * 🌐 PUBLIC API - ПОЛУЧИТЬ ОДНУ МАНХВУ С РОЗДІЛАМИ И КОЛИЧЕСТВОМ ОЦЕНОК
  * 
  * GET /api/public/:id
  * 
@@ -16,6 +16,7 @@
  *   coverImage: "...",
  *   status: "ongoing",
  *   rating: 8.9,
+ *   ratingCount: 125,  ← ДОБАВЛЕНО!
  *   tags: ["БЕЗ ЦЕНЗУРИ"],
  *   scheduleDay: {...},
  *   chapters: [
@@ -33,6 +34,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+export const revalidate = 60;       // кэшируем данные на 60 секунд
+export const dynamic = "force-static"; // заставляем Next.js кэшировать API
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -72,6 +75,22 @@ export async function GET(
 
     console.log(`📚 Получено розділов: ${chapters?.length || 0}`);
 
+    // ============ ПОЛУЧАЕМ КОЛИЧЕСТВО ОЦЕНОК ============ ← ДОБАВЛЕНО!
+    
+    const { data: ratings, error: ratingsError } = await supabase
+      .from('manhwa_ratings')
+      .select('rating')
+      .eq('manhwa_id', id);
+
+    if (ratingsError) {
+      console.error('⚠️ Ошибка получения оценок:', ratingsError);
+      // Продолжаем с ratingCount = 0, если ошибка
+    }
+
+    const ratingCount = ratings?.length || 0;
+    
+    console.log(`⭐ Оценок найдено: ${ratingCount}`);
+
     // Структурированный ответ (camelCase)
     const scheduleDay = manhwa.schedule_day ? {
       dayBig: manhwa.schedule_day,
@@ -89,6 +108,7 @@ export async function GET(
       charImage: manhwa.char_image,
       status: manhwa.status,
       rating: manhwa.rating,
+      ratingCount: ratingCount,  // ← ДОБАВЛЕНО!
       tags: Array.isArray(manhwa.tags) ? manhwa.tags : [],
       type: manhwa.type,
       publicationType: manhwa.publication_type,
