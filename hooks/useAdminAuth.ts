@@ -13,7 +13,7 @@ interface AdminUser {
 }
 
 let adminCache: { data: AdminUser | null; timestamp: number } | null = null;
-const CACHE_TTL = 3 * 60 * 1000; // 3 минуты
+const CACHE_TTL = 60 * 60 * 1000; // 1 час
 
 export function useAdminAuth() {
   const router = useRouter();
@@ -21,14 +21,19 @@ export function useAdminAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const checkingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
+    isMountedRef.current = true;
     checkAdmin();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+      if (!isMountedRef.current) return;
+      
       console.log('🔐 [useAdminAuth] Auth state changed:', event);
 
       if (event === 'SIGNED_OUT') {
@@ -41,51 +46,62 @@ export function useAdminAuth() {
         return;
       }
 
-      // Только на INITIAL_SESSION - избегаем race condition
       if (event === 'INITIAL_SESSION') {
         adminCache = null;
         checkAdmin();
       }
     });
 
-    // Периодическая проверка каждые 3 минуты
+    // ✅ Периодическая проверка каждый час
     refreshIntervalRef.current = setInterval(() => {
-      console.log('⏰ [useAdminAuth] Periodic refresh (3 min)');
+      if (!isMountedRef.current) return;
+      console.log('⏰ [useAdminAuth] Periodic refresh (1 hour)');
       adminCache = null;
       checkAdmin();
-    }, 3 * 60 * 1000);
+    }, 60 * 60 * 1000); // 1 час = 3,600,000 мс
 
     return () => {
+      isMountedRef.current = false;
       subscription?.unsubscribe();
       if (refreshIntervalRef.current) {
         clearInterval(refreshIntervalRef.current);
+      }
+      // ✅ Отменить fetch если в процессе
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
   }, [router]);
 
   const checkAdmin = async () => {
-    if (checkingRef.current) return;
+    if (!isMountedRef.current || checkingRef.current) return;
     checkingRef.current = true;
 
     try {
       console.log('🔍 [useAdminAuth] Starting...');
 
-      // Проверить кеш
+      // ✅ Проверить кеш (1 час)
       if (adminCache && Date.now() - adminCache.timestamp < CACHE_TTL) {
         console.log('💾 [useAdminAuth] Using cached data');
-        setAdmin(adminCache.data);
-        setLoading(false);
+        if (isMountedRef.current) {
+          setAdmin(adminCache.data);
+          setLoading(false);
+        }
         checkingRef.current = false;
         return;
       }
 
-      // Таймаут 4 секунды
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Timeout')), 4000)
-      );
+      // ✅ AbortController для отмены fetch
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
 
-      const checkPromise = (async () => {
+      // ✅ Таймаут 8 секунд
+      const timeoutId = setTimeout(() => abortController.abort(), 8000);
+
+      try {
         const { data: authData, error: authError } = await supabase.auth.getUser();
+
+        if (!isMountedRef.current) return;
 
         if (authError || !authData.user) {
           console.log('❌ [useAdminAuth] No authenticated user');
@@ -94,8 +110,9 @@ export function useAdminAuth() {
 
         console.log('👤 [useAdminAuth] User:', authData.user.email);
 
-        // Просто получить текущую сессию БЕЗ обновления
         const { data: sessionData } = await supabase.auth.getSession();
+
+        if (!isMountedRef.current) return;
 
         if (!sessionData?.session) {
           console.log('❌ [useAdminAuth] No session');
@@ -117,7 +134,12 @@ export function useAdminAuth() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${accessToken}`,
           },
+          signal: abortController.signal, // ✅ Передаём signal
         });
+
+        clearTimeout(timeoutId);
+
+        if (!isMountedRef.current) return;
 
         console.log('📡 [useAdminAuth] Response:', response.status);
 
@@ -128,36 +150,45 @@ export function useAdminAuth() {
 
         const data = await response.json();
         console.log('✅ [useAdminAuth] Success:', data.user.email);
-        return data.user;
-      })();
 
-      const user = await Promise.race([checkPromise, timeoutPromise]);
+        adminCache = {
+          data: data.user as AdminUser,
+          timestamp: Date.now(),
+        };
 
-      adminCache = {
-        data: user as AdminUser,
-        timestamp: Date.now(),
-      };
+        if (isMountedRef.current) {
+          setAdmin(data.user as AdminUser);
+          setError(null);
+          setLoading(false);
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
 
-      setAdmin(user as AdminUser);
-      setError(null);
-      setLoading(false);
-    } catch (err) {
-      console.error('❌ [useAdminAuth] Error:', err instanceof Error ? err.message : String(err));
+        if (!isMountedRef.current) return;
 
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      setLoading(false);
+        // ✅ Проверить если это AbortError
+        if (err instanceof Error && err.name === 'AbortError') {
+          console.warn('⚠️ [useAdminAuth] Request aborted');
+          return;
+        }
 
-      // Не редирект на timeout
-      if (message !== 'Timeout') {
+        console.error('❌ [useAdminAuth] Error:', err instanceof Error ? err.message : String(err));
+
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(message);
+        setLoading(false);
         adminCache = null;
         setAdmin(null);
+
         setTimeout(() => {
-          router.push('/');
+          if (isMountedRef.current) {
+            router.push('/');
+          }
         }, 1500);
       }
     } finally {
       checkingRef.current = false;
+      abortControllerRef.current = null;
     }
   };
 
