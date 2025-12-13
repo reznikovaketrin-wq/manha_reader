@@ -2,6 +2,7 @@
  * 📁 /lib/api.ts
  * 
  * 🌐 УТИЛИТЫ ДЛЯ РАБОТЫ С ПУБЛИЧНЫМ API
+ * ✅ Исправлено: используется relative URL вместо hardcoded localhost
  * 
  * ✅ ОПТИМИЗАЦИЯ: ISR + revalidateTag комбо
  * - Кеш хранится 60 секунд
@@ -11,7 +12,8 @@
  * 🔄 СОРТИРОВКА: по последней главе (новые главы вверх)
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// ✅ Используем relative URL - работает везде (localhost, Vercel, любой домен)
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 export interface Manhwa {
   id: string;
