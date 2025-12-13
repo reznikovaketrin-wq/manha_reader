@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getSupabaseAdmin, getSupabaseAnon, getSupabaseWithToken } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
 import { ManhwaCommentsComponent } from '@/components/manhwa-comments-component';
 import buttonStyles from '@/components/ReadButton.module.css';
 
@@ -142,7 +142,10 @@ export default function ManhwaPage() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const supabase = getSupabaseAnon();
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+        );
         
         const { data: { user } } = await supabase.auth.getUser();
         if (user?.id) {

@@ -65,11 +65,11 @@ export function ManhwaCommentsComponent({
               .select('comment_id')
               .eq('user_id', userData.user.id);
             
-            userLikes = new Set(likesData?.map((l: any) => l.comment_id) || []);
+            userLikes = new Set(likesData?.map(l => l.comment_id) || []);
           }
 
           const enrichedComments = await Promise.all(
-            commentsData.map(async (c: any) => {
+            commentsData.map(async (c) => {
               const { count: likesCount } = await supabase
                 .from('comment_likes')
                 .select('*', { count: 'exact' })
@@ -256,7 +256,7 @@ export function ManhwaCommentsComponent({
       )}
 
       {/* Поле для ввода коментария */}
-      {user?.id && (
+      {user?.id ? (
         <div style={{ marginBottom: '20px', position: 'relative', display: 'flex', alignItems: 'center', backgroundColor: 'transparent', border: '1px solid #3A3A3A', borderRadius: '8px', padding: '0 12px' }}>
           <input
             type="text"
@@ -311,6 +311,10 @@ export function ManhwaCommentsComponent({
           >
             {submitting ? 'Надсилання...' : 'Надіслати'}
           </button>
+        </div>
+      ) : (
+        <div style={{ marginBottom: '20px', padding: '12px 16px', backgroundColor: 'transparent', border: '1px solid #3A3A3A', borderRadius: '8px', color: '#9A9A9A', fontSize: '14px', textAlign: 'center' }}>
+          Будь ласка, <a href="/login" style={{ color: '#A259FF', textDecoration: 'none', cursor: 'pointer' }}>увійдіть</a> щоб залишити коментар
         </div>
       )}
 
