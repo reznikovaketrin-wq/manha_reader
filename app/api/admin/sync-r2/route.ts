@@ -8,13 +8,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// ✅ Утилита для создания клиента (будет вызвана в runtime, не в build time)
+function getSupabaseClient(useServiceRole = false) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = useServiceRole 
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY 
+    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    throw new Error('Missing Supabase credentials');
+  }
+
+  return createClient(url, key);
+}
 
 async function verifyAdmin(token: string) {
   try {
+    // ✅ Создаём клиент ВНУТРИ функции
     const supabaseUser = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
@@ -29,6 +39,9 @@ async function verifyAdmin(token: string) {
 
     const { data: authData, error: authError } = await supabaseUser.auth.getUser();
     if (authError || !authData.user) throw new Error('Unauthorized');
+
+    // ✅ Используем getSupabaseClient для service role
+    const supabase = getSupabaseClient(true);
 
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -99,6 +112,9 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.substring(7);
     await verifyAdmin(token);
+
+    // ✅ Создаём клиент ВНУТРИ функции POST
+    const supabase = getSupabaseClient(true);
 
     const R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL;
     const R2_BUCKET = process.env.R2_BUCKET_NAME;
@@ -255,7 +271,7 @@ export async function POST(request: NextRequest) {
               chapter_id: chapterData.id,
               page_number: index + 1,
               image_url: url,
-              file_path: urlPath, // ✅ ДОБАВЛЕНО
+              file_path: urlPath,
             };
           });
 
