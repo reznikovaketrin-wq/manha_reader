@@ -2,6 +2,7 @@
  * 📁 /app/api/public/[id]/route.ts
  * 
  * 🌐 PUBLIC API - ПОЛУЧИТЬ ОДНУ МАНХВУ С РОЗДІЛАМИ И КОЛИЧЕСТВОМ ОЦЕНОК
+ * ✅ Исправлено: клиент создается внутри функции
  * 
  * GET /api/public/:id
  * 
@@ -33,20 +34,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAnon } from '@/lib/supabase-server';
+
 export const revalidate = 60;       // кэшируем данные на 60 секунд
 export const dynamic = "force-static"; // заставляем Next.js кэшировать API
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // ✅ Создаём клиент ВНУТРИ функции
+    const supabase = getSupabaseAnon();
+
     const id = params.id;
     console.log(`📖 [API] GET /api/public/${id} - Получаю манхву`);
 
@@ -75,7 +75,7 @@ export async function GET(
 
     console.log(`📚 Получено розділов: ${chapters?.length || 0}`);
 
-    // ============ ПОЛУЧАЕМ КОЛИЧЕСТВО ОЦЕНОК ============ ← ДОБАВЛЕНО!
+    // ============ ПОЛУЧАЕМ КОЛИЧЕСТВО ОЦЕНОК ============
     
     const { data: ratings, error: ratingsError } = await supabase
       .from('manhwa_ratings')
@@ -108,7 +108,7 @@ export async function GET(
       charImage: manhwa.char_image,
       status: manhwa.status,
       rating: manhwa.rating,
-      ratingCount: ratingCount,  // ← ДОБАВЛЕНО!
+      ratingCount: ratingCount,
       tags: Array.isArray(manhwa.tags) ? manhwa.tags : [],
       type: manhwa.type,
       publicationType: manhwa.publication_type,

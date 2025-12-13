@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { signOut } from '@/lib/auth';
+import { Session } from '@supabase/supabase-js'
+import { AuthChangeEvent } from '@supabase/supabase-js';
 
 interface User {
   id: string;
@@ -60,7 +62,7 @@ export default function UserMenu() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event: AuthChangeEvent, session: Session | null) => {
       if (session?.user) {
         setUser(session.user as User);
 

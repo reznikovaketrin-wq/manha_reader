@@ -2,29 +2,21 @@
  * 📁 /app/api/admin/chapters/[chapterId]/publish/route.ts
  * 
  * ✅ ОПТИМИЗАЦИЯ: Очищаем кеш при публикации/планировании глав
+ * ✅ Исправлено: используем getSupabaseWithToken и getSupabaseAdmin
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin, getSupabaseWithToken } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
 async function verifyAdmin(token: string) {
-  const supabaseUser = createClient(URL, ANON_KEY, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
+  // ✅ Используем getSupabaseWithToken вместо createClient
+  const supabaseUser = getSupabaseWithToken(token);
 
   const { data: authData, error: authError } = await supabaseUser.auth.getUser();
   if (authError || !authData.user) throw new Error('Unauthorized');
 
-  const supabaseAdmin = createClient(URL, SERVICE_ROLE_KEY);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: userData, error: userError } = await supabaseAdmin
     .from('users')
@@ -53,7 +45,7 @@ export async function PUT(request: NextRequest, { params }: any) {
     const body = await request.json();
     const { action, scheduledAt } = body; // action: 'publish' или 'schedule'
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     let updateData: any = {};
 
@@ -125,7 +117,7 @@ export async function DELETE(request: NextRequest, { params }: any) {
     const token = authHeader.substring(7);
     await verifyAdmin(token);
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('chapters')

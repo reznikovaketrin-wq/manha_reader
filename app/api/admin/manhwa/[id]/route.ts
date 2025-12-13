@@ -2,16 +2,13 @@
  * 🗑️ /app/api/admin/manhwa/[id]/route.ts
  * 
  * ✅ Включает удаление файлов из R2 при удалении манги
+ * ✅ Исправлено - использует getSupabaseAdmin, getSupabaseWithToken
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin, getSupabaseWithToken } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
-
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // R2 конфиг
 const R2_BUCKET = process.env.R2_BUCKET_NAME || 'manhwa-storage';
@@ -30,18 +27,14 @@ const s3Client = new S3Client({
 });
 
 async function verifyAdmin(token: string) {
-  const supabaseUser = createClient(URL, ANON_KEY, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
+  // ✅ Используем getSupabaseWithToken вместо createClient
+  const supabaseUser = getSupabaseWithToken(token);
 
   const { data: authData, error: authError } = await supabaseUser.auth.getUser();
   if (authError || !authData.user) throw new Error('Unauthorized');
 
-  const supabaseAdmin = createClient(URL, SERVICE_ROLE_KEY);
+  // ✅ Используем getSupabaseAdmin вместо createClient
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: userData, error: userError } = await supabaseAdmin
     .from('users')
@@ -67,7 +60,7 @@ export async function GET(request: NextRequest, { params }: any) {
     const token = authHeader.substring(7);
     await verifyAdmin(token);
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('admin_manhwa')
@@ -107,7 +100,7 @@ export async function PUT(request: NextRequest, { params }: any) {
 
     const body = await request.json();
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     // Построить update объект динамически
     const updateData: any = {};
@@ -165,7 +158,7 @@ export async function DELETE(request: NextRequest, { params }: any) {
     const token = authHeader.substring(7);
     await verifyAdmin(token);
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     // 1️⃣ Удаляем манхву из БД
     console.log(`📋 [API] Deleting manhwa from database: ${id}`);

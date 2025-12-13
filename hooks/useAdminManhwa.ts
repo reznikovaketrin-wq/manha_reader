@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { AuthChangeEvent } from '@supabase/supabase-js';
+
 
 interface AdminUser {
   id: string;
@@ -26,7 +28,7 @@ export function useAdminAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent) => {
       console.log('Auth event:', event);
 
       // Если юзер вышел — сбрасываем

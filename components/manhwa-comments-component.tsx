@@ -65,11 +65,11 @@ export function ManhwaCommentsComponent({
               .select('comment_id')
               .eq('user_id', userData.user.id);
             
-            userLikes = new Set(likesData?.map(l => l.comment_id) || []);
+            userLikes = new Set(likesData?.map((l: any) => l.comment_id) || []);
           }
 
           const enrichedComments = await Promise.all(
-            commentsData.map(async (c) => {
+            commentsData.map(async (c: any) => {
               const { count: likesCount } = await supabase
                 .from('comment_likes')
                 .select('*', { count: 'exact' })

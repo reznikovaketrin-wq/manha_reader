@@ -2,29 +2,21 @@
  * 📁 /app/api/admin/chapters/[chapterId]/route.ts
  * 
  * ✅ ОПТИМИЗАЦИЯ: Очищаем кеш при обновлении глав
+ * ✅ Исправлено: используем getSupabaseAdmin и getSupabaseWithToken
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin, getSupabaseWithToken } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
 async function verifyAdmin(token: string) {
-  const supabaseUser = createClient(URL, ANON_KEY, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
+  // ✅ Используем getSupabaseWithToken вместо createClient
+  const supabaseUser = getSupabaseWithToken(token);
 
   const { data: authData, error: authError } = await supabaseUser.auth.getUser();
   if (authError || !authData.user) throw new Error('Unauthorized');
 
-  const supabaseAdmin = createClient(URL, SERVICE_ROLE_KEY);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: userData, error: userError } = await supabaseAdmin
     .from('users')
@@ -50,7 +42,7 @@ export async function GET(request: NextRequest, { params }: any) {
     const token = authHeader.substring(7);
     await verifyAdmin(token);
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     // Получить главу
     const { data: chapter, error: chapterError } = await supabase
@@ -96,7 +88,7 @@ export async function PUT(request: NextRequest, { params }: any) {
     await verifyAdmin(token);
 
     const body = await request.json();
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('chapters')
@@ -147,7 +139,7 @@ export async function DELETE(request: NextRequest, { params }: any) {
     const token = authHeader.substring(7);
     await verifyAdmin(token);
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     // Удалить (каскадное удаление страниц)
     const { error } = await supabase.from('chapters').delete().eq('id', chapterId);

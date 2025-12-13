@@ -2,6 +2,7 @@
  * 📁 /app/api/public/[id]/rate/route.ts
  * 
  * 🌟 PUBLIC API - СОХРАНИТЬ ОЦЕНКУ МАНХВЫ
+ * ✅ Исправлено: клиенты создаются внутри функции
  * 
  * POST /api/public/:id/rate
  * 
@@ -21,25 +22,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Service Role для записи в БД
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
-
-// Anon key для чтения
-const supabaseAnon = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+import { getSupabaseAdmin, getSupabaseAnon } from '@/lib/supabase-server';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    // ✅ Создаём клиенты ВНУТРИ функции
+    const supabaseAdmin = getSupabaseAdmin();
+    const supabaseAnon = getSupabaseAnon();
+
     const manhwaId = params.id;
     const { rating, userId } = await request.json();
 

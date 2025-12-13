@@ -2,6 +2,7 @@
  * 📁 /app/api/public/[id]/chapters/[chapterId]/route.ts
  * 
  * 🌐 PUBLIC API - ПОЛУЧИТЬ СТОРІНКИ РОЗДІЛА
+ * ✅ Исправлено: клиент создается внутри функции
  * 
  * GET /api/public/:id/chapters/:chapterId
  * 
@@ -29,12 +30,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+import { getSupabaseAnon } from '@/lib/supabase-server';
 
 export async function GET(
   request: NextRequest,
@@ -43,6 +39,9 @@ export async function GET(
   try {
     const { id, chapterId } = params;
     console.log(`📖 [API] GET /api/public/${id}/chapters/${chapterId}`);
+
+    // ✅ Создаём клиент ВНУТРИ функции
+    const supabase = getSupabaseAnon();
 
     // Получить розділ
     const { data: chapter, error: chapterError } = await supabase

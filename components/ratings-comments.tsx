@@ -34,7 +34,7 @@ export function ManhwaRatingHeader({ manhwaId }: ManhwaRatingHeaderProps) {
         if (allRatings) {
           const avgRating =
             allRatings.length > 0
-              ? allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length
+              ? allRatings.reduce((sum: number, r: any) => sum + r.rating, 0) / allRatings.length
               : 0;
 
           setAverageRating(avgRating);
@@ -96,7 +96,7 @@ export function ManhwaRatingHeader({ manhwaId }: ManhwaRatingHeaderProps) {
       if (allRatings) {
         const avgRating =
           allRatings.length > 0
-            ? allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length
+            ? allRatings.reduce((sum: number, r: any) => sum + r.rating, 0) / allRatings.length
             : 0;
 
         setAverageRating(avgRating);

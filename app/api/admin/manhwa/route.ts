@@ -7,26 +7,16 @@
  * POST /api/admin/manhwa → создать новую манхву
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin, getSupabaseAnon, getSupabaseWithToken } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
 async function verifyAdmin(token: string) {
-  const supabaseUser = createClient(URL, ANON_KEY, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
+  const supabaseUser = getSupabaseWithToken(token);
 
   const { data: authData, error: authError } = await supabaseUser.auth.getUser();
   if (authError || !authData.user) throw new Error('Unauthorized');
 
-  const supabaseAdmin = createClient(URL, SERVICE_ROLE_KEY);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: userData, error: userError } = await supabaseAdmin
     .from('users')
@@ -51,7 +41,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.substring(7);
     await verifyAdmin(token);
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('admin_manhwa')
@@ -104,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     const { data, error } = await supabase
       .from('admin_manhwa')

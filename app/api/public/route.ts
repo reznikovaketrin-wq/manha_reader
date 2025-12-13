@@ -2,6 +2,7 @@
  * 📁 /app/api/public/route.ts
  * 
  * 🌐 PUBLIC API - ПОЛУЧИТЬ ВСЕ МАНХВЫ
+ * ✅ Исправлено: клиент создается внутри функции
  * 
  * GET /api/public
  * 
@@ -23,28 +24,19 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAnon } from '@/lib/supabase-server';
+
 export const revalidate = 60;       // кэшируем данные на 60 секунд
 export const dynamic = "force-static"; // заставляем Next.js кэшировать API
-
-// Инициализация Supabase с проверкой ключей
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ [API] Missing Supabase credentials');
-  console.error('  NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl ? '✅' : '❌ Missing');
-  console.error('  NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseKey ? '✅' : '❌ Missing');
-}
-
-const supabase = createClient(supabaseUrl || '', supabaseKey || '');
 
 export async function GET(request: NextRequest) {
   console.log('🚀🚀🚀 [API] GET /api/public CALLED! 🚀🚀🚀');
   try {
+    // ✅ Создаём клиент ВНУТРИ функции
+    const supabase = getSupabaseAnon();
+
     console.log('📚 [API] GET /api/public - Получаю все манхвы');
-    console.log('🔧 Supabase URL:', supabaseUrl ? '✅ Configured' : '❌ Missing');
-    console.log('🔧 Supabase Key:', supabaseKey ? '✅ Configured' : '❌ Missing');
+    console.log('🔧 Supabase client created successfully');
 
     // Получить все манхвы
     const { data: manhwas, error: manhwaError } = await supabase

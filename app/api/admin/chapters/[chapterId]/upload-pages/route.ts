@@ -1,10 +1,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin, getSupabaseWithToken } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
-const URL = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '';
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '';
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '';
@@ -21,18 +18,13 @@ const s3Client = new S3Client({
 });
 
 async function verifyAdmin(token: string) {
-  const supabaseUser = createClient(URL, ANON_KEY, {
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
-  });
+  // ✅ Используем getSupabaseWithToken вместо createClient
+  const supabaseUser = getSupabaseWithToken(token);
 
   const { data: authData, error: authError } = await supabaseUser.auth.getUser();
   if (authError || !authData.user) throw new Error('Unauthorized');
 
-  const supabaseAdmin = createClient(URL, SERVICE_ROLE_KEY);
+  const supabaseAdmin = getSupabaseAdmin();
 
   const { data: userData, error: userError } = await supabaseAdmin
     .from('users')
@@ -69,7 +61,7 @@ export async function POST(request: NextRequest, { params }: any) {
 
     console.log(`📤 Uploading ${files.length} pages to R2...`);
 
-    const supabase = createClient(URL, SERVICE_ROLE_KEY);
+    const supabase = getSupabaseAdmin();
 
     // Получить главу
     const { data: chapter, error: chapterError } = await supabase

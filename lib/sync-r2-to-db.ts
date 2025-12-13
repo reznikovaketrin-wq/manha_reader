@@ -11,13 +11,10 @@
  * 5. Создает сторінки из изображений сторінок
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin, getSupabaseAnon, getSupabaseWithToken } from '@/lib/supabase-server';
 import { S3Client, ListObjectsV2Command } from '@aws-sdk/client-s3';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+const supabase = getSupabaseAdmin();
 
 const s3Client = new S3Client({
   region: 'auto',

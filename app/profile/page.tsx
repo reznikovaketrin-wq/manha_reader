@@ -56,7 +56,7 @@ export default function ProfilePage() {
           .eq('user_id', data.user.id);
 
         if (!historyError && historyData) {
-          const uniqueManhwa = new Set(historyData.map(h => h.manhwa_id)).size;
+          const uniqueManhwa = new Set(historyData.map((h: any) => h.manhwa_id)).size;
           const totalChapters = historyData.length;
           
           // Примерный расчет времени (предположим среднее 5 минут на главу)

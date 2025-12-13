@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 interface AdminUser {
   id: string;
@@ -27,7 +28,7 @@ export function useAdminAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       console.log('🔐 [useAdminAuth] Auth state changed:', event);
 
       if (event === 'SIGNED_OUT') {
