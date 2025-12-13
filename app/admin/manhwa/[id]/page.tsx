@@ -390,29 +390,83 @@ export default function AdminManhwaDetailPage() {
     }
   };
 
-  const handlePublishChapter = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ - замени старую handlePublishChapter
 
-    if (!activeChapter) return;
+const handlePublishChapter = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (publishMode === 'schedule' && !publishDate) {
-      setError('Виберіть дату');
-      return;
-    }
+  if (!activeChapter) return;
 
-    try {
-      setUploading(true);
-      setError(null);
+  if (publishMode === 'schedule' && !publishDate) {
+    setError('Виберіть дату');
+    return;
+  }
 
-      if (!token) throw new Error('No token');
+  try {
+    setUploading(true);
+    setError(null);
 
-      const body =
-        publishMode === 'now'
-          ? { action: 'publish' }
-          : {
-              action: 'schedule',
-              scheduledAt: new Date(`${publishDate}T${publishTime}`).toISOString(),
-            };
+    if (!token) throw new Error('No token');
+
+    let scheduledAtISO: string;
+
+    if (publishMode === 'now') {
+      // Публикуем сейчас
+      const body = { action: 'publish' };
+      
+      const response = await fetch(`/api/admin/chapters/${activeChapter.id}/publish`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) throw new Error('Publish failed');
+
+      const data = await response.json();
+
+      setChapters((prev) =>
+        prev.map((ch) => (ch.id === activeChapter.id ? data.data : ch))
+      );
+
+      setModal('none');
+      setPublishDate('');
+      setPublishTime('12:00');
+      setPublishMode('now');
+      await invalidateManhwaCache(id);
+      console.log('✅ Chapter published now');
+    } else {
+      // ✅ ИСПРАВКА: Правильная конвертация времени с учётом timezone
+      
+      // 1. Создаём дату как UTC (date input всегда возвращает YYYY-MM-DD)
+      const [year, month, day] = publishDate.split('-');
+      const [hours, minutes] = publishTime.split(':');
+      
+      // 2. Создаём UTC дату (как если бы это было UTC время)
+      const utcDate = new Date(Date.UTC(
+        parseInt(year),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(hours),
+        parseInt(minutes),
+        0,
+        0
+      ));
+      
+      scheduledAtISO = utcDate.toISOString();
+      
+      console.log('📅 Publish scheduled:', {
+        userInput: { date: publishDate, time: publishTime },
+        utcTime: scheduledAtISO,
+        note: 'Time sent as UTC to database'
+      });
+
+      const body = {
+        action: 'schedule',
+        scheduledAt: scheduledAtISO,
+      };
 
       const response = await fetch(`/api/admin/chapters/${activeChapter.id}/publish`, {
         method: 'PUT',
@@ -436,14 +490,15 @@ export default function AdminManhwaDetailPage() {
       setPublishTime('12:00');
       setPublishMode('now');
       await invalidateManhwaCache(id);
-      console.log('✅ Chapter published');
-    } catch (err) {
-      console.error('❌ Error:', err);
-      setError(err instanceof Error ? err.message : 'Помилка');
-    } finally {
-      setUploading(false);
+      console.log('✅ Chapter scheduled for publication');
     }
-  };
+  } catch (err) {
+    console.error('❌ Error:', err);
+    setError(err instanceof Error ? err.message : 'Помилка');
+  } finally {
+    setUploading(false);
+  }
+};
 
   const handleDeleteChapter = async (chapterId: number) => {
     if (!confirm('Видалити цей розділ?')) return;
