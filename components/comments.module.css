@@ -1,0 +1,468 @@
+/* src/components/styles/comments.module.css */
+
+/* Container */
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Header */
+.header {
+  display: none;
+}
+
+.headerDesktop {
+  display: none; /* По умолчанию скрыт на мобильной */
+}
+
+/* Desktop only - показываем заголовок только на desktop */
+@media (min-width: 768px) {
+  .headerDesktop {
+    display: flex !important; /* Показываем только на desktop */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+  }
+}
+
+/* Мобильная версия - явно скрываем */
+@media (max-width: 767px) {
+  .headerDesktop {
+    display: none !important;
+  }
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.sortSelect {
+  background-color: #0a0a0a;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #cfcfcf;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sortSelect:hover {
+  border-color: #a259ff;
+}
+
+/* ============================================ */
+/* ✅ НОВОЕ: Кнопки сортировки для мобильной версии */
+/* ============================================ */
+
+.sortButtons {
+  display: flex;
+  gap: 8px;
+  margin: 5px 0;
+}
+
+.sortButton {
+  /* ✅ КОПИРУЕМ СТИЛИ ОТ commentSendButton */
+  padding: clamp(4px, 0.6vw, 6px) clamp(9px, 1.2vw, 12px);
+  background-color: transparent;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #cfcfcf;
+  font-size: clamp(10px, 1.1vw, 13px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: fit-content;
+  line-height: 1;
+}
+
+.sortButton:hover:not(.active) {
+  border-color: #a259ff;
+  color: #a259ff;
+}
+
+.sortButton.active {
+  background-color: #a259ff;
+  border-color: #a259ff;
+  color: #ffffff;
+}
+
+/* Form */
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.textarea {
+  background-color: transparent;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #cfcfcf;
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+}
+
+.textarea:focus {
+  border-color: #a259ff;
+}
+
+.textareaSmall {
+  min-height: 60px;
+  font-size: 12px;
+}
+
+.submitButton {
+  padding: 10px 24px;
+  background-color: #a259ff;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submitButton:hover {
+  background-color: #b370ff;
+}
+
+.submitButton:disabled {
+  background-color: #3a3a3a;
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.submitButtonContainer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.replyButtonRow {
+  display: flex;
+  gap: 8px;
+}
+
+/* Auth message */
+.authMessage {
+  padding: 16px;
+  background-color: transparent;
+  border: 1px solid rgba(162, 89, 255, 0.3);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.authText {
+  font-size: 14px;
+  color: #cfcfcf;
+  margin: 0;
+}
+
+.authLink {
+  color: #a259ff;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.authLink:hover {
+  color: #b370ff;
+}
+
+/* States */
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9a9a9a;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9a9a9a;
+}
+
+/* Comments list */
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.comment {
+  padding: 16px;
+  background-color: #0a0a0a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 0.2s;
+}
+
+.comment:hover {
+  border-color: #5a5a5a;
+}
+
+/* Comment header */
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.commentInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.commentAuthor {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.commentDate {
+  color: #9a9a9a;
+  font-size: 12px;
+  margin: 0;
+}
+
+.likeButton {
+  background-color: transparent;
+  border: none;
+  color: #9a9a9a;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+.likeButton:hover {
+  color: #cfcfcf;
+}
+
+.likeButtonLiked {
+  color: #ff1b6d;
+}
+
+.likeButtonLiked:hover {
+  color: #ff3b7d;
+}
+
+.likeIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.likeIconSmall {
+  width: 12px;
+  height: 12px;
+}
+
+/* Comment content */
+.commentContent {
+  color: #cfcfcf;
+  font-size: 14px;
+  line-height: 1.5;
+  word-break: break-word;
+  margin: 0;
+}
+
+.commentContentSmall {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Reply button */
+.replyButton {
+  background-color: transparent;
+  border: none;
+  color: #a259ff;
+  cursor: pointer;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.2s;
+  text-align: left;
+}
+
+.replyButton:hover {
+  color: #b370ff;
+}
+
+/* Reply form */
+.replyFormContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.replyFormButtons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Action buttons */
+.actionButton {
+  padding: 7px 14px;
+  background-color: transparent;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #cfcfcf;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionButton:hover {
+  border-color: #a259ff;
+  color: #a259ff;
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Expand replies */
+.expandButton {
+  background-color: transparent;
+  border: none;
+  color: #9a9a9a;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  transition: color 0.2s;
+}
+
+.expandButton:hover {
+  color: #a259ff;
+}
+
+.expandButtonsContainer {
+  margin-top: 12px;
+}
+
+/* Replies section */
+.repliesContainer {
+  margin-top: 8px;
+  padding-left: 20px;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.reply {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.replyAuthor {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.replyContent {
+  color: #cfcfcf;
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-word;
+  margin-bottom: 6px;
+}
+
+/* ============================================ */
+/* ✅ НОВОЕ: Контейнер для textarea с кнопкой */
+/* ============================================ */
+
+.commentInputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.commentTextarea {
+  width: 100%;
+  min-height: 48px;
+  max-height: 48px;
+  resize: none;
+  overflow-y: auto;
+
+  /* 🔥 КРИТИЧНО: место для кнопки справа */
+  padding: 12px 110px 12px 12px;
+
+  border-radius: 12px;
+  border: 1px solid #3a3a3a;
+  background: #0a0a0a;
+  color: #cfcfcf;
+
+  font-size: 14px;
+  line-height: 1.5;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.commentTextarea:focus {
+  border-color: #a259ff;
+}
+
+.commentSendButton {
+  position: absolute;
+  right: 8px;
+  top: 45%;
+  transform: translateY(-50%);
+
+  padding: clamp(4px, 0.6vw, 6px) clamp(9px, 1.2vw, 12px);
+  background-color: transparent;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #cfcfcf;
+  font-size: clamp(10px, 1.1vw, 13px);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: fit-content;
+  line-height: 1;
+}
+
+.commentSendButton:hover:not(:disabled) {
+  border-color: #a259ff;
+  color: #a259ff;
+}
+
+.commentSendButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

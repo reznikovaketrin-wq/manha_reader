@@ -1,0 +1,19 @@
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    #1A1A1A 0%,
+    #2A2A2A 50%,
+    #1A1A1A 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

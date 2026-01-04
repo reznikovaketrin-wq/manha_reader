@@ -1,0 +1,273 @@
+/* MobileView.module.css - Оновлена версія */
+
+/* ============================================
+   ОСНОВНИЙ КОНТЕЙНЕР
+   ============================================ */
+
+.container {
+  font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  padding: 20px 16px;
+}
+
+/* ============================================
+   ОБКЛАДИНКА
+   ============================================ */
+
+.coverImage {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto 16px;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: #2A2A2A;
+  aspect-ratio: 3/4;
+  background-size: cover;
+  background-position: center;
+}
+
+/* ============================================
+   ТАБИ - КОНТЕЙНЕР
+   ============================================ */
+
+.tabsContainer {
+  border: 1px solid #3A3A3A;
+  border-radius: 12px;
+  background-color: #0A0A0A;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+/* ============================================
+   ТАБИ - НАВІГАЦІЯ
+   ============================================ */
+
+.tabsNav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #3A3A3A;
+  background-color: transparent;
+}
+
+.tabButton {
+  flex: 1;
+  padding: 14px 12px;
+  background-color: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #9A9A9A;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.tabButton.active {
+  border-bottom-color: #A259FF;
+  color: #A259FF;
+}
+
+.tabIcon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================
+   ТАБИ - КОНТЕНТ
+   ============================================ */
+
+.tabContent {
+  padding: 20px;
+}
+
+.description {
+  margin-top: 16px;
+}
+
+.descriptionText {
+  color: #CFCFCF;
+  line-height: 1.45;
+  font-size: 17px;
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ============================================
+   РОЗДІЛИ - ПОШУК І СОРТУВАННЯ
+   ============================================ */
+
+.searchContainer {
+  margin-bottom: 20px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  background-color: transparent;
+  border: 1px solid #3A3A3A;
+  border-radius: 8px;
+  padding: 0 12px;
+}
+
+.searchInput {
+  flex: 1;
+  background-color: transparent;
+  border: none;
+  padding: 10px 16px;
+  color: #CFCFCF;
+  font-size: 14px;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: #6A6A6A;
+}
+
+.sortButton {
+  padding: 0;
+  background-color: transparent;
+  border: none;
+  outline: none;
+  color: #FFFFFF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.sortIcon {
+  width: 23px;
+  height: 23px;
+  filter: brightness(1);
+  transition: all 0.2s;
+}
+
+.sortIcon.active {
+  width: 25px;
+  height: 25px;
+  filter: brightness(3);
+}
+
+/* ============================================
+   КОМЕНТАРІ
+   ============================================ */
+
+.commentsPlaceholder {
+  color: #9A9A9A;
+  text-align: center;
+  padding: 20px;
+}
+
+/* ============================================
+   АДАПТИВНІСТЬ - ВІДСТУПИ
+   ============================================ */
+
+/* Tablet: 768px і менше */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px 12px;
+  }
+
+  .tabContent {
+    padding: 16px;
+  }
+}
+
+/* Mobile: 600px і менше */
+@media (max-width: 600px) {
+  .container {
+    padding: 14px 8px;
+  }
+
+  .coverImage {
+    margin-bottom: 0px;
+  }
+
+  .tabContent {
+    padding: 14px;
+  }
+
+  .searchInput {
+    font-size: 13px;
+    padding: 9px 12px;
+  }
+}
+
+/* Small Mobile: 480px і менше */
+@media (max-width: 480px) {
+  .container {
+    padding: 12px 6px;
+  }
+
+  .coverImage {
+    margin-bottom: 0px;
+  }
+
+  .tabButton {
+    padding: 12px 4px;
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .tabIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .tabContent {
+    padding: 12px;
+  }
+
+  .searchContainer {
+    margin-bottom: 16px;
+    padding: 0 10px;
+  }
+
+  .searchInput {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+
+  .descriptionText {
+    font-size: 16px;
+  }
+}
+
+/* Extra Small Mobile: 390px і менше */
+@media (max-width: 390px) {
+  .container {
+    padding: 10px 4px;
+  }
+
+  .coverImage {
+    margin-bottom: 0px;
+  }
+
+  .tabButton {
+    padding: 10px 6px;
+    font-size: 12px;
+    gap: 5px;
+  }
+
+  .tabIcon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .tabContent {
+    padding: 10px;
+  }
+
+  .searchInput {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+
+  .descriptionText {
+    font-size: 15px;
+  }
+}

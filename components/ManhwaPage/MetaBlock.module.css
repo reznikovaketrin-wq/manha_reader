@@ -1,0 +1,331 @@
+/* MetaBlock.module.css - FIXED WIDTH APPROACH */
+/* Desktop: фіксована max-width, контент підігнаний під неї */
+
+/* ============================================
+   БАЗОВІ СТИЛІ (Mobile-First 360px+)
+   ============================================ */
+
+.metaContainer {
+  /* --- CSS ЗМІННІ (Base: 360px Samsung Galaxy) --- */
+  --icon-size: 24px;
+  --label-sz: 10px;
+  --value-sz: 12px;
+  --count-sz: 9px;
+  --btn-font: 10px;
+  --btn-pad-y: 5px;
+  --btn-pad-x: 10px;
+  --gap-outer: 8px;
+  --gap-inner: 6px;
+  --container-pad-y: 8px;
+  --container-pad-x: 10px;
+
+  /* Layout */
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--gap-outer);
+  padding: var(--container-pad-y) var(--container-pad-x);
+
+  /* ✅ Mobile: full width */
+  width: 100%;
+  max-width: 100%;
+
+  /* Styles */
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  /* Safety */
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ============================================
+   ЕЛЕМЕНТИ
+   ============================================ */
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-inner);
+
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.metaIcon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.metaText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.metaLabel {
+  font-size: var(--label-sz);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin: 0 0 1px 0;
+  white-space: nowrap;
+}
+
+.metaValue {
+  font-size: var(--value-sz);
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.2;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.metaRating {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.metaRatingCount {
+  font-size: var(--count-sz);
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+}
+
+.ratingButton {
+  flex-shrink: 0;
+  padding: var(--btn-pad-y) var(--btn-pad-x);
+  font-size: var(--btn-font);
+  font-weight: 500;
+
+  background: transparent;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  color: #cfcfcf;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.ratingButton:hover {
+  border-color: #a259ff;
+  color: #a259ff;
+}
+
+/* ============================================
+   EDGE CASE <360px (Fold cover)
+   ============================================ */
+
+@media (max-width: 359px) {
+  .metaContainer {
+    --icon-size: 20px;
+    --label-sz: 7px;
+    --value-sz: 10px;
+    --count-sz: 8px;
+    --btn-font: 9px;
+    --btn-pad-y: 4px;
+    --btn-pad-x: 8px;
+    --gap-outer: 6px;
+    --gap-inner: 5px;
+    --container-pad-y: 6px;
+    --container-pad-x: 8px;
+  }
+}
+
+/* ============================================
+   MOBILE (≤767px)
+   ============================================ */
+
+@media (max-width: 767px) {
+  .metaContainer {
+    justify-content: space-between;
+  }
+
+  /* Нижній блок — ховаємо перші 4 */
+  .metaContainer:not(.topBlock) .metaItem:nth-child(-n+4) {
+    display: none;
+  }
+
+  .ratingButton {
+    margin-left: 0;
+  }
+}
+
+/* ============================================
+   TOP BLOCK (завжди тільки 3)
+   ============================================ */
+
+.topBlock {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.topBlock .metaItem:nth-child(n+4),
+.topBlock .ratingButton {
+  display: none !important;
+}
+
+.topBlock .metaItem:nth-child(-n+3) {
+  display: flex !important;
+}
+
+/* ============================================
+   390px+
+   ============================================ */
+
+@media (min-width: 390px) {
+  .metaContainer {
+    --icon-size: 22px;
+    --label-sz: 11px;
+    --value-sz: 13px;
+    --count-sz: 10px;
+    --btn-font: 11px;
+    --btn-pad-y: 6px;
+    --btn-pad-x: 12px;
+    --gap-outer: 10px;
+    --gap-inner: 7px;
+    --container-pad-y: 10px;
+    --container-pad-x: 12px;
+  }
+}
+
+/* ============================================
+   430px+
+   ============================================ */
+
+@media (min-width: 430px) {
+  .metaContainer {
+    --icon-size: 24px;
+    --label-sz: 11px;
+    --value-sz: 14px;
+    --count-sz: 11px;
+    --btn-font: 12px;
+    --btn-pad-y: 6px;
+    --btn-pad-x: 14px;
+    --gap-outer: 12px;
+    --gap-inner: 8px;
+    --container-pad-y: 10px;
+    --container-pad-x: 14px;
+  }
+}
+
+/* ============================================
+   TABLET / DESKTOP 768px+
+   🎯 ФІКСОВАНА ШИРИНА: 840px
+   ============================================ */
+
+@media (min-width: 768px) {
+  .metaContainer {
+    /* ✅ ЗАЙМАЄ ВСЮ ШИРИНУ ДОСТУПНОГО КОНТЕЙНЕРА */
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-start;
+    
+    /* КРОК 2: РОЗМІРИ ПІДІГНАНІ ПІД 840px */
+    --icon-size: 26px;
+    --label-sz: 10px;
+    --value-sz: 13px;
+    --count-sz: 10px;
+    --btn-font: 11px;
+    --btn-pad-y: 6px;
+    --btn-pad-x: 12px;
+    --gap-outer: 10px;  /* Компактні gaps */
+    --gap-inner: 6px;
+    --container-pad-y: 10px;
+    --container-pad-x: 14px;
+  }
+
+  .metaItem:nth-child(-n+6) {
+    display: flex;
+  }
+
+  .ratingButton {
+    margin-left: auto;
+  }
+}
+
+/* ============================================
+   DESKTOP 1024px+
+   🎯 ЗБІЛЬШУЄМО ТРОХИ НА ВЕЛИКИХ ЕКРАНАХ
+   ============================================ */
+
+@media (min-width: 1024px) {
+  .metaContainer {
+    /* ✅ Займає всю ширину контейнера */
+    width: 100%;
+    max-width: 100%;
+    
+    /* Трохи більші розміри для комфорту */
+    --icon-size: 28px;      /* +2px від 768px */
+    --label-sz: 11px;       /* +1px */
+    --value-sz: 14px;       /* +1px */
+    --count-sz: 11px;       /* +1px */
+    --btn-font: 12px;       /* +1px */
+    --gap-outer: 12px;      /* +2px */
+    --gap-inner: 6px;
+    --container-pad-x: 16px; /* +2px */
+  }
+}
+
+/* ============================================
+   LARGE DESKTOP 1440px+
+   🎯 МОЖЕМО ДОЗВОЛИТИ ТРОХИ БІЛЬШЕ
+   ============================================ */
+
+@media (min-width: 1440px) {
+  .metaContainer {
+    /* ✅ Займає всю ширину контейнера */
+    width: 100%;
+    max-width: 100%;
+    
+    /* Комфортні розміри */
+    --icon-size: 30px;
+    --label-sz: 12px;
+    --value-sz: 15px;
+    --count-sz: 11px;
+    --btn-font: 13px;
+    --btn-pad-y: 7px;
+    --btn-pad-x: 14px;
+    --gap-outer: 14px;
+    --gap-inner: 7px;
+    --container-pad-y: 10px;
+    --container-pad-x: 18px;
+  }
+}
+
+/* ============================================
+   МАТЕМАТИКА (для довідки)
+   ============================================ */
+
+/*
+✅ НОВИЙ ПІДХІД: width: 100%
+
+MetaBlock автоматично займає ВСЮ доступну ширину контейнера!
+
+🎯 Доступна ширина на Desktop:
+────────────────────────────────────
+Layout:           1280px (max-width)
+- Padding:         -64px (32px × 2)
+- Cover колонка:  -300px
+- Gap:             -40px
+────────────────────────────────
+= 876px доступно для MetaBlock ✅
+
+MetaBlock тепер займає всі 876px автоматично!
+
+Items розташування:
+- Items компактно зліва (justify-content: flex-start)
+- Кнопка "Оцінити" відштовхується вправо (margin-left: auto)
+- Права границя MetaBlock = права границя Header ✅
+
+Переваги:
+✅ Автоматична адаптація до контейнера
+✅ Не треба вгадувати фіксовану ширину
+✅ Ідеальне вирівнювання з Header
+✅ Масштабується при зміні layout
+*/

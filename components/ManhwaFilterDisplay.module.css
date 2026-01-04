@@ -1,0 +1,352 @@
+/* === КОНТЕЙНЕР ПОИСКА === */
+
+.searchContainer {
+  position: relative;
+  width: 100%;
+  padding: 0.15rem 0 0;
+  margin-bottom: -33px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media (min-width: 768px) {
+  .searchContainer {
+    padding: 1.5rem 0 0.5rem;
+    margin-bottom: 0;
+  }
+}
+
+/* === ОСНОВНОЙ WRAPPER === */
+
+.poda {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  position: relative;
+  height: 32px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .poda {
+    height: 56px;
+  }
+}
+
+/* === ОСНОВНОЙ КОНТЕЙНЕР INPUT С ГРАДИЕНТОМ === */
+
+.main {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  padding: 0 6px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  /* Градиент как у кнопок */
+  background: linear-gradient(#000000, #000000) padding-box,
+              linear-gradient(135deg, #FF1B6D, #A259FF) border-box;
+  border: 2px solid transparent;
+}
+
+@media (min-width: 768px) {
+  .main {
+    padding: 0 12px;
+    border-radius: 12px;
+  }
+}
+
+.poda:hover .main {
+  box-shadow: 0 0 30px rgba(255, 27, 109, 0.5), 0 0 15px rgba(162, 89, 255, 0.3);
+}
+
+.poda:focus-within .main {
+  box-shadow: 0 0 30px rgba(255, 27, 109, 0.5), 0 0 15px rgba(162, 89, 255, 0.3);
+}
+
+/* === INPUT === */
+
+.input {
+  background-color: transparent;
+  border: none;
+  width: 100%;
+  min-width: 200px;
+  height: 100%;
+  border-radius: 10px;
+  color: white;
+  padding-inline: 28px 28px;
+  font-size: 12px;
+  position: relative;
+  z-index: 10;
+  font-family: inherit;
+}
+
+@media (min-width: 768px) {
+  .input {
+    padding-inline: 59px 50px;
+    font-size: 18px;
+  }
+}
+
+.input::placeholder {
+  color: #c0b9c0;
+}
+
+.input:focus {
+  outline: none;
+}
+
+/* === ИКОНКИ === */
+
+.searchIcon {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 11;
+  width: 14px;
+  height: 14px;
+}
+
+@media (min-width: 768px) {
+  .searchIcon {
+    left: 20px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.filterIcon {
+  position: relative;
+  right: 0;
+  top: 0;
+  z-index: 11;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  background: transparent;
+  border: 1.5px solid #d6d6e6;
+  border-radius: 5px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+@media (min-width: 768px) {
+  .filterIcon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    margin-right: 8px;
+  }
+}
+
+.filterIcon:hover {
+  border-color: #e0e0e0;
+  box-shadow: 0 0 12px rgba(214, 214, 230, 0.4);
+}
+
+.filterIcon:active {
+  border-color: #ffffff;
+  transform: scale(0.95);
+}
+
+.filterIcon svg {
+  width: 11px;
+  height: 11px;
+  color: #d6d6e6;
+}
+
+@media (min-width: 768px) {
+  .filterIcon svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (min-width: 768px) {
+  .filterIcon svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* === ФИЛЬТРЫ МОДАЛ === */
+
+.filterModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 20px;
+  z-index: 50;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.filterModalContent {
+  background: #0a0a0a;
+  border: 1px solid rgba(207, 48, 170, 0.3);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 0 30px rgba(207, 48, 170, 0.3),
+              0 0 60px rgba(64, 47, 181, 0.2);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filterModalHeader {
+  font-size: 18px;
+  color: #e0e0e0;
+  font-weight: 600;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.filterModalCloseBtn {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.filterModalCloseBtn:hover {
+  color: #e0e0e0;
+}
+
+.filterModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterLabel {
+  font-size: 14px;
+  color: #a0a0a0;
+  font-weight: 500;
+}
+
+.filterOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filterCheckboxWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.filterCheckbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #cf30aa;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.filterCheckbox:hover {
+  accent-color: #df50ba;
+  transform: scale(1.1);
+}
+
+.filterCheckboxLabel {
+  font-size: 14px;
+  color: #e0e0e0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.filterCheckboxLabel:hover {
+  color: #ffffff;
+}
+
+/* === РЕЗУЛЬТАТЫ СЧЁТЧИК === */
+
+.resultsCount {
+  font-size: 13px;
+  color: #888888;
+  margin-top: 8px;
+}
+
+/* === ПУСТОЙ РЕЗУЛЬТАТ === */
+
+.emptyState {
+  text-align: center;
+  padding: 48px 20px;
+  color: #888888;
+}
+
+.emptyStateTitle {
+  font-size: 18px;
+  color: #e0e0e0;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.emptyStateSubtitle {
+  font-size: 14px;
+  color: #666666;
+}
+
+/* === СКРЫТЫЕ ЭЛЕМЕНТЫ (не используются) === */
+
+.glow,
+.white,
+.border,
+.darkBorderBg,
+.inputMask,
+.pinkMask,
+.filterBorder {
+  display: none;
+}

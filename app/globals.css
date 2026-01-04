@@ -1,0 +1,274 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #111111;
+    --foreground: #ffffff;
+  }
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-page-bg text-text-main;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html {
+    background: #111111;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-shadow-strong {
+    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+  }
+}
+/* globals.css - добавить в конец файла */
+
+/* ========================================
+   FLUID TYPOGRAPHY & RESPONSIVE SCALING
+   ======================================== */
+
+:root {
+  /* FONT SIZES - плавное масштабирование */
+  --fs-h1: clamp(24px, 6vw, 70px);
+  --fs-h2: clamp(20px, 5vw, 48px);
+  --fs-h3: clamp(18px, 4vw, 32px);
+  --fs-base: clamp(14px, 2.5vw, 18px);
+  --fs-sm: clamp(12px, 2vw, 16px);
+  --fs-xs: clamp(10px, 1.5vw, 14px);
+  
+  /* SPACING - плавное масштабирование отступов */
+  --spacing-xs: clamp(4px, 1vw, 8px);
+  --spacing-sm: clamp(8px, 2vw, 12px);
+  --spacing-md: clamp(12px, 3vw, 20px);
+  --spacing-lg: clamp(16px, 4vw, 32px);
+  --spacing-xl: clamp(24px, 5vw, 48px);
+  --spacing-2xl: clamp(32px, 6vw, 64px);
+  
+  /* GAP - для flex/grid */
+  --gap-xs: clamp(4px, 1vw, 8px);
+  --gap-sm: clamp(8px, 1.5vw, 12px);
+  --gap-md: clamp(12px, 2.5vw, 20px);
+  --gap-lg: clamp(16px, 3.5vw, 28px);
+  --gap-xl: clamp(24px, 5vw, 40px);
+  
+  /* BORDER RADIUS */
+  --radius-sm: clamp(4px, 1vw, 8px);
+  --radius-md: clamp(8px, 1.5vw, 12px);
+  --radius-lg: clamp(12px, 2vw, 24px);
+  --radius-xl: clamp(16px, 3vw, 32px);
+  
+  /* IMAGE SIZES */
+  --img-card-height: clamp(180px, 50vw, 320px);
+  --img-cover-width: clamp(140px, 35vw, 260px);
+  
+  /* CONTAINER & WIDTHS */
+  --container-max: 1160px;
+  --container-padding: clamp(16px, 4vw, 48px);
+}
+
+/* ========================================
+   ПРИМЕНЕНИЕ В КОМПОНЕНТАХ
+   ======================================== */
+
+/* Пример использования в компонентах */
+h1 {
+  font-size: var(--fs-h1);
+}
+
+h2 {
+  font-size: var(--fs-h2);
+}
+
+p {
+  font-size: var(--fs-base);
+}
+
+.container {
+  max-width: var(--container-max);
+  padding: 0 var(--container-padding);
+  margin: 0 auto;
+}
+
+.card {
+  padding: var(--spacing-lg);
+  gap: var(--gap-lg);
+  border-radius: var(--radius-lg);
+}
+
+/* ========================================
+   MEDIA QUERIES ТОЛЬКО ДЛЯ LAYOUT
+   ======================================== */
+
+/* Мобилка - вертикальный layout */
+@media (max-width: 640px) {
+  .card-desktop {
+    flex-direction: column;
+  }
+}
+
+/* Планшет и выше - горизонтальный layout */
+@media (min-width: 641px) {
+  .card-desktop {
+    flex-direction: row;
+  }
+}
+
+/* ========================================
+   MOBILE VIEWPORT FIXES
+   Исправления для правильного масштабирования
+   ======================================== */
+
+@layer base {
+  /* Fix для html - убирает горизонтальный скролл */
+  html {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    width: 100%;
+    /* Гладкий скролл на iOS */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Гладкий скролл для контейнеров с overflow */
+  div[style*="overflow-y: auto"],
+  div[style*="overflow: auto"] {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Защита от горизонтального скролла - max-width на все элементы */
+@layer base {
+  * {
+    max-width: 100%;
+  }
+
+  /* Отключает зум на double-tap для элементов с touch-none */
+  .touch-none {
+    touch-action: none;
+  }
+
+  /* Изображения - защита от drag и выделения */
+  img {
+    -webkit-user-drag: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Гладкое поведение скролла */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Убирает стандартный зум на инпутах (font-size: 16px) */
+  input[type="range"],
+  input[type="number"],
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  textarea,
+  select {
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* Убирает выделение при долгом нажатии */
+  div,
+  span,
+  img,
+  button,
+  a {
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Safe Area поддержка для notch и других cutouts */
+@supports (padding: max(0px)) {
+  /* Не добавляем padding на body, так как это может сломать layout */
+  /* Safe area уже учитывается браузером для fixed элементов */
+}
+
+/* Специфичные стили для reader компонента */
+@layer utilities {
+  /* Убирает стандартное поведение зума при фокусе на iOS */
+  .no-ios-zoom input {
+    font-size: 16px !important;
+  }
+
+  /* Плавный скролл для контейнеров */
+  .scroll-smooth-ios {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Предотвращает перемасштабирование при input focus */
+  .input-no-zoom {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+/* ========================================
+   SITE CONTAINER - ЕДИНЫЙ ДЛЯ ВСЕГО САЙТА
+   ======================================== */
+
+.site-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  padding-left: 32px;
+  padding-right: 32px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .site-container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* ========================================
+   ДОПОЛНИТЕЛЬНЫЕ УТИЛИТЫ
+   ======================================== */
+
+@layer utilities {
+  /* Для скрытия элемента но сохранения пространства */
+  .invisible-preserve {
+    visibility: hidden;
+  }
+
+  /* Полноэкранный контейнер */
+  .fullscreen {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  /* Контейнер с ограничением ширины */
+  .max-screen-width {
+    width: 100vw;
+    max-width: 100%;
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "manhwa": [
+    {
+      "id": "lycar-ta-vidma",
+      "title": "Лицар та Відьма",
+      "description": "Зерак — зухвала відьма, народжена з самоцвіту. Її не приймають у злет традиційних відьом, тому вона вирушає у мандри. На своєму шляху вона зустрічає трьох загадкових чоловіків, і кожен з них може змінити її долю — як у коханні, так і в магії.",
+      "coverImage": "/lycar-ta-vidma/cover.png",
+      "status": "ongoing",
+      "rating": 8.9,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
+      "scheduleDay": {
+        "dayBig": "ПН",
+        "dayLabel": "Понеділок",
+        "note": "Нове оновлення кожного понеділка."
+      },
+      "chapters": [
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 4
+        },
+        {
+          "id": "02",
+          "number": 2,
+          "pagesCount": 4
+        },
+        {
+          "id": "03",
+          "number": 3,
+          "pagesCount": 4
+        }
+      ]
+    },
+    {
+      "id": "laboratoriia-krisel-kokhannia",
+      "title": "Лабораторія крісел кохання",
+      "description": "З кожним днем «Лабораторія крісел кохання» продовжує вдосконалюватися, а її особливість полягає в тому, що співробітники охоче занурюються в цю ілюзію.",
+      "coverImage": "/laboratoriia-krisel-kokhannia/cover.png",
+      "status": "ongoing",
+      "rating": 8.5,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
+      "chapters": [
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 8
+        },
+        {
+          "id": "02",
+          "number": 2,
+          "pagesCount": 5
+        },
+        {
+          "id": "03",
+          "number": 3,
+          "pagesCount": 4
+        }
+      ]
+    },
+    {
+      "id": "klub-dorosloi-literatury",
+      "title": "Клуб дорослої літератури",
+      "description": "Першокурсниця Хоїн вступає до книжкового клубу, де начебто достатньо просто читати вголос. Але дуже швидко вона розуміє, що обрана література — зовсім не невинна.",
+      "coverImage": "/klub-dorosloi-literatury/cover.png",
+      "status": "ongoing",
+      "rating": 8.7,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
+      "scheduleDay": {
+        "dayBig": "СР",
+        "dayLabel": "Середа",
+        "note": "Справжній дорослий клуб посеред тижня."
+      },
+      "chapters": [
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 10
+        },
+        {
+          "id": "02",
+          "number": 2,
+          "pagesCount": 8
+        },
+        {
+          "id": "03",
+          "number": 3,
+          "pagesCount": 6
+        },
+        {
+          "id": "04",
+          "number": 4,
+          "pagesCount": 5
+        },
+        {
+          "id": "05",
+          "number": 5,
+          "pagesCount": 6
+        }
+      ]
+    },
+    {
+      "id": "yak-pryborkaty-hercoga-monstra",
+      "title": "Як приборкати герцога-монстра",
+      "description": "Чарівниця Неоніс має зняти прокляття з герцога, у жилах якого тече кров драконів. Чим довше вона залишається в маєтку, тим сильніше чудовисько бачить у ній свою пару.",
+      "coverImage": "/yak-pryborkaty-hercoga-monstra/cover.png",
+      "status": "completed",
+      "rating": 9.3,
+      "tags": [],
+      "chapters": [
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 7
+        }
+      ]
+    },
+    {
+      "id": "yak-otrymaty-tu-pokoivku",
+      "title": "Як отримати ту покоївку",
+      "description": "Генрі та Ґрейс виросли разом, але їхні заручини перетворилися на формальність. Після падіння роду Ґрейс баланс руйнується, а нічні домовленості стають небезпечно відвертими.",
+      "coverImage": "/yak-otrymaty-tu-pokoivku/cover.png",
+      "status": "completed",
+      "rating": 8.8,
+      "tags": [],
+      "scheduleDay": {
+        "dayBig": "ЧТ",
+        "dayLabel": "Четвер",
+        "note": "Продовження історії щочетверга."
+      },
+      "chapters": [
+        {
+          "id": "00",
+          "number": 1,
+          "pagesCount": 2
+        },
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 6
+        },
+        {
+          "id": "02",
+          "number": 1,
+          "pagesCount": 6
+        }
+      ]
+    },
+    {
+      "id": "punkni-vyshenky",
+      "title": "Пуньки вишеньки",
+      "description": "Є Ін усе життя соромилася своїх втягнутих сосків і клялася ніколи не показувати груди. Але випадкова ніч з Джеміном, надто уважним юристом, змінює все.",
+      "coverImage": "/punkni-vyshenky/cover.png",
+      "status": "ongoing",
+      "rating": 8.5,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
+      "scheduleDay": {
+        "dayBig": "ПТ",
+        "dayLabel": "П'ятниця",
+        "note": "П'ятничний реліз для тих, хто чекав."
+      },
+      "chapters": [
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 5
+        }
+      ]
+    },
+    {
+      "id": "miy-drug-dytynstva",
+      "title": "Мій друг дитинства, якого я вважала мертвим, став володарем демонів",
+      "description": "Люссі жила тихим життям поруч з Орто, поки її друг дитинства, якого всі вважали мертвим, не повернувся як король демонів — і тепер не збирається відпускати її знову.",
+      "coverImage": "/miy-drug-dytynstva/cover.png",
+      "status": "ongoing",
+      "rating": 9.0,
+      "tags": ["БЕЗ ЦЕНЗУРИ", "МАНХВА"],
+      "chapters": [
+        {
+          "id": "01",
+          "number": 1,
+          "pagesCount": 10
+        }
+      ]
+    }
+  ]
+}
