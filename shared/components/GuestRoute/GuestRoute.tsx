@@ -37,7 +37,7 @@ export const GuestRoute: React.FC<GuestRouteProps> = ({
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       // Check if there's a redirect parameter
-      const redirect = searchParams.get('redirect');
+      const redirect = searchParams?.get('redirect');
       const destination = redirect || redirectTo;
       
       router.push(destination);

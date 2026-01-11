@@ -18,6 +18,7 @@ export interface EnrichedComment extends BaseComment {
   likes_count?: number;
   user_liked?: boolean;
   users?: { username?: string | null; email?: string | null } | null;
+  display_name?: string | null;
 }
 
 // Include related user info when loading comments
@@ -32,7 +33,7 @@ export interface CommentWithUser extends BaseComment {
 export async function loadChapterComments(
   manhwaId: string,
   chapterId: string
-): Promise<BaseComment[]> {
+): Promise<EnrichedComment[]> {
   try {
     const { data, error } = await supabase
       .from('chapter_comments')
@@ -173,7 +174,7 @@ export async function createChapterComment(
 
 export async function loadManhwaComments(
   manhwaId: string
-): Promise<CommentWithUser[]> {
+): Promise<EnrichedComment[]> {
   try {
     const { data, error } = await supabase
       .from('manhwa_comments')

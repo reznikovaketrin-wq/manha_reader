@@ -48,7 +48,7 @@ export default function ReaderPage() {
   const manhwaId = params?.id as string;
   const chapterId = params?.chapterId as string;
   const searchParams = useSearchParams();
-  const searchString = typeof searchParams === 'undefined' ? '' : searchParams.toString();
+  const searchString = searchParams ? searchParams.toString() : '';
 
   // === User Context ===
   const { user } = useUser();

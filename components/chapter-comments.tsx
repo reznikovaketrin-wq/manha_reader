@@ -10,7 +10,7 @@ import {
   loadUserLikes,
   toggleCommentLike,
   getCommentLikesCount,
-  type BaseComment,
+  type EnrichedComment,
 } from '../lib/comments.utils';
 import {
   CommentForm,
@@ -43,7 +43,7 @@ export function ChapterCommentsComponent({
 }: ChapterCommentsComponentProps) {
   const { user } = useUser();
   const { profile, isAdmin } = useUserProfile();
-  const [comments, setComments] = useState<BaseComment[]>([]);
+  const [comments, setComments] = useState<EnrichedComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');

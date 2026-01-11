@@ -39,7 +39,7 @@ import { ManhwaPageSkeleton } from './Skeleton';
  */
 function ManhwaPageContent() {
   const params = useParams();
-  const manhwaId = params.id as string;
+  const manhwaId = params?.id as string;
 
   // ============================================
   // РЕАЛЬНЫЕ ХУКИ ДАННЫХ
