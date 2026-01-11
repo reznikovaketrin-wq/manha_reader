@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { RatingModal } from './RatingModal';
 import { DesktopView } from './DesktopView';
 import { MobileView } from './MobileView';
@@ -18,7 +18,7 @@ interface Range {
  * ✅ Правильно управляет состоянием модалки
  * ✅ Правильно передает пропсы
  */
-const ManhwaPage = memo(function ManhwaPage({
+function ManhwaPage({
   manhwaId,
   manhwa,
   filteredChapters,
@@ -33,22 +33,13 @@ const ManhwaPage = memo(function ManhwaPage({
   canComment = true,
   clientRatingOverride = null,
 }: ManhwaPageProps) {
-  // Guard clause - render a stable placeholder instead of returning null
-  // to avoid hydration/markup mismatches between renders
-  if (!manhwa) {
-    return (
-      <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh' }} data-loading="manhwa">
-        <div className="manhwa-loading" aria-hidden>
-          Loading manhwa…
-        </div>
-      </div>
-    );
-  }
-
   const { user } = useUser();
   const [lastReadEntry, setLastReadEntry] = useState<any | null>(null);
   const [readChaptersSet, setReadChaptersSet] = useState<Set<string>>(new Set());
   const [archivedRanges, setArchivedRanges] = useState<Range[]>([]);
+
+  // Do not return early here — render a loading placeholder inside JSX
+  // so hook order remains stable between renders.
 
   // Load last read chapter
   useEffect(() => {
@@ -113,33 +104,40 @@ const ManhwaPage = memo(function ManhwaPage({
     loadProgress();
     return () => { mounted = false; };
   }, [user?.id, manhwaId, manhwa?.chapters?.length]);
+  // compute first chapter to open (memoized at top-level to respect Hooks rules)
+  const { computedFirstChapterId, computedFirstChapterPage } = useMemo(() => {
+    if (!manhwa?.chapters) {
+      return { computedFirstChapterId: '', computedFirstChapterPage: null };
+    }
+    const id = (lastReadEntry as any)?.chapter_id || manhwa.chapters?.[0]?.id || '';
+    const page = (lastReadEntry as any)?.page_number ?? null;
+    return { computedFirstChapterId: id, computedFirstChapterPage: page };
+  }, [lastReadEntry?.chapter_id, lastReadEntry?.page_number, manhwa?.chapters?.length]);
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
-      {/* ============================================
-          МОДАЛКА РЕЙТИНГА - ПРАВИЛЬНАЯ
-          ============================================ */}
-      <RatingModal
-        open={showRatingModal}
-        onClose={onRatingModalClose}
-        onSubmit={onRatingSubmit}
-        currentRating={Math.round((clientRatingOverride ?? manhwa.rating) || 0)}
-      />
+      {!manhwa ? (
+        <div data-loading="manhwa">
+          <div className="manhwa-loading" aria-hidden>
+            Loading manhwa…
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ============================================
+              МОДАЛКА РЕЙТИНГА - ПРАВИЛЬНАЯ
+              ============================================ */}
+          <RatingModal
+            open={showRatingModal}
+            onClose={onRatingModalClose}
+            onSubmit={onRatingSubmit}
+            currentRating={Math.round((clientRatingOverride ?? manhwa.rating) || 0)}
+          />
 
-      {/* ============================================
-          ВЫБОР ВЕРСИИ (desktop / mobile)
-          ============================================ */}
-      {/* compute and log first chapter to open */}
-      {/* compute first chapter to open (memoized) */}
-      {(() => {
-        const { computedFirstChapterId, computedFirstChapterPage } = useMemo(() => {
-          const id = lastReadEntry?.chapter_id || manhwa.chapters?.[0]?.id || '';
-          const page = lastReadEntry?.page_number ?? null;
-          return { computedFirstChapterId: id, computedFirstChapterPage: page };
-        }, [lastReadEntry?.chapter_id, lastReadEntry?.page_number, manhwa.chapters?.length]);
-
-        if (isMobile) {
-          return (
+          {/* ============================================
+              ВЫБОР ВЕРСИИ (desktop / mobile)
+              ============================================ */}
+          {isMobile ? (
             <MobileView
               manhwaId={manhwaId}
               manhwa={{ ...manhwa, rating: clientRatingOverride ?? manhwa.rating }}
@@ -154,28 +152,25 @@ const ManhwaPage = memo(function ManhwaPage({
               readChapters={readChaptersSet}
               archivedRanges={archivedRanges}
             />
-          );
-        }
-
-        return (
-          <DesktopView
-            manhwaId={manhwaId}
-            manhwa={{ ...manhwa, rating: clientRatingOverride ?? manhwa.rating }}
-            filteredChapters={filteredChapters}
-            canRate={canRate}
-            canComment={canComment}
-            onRatingModalOpen={onRatingModalOpen}
-            firstChapterId={computedFirstChapterId}
-            firstChapterPage={computedFirstChapterPage}
-            readChapters={readChaptersSet}
-            archivedRanges={archivedRanges}
-          />
-        );
-      })()}
-      
+          ) : (
+            <DesktopView
+              manhwaId={manhwaId}
+              manhwa={{ ...manhwa, rating: clientRatingOverride ?? manhwa.rating }}
+              filteredChapters={filteredChapters}
+              canRate={canRate}
+              canComment={canComment}
+              onRatingModalOpen={onRatingModalOpen}
+              firstChapterId={computedFirstChapterId}
+              firstChapterPage={computedFirstChapterPage}
+              readChapters={readChaptersSet}
+              archivedRanges={archivedRanges}
+            />
+          )}
+        </>
+      )}
     </div>
   );
-});
+}
 
 ManhwaPage.displayName = 'ManhwaPage';
 

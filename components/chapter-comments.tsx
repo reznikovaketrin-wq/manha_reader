@@ -90,7 +90,8 @@ export function ChapterCommentsComponent({
 
             return {
               ...c,
-              user_email: (c as any).users?.email || user?.email || 'Анонім',
+              display_name: (c as any).display_name || (c as any).users?.username || c.user_email || null,
+              user_email: (c as any).users?.email || c.user_email || 'Анонім',
               users: (c as any).users,
               likes_count: likesCount,
               user_liked: userLikes.has(c.id),
@@ -98,6 +99,13 @@ export function ChapterCommentsComponent({
             } as any;
           })
         );
+        // Debug log to help verify usernames are present at runtime
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('📥 [Comments] Enriched comments loaded:', enrichedData);
+        } else {
+          // also log in production for a short time to Vercel logs
+          console.log('[Comments] Enriched comments count:', enrichedData.length);
+        }
         setComments(enrichedData);
       } catch (err) {
         console.error('Error loading comments:', err);
@@ -139,7 +147,7 @@ export function ChapterCommentsComponent({
 
     setSubmitting(true);
 
-    try {
+      try {
       const data = await createChapterComment(
         manhwaId,
         chapterId,
@@ -150,6 +158,7 @@ export function ChapterCommentsComponent({
       setComments([
         {
           ...data,
+          display_name: (profile as any)?.username || (user.email || '').split('@')[0],
           user_email: user.email || 'Анонім',
           users: { username: (profile as any)?.username, email: user.email },
           likes_count: 0,
@@ -193,6 +202,7 @@ export function ChapterCommentsComponent({
           ...comments,
           {
             ...data,
+              display_name: (profile as any)?.username || (user.email || '').split('@')[0],
               user_email: user.email || 'Анонім',
               users: { username: (profile as any)?.username, email: user.email },
             likes_count: 0,

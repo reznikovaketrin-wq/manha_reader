@@ -49,15 +49,28 @@ export function ManhwaCommentsComponent({
         const enrichedComments = await Promise.all(
           commentsData.map(async (c) => {
             const likesCount = await getCommentLikesCount(c.id);
-            return {
+            const enriched = {
               ...c,
+              display_name: (c as any).display_name || (c as any).users?.username || c.user_email || null,
               // Prefer username from joined user record, otherwise try email
-              user_email: (c as any).users?.email || user?.email || 'Анонім',
+              user_email: (c as any).users?.email || c.user_email || 'Анонім',
               likes_count: likesCount,
               user_liked: userLikes.has(c.id),
               // keep users object so UI can show username immediately
               users: (c as any).users,
             };
+            
+            // Debug log
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('[manhwa-comments] Enriched comment:', {
+                id: c.id,
+                display_name: enriched.display_name,
+                users: (c as any).users,
+                user_email: enriched.user_email,
+              });
+            }
+            
+            return enriched;
           })
         );
 
@@ -98,10 +111,20 @@ export function ManhwaCommentsComponent({
   );
 
   const formatAuthor = (c: EnrichedComment) => {
+    const displayName = (c as any).display_name;
+    if (displayName && String(displayName).trim()) return String(displayName);
+
     const usersObj = (c as any).users;
     const username = usersObj?.username;
     if (username && String(username).trim()) return String(username);
-    return 'Користувач';
+    
+    // Fallback to email username part
+    const email = c.user_email || (c as any).users?.email;
+    if (email && email !== 'Анонім') {
+      return email.split('@')[0];
+    }
+    
+    return 'Анонім';
   };
 
   const handleSubmitComment = useCallback(async () => {
@@ -121,6 +144,7 @@ export function ManhwaCommentsComponent({
       const data = await createManhwaComment(manhwaId, user.id, newComment);
       const newEnrichedComment: EnrichedComment = {
         ...data,
+        display_name: (profile as any)?.username || (user.email || '').split('@')[0],
         user_email: user.email,
         // Attach current user's username/email so UI shows username immediately
         users: { username: (profile as any)?.username, email: user.email },
@@ -157,6 +181,7 @@ export function ManhwaCommentsComponent({
         const data = await createManhwaComment(manhwaId, user.id, replyText, parentCommentId);
         const newReply: EnrichedComment = {
           ...data,
+          display_name: (profile as any)?.username || (user.email || '').split('@')[0],
           user_email: user.email,
           likes_count: 0,
           user_liked: false,

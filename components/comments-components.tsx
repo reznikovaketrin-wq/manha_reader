@@ -79,7 +79,25 @@ export function CommentItem({
   const { profile, isAdmin } = useUserProfile();
   const [showMenu, setShowMenu] = useState(false);
   
-  const userName = (comment as any).users?.username || comment.user_email?.split('@')[0] || 'Анонім';
+  const resolvedUser = (comment as any).users;
+  const userEmail = (comment as any).user_email;
+  const userId = (comment as any).user_id;
+  const displayName = (comment as any).display_name;
+
+  const userName = displayName
+    ? displayName
+    : resolvedUser && resolvedUser.username
+      ? resolvedUser.username
+      : userEmail
+        ? userEmail.split('@')[0]
+        : userId
+          ? `user_${String(userId).slice(0,6)}`
+          : 'Анонім';
+
+  // Small debug to ensure rendered name is resolved correctly
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🧾 [CommentItem] userName:', userName, 'resolvedUser:', resolvedUser, 'user_email:', userEmail, 'user_id:', userId);
+  }
   const date = new Date(comment.created_at).toLocaleDateString('uk-UA');
   
   // ✅ Может ли удалить комментарий? (только админ)

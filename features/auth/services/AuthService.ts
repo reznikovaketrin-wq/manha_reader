@@ -7,6 +7,16 @@ import { User, Session, AuthError } from '../types';
 import { createAuthError, logAuthEvent, AuthEvents } from '../utils';
 
 class AuthService {
+  private getSiteOrigin(): string {
+    // Prefer explicit public site URL (set in Vercel envs) to avoid localhost in production
+    // If not provided, fall back to the current browser origin.
+    // Use `NEXT_PUBLIC_SITE_URL` in production deployments (set to https://your-domain.com).
+    // This helps when emails are generated server-side or build-time and `window.location` is not reliable.
+    const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (envUrl && envUrl.length > 0) return envUrl;
+    if (typeof window !== 'undefined' && window.location && window.location.origin) return window.location.origin;
+    return '';
+  }
   // ===== SIGN IN =====
   async signIn(email: string, password: string, rememberMe: boolean = false): Promise<{ user: User | null; session: Session | null; error: AuthError | null }> {
     try {
@@ -52,12 +62,13 @@ class AuthService {
   // ===== SIGN UP =====
   async signUp(email: string, password: string, metadata?: { username?: string }): Promise<{ user: User | null; session: Session | null; error: AuthError | null }> {
     try {
+      const base = this.getSiteOrigin();
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: metadata,
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${base}/auth/callback`
         }
       });
 
@@ -107,8 +118,9 @@ class AuthService {
   // ===== RESET PASSWORD FOR EMAIL =====
   async resetPasswordForEmail(email: string): Promise<{ error: AuthError | null }> {
     try {
+      const base = this.getSiteOrigin();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/reset-password`
+        redirectTo: `${base}/auth/reset-password`
       });
 
       if (error) {
@@ -235,11 +247,12 @@ class AuthService {
   // ===== RESEND CONFIRMATION EMAIL =====
   async resendConfirmationEmail(email: string): Promise<{ error: AuthError | null }> {
     try {
+      const base = this.getSiteOrigin();
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${base}/auth/callback`
         }
       });
 

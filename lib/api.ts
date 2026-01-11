@@ -16,10 +16,25 @@
 // Если в env задано http://localhost:3000 (для локальной сборки), при доступе с другого хоста
 // (например 192.168.x.x на мобильном) запросы должны идти на текущий origin, иначе возникнет CORS.
 let API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+
+// В браузере используем текущий origin при локальном адресе
 if (typeof window !== 'undefined') {
-  // Если env ссылается на localhost, заменяем на текущий origin (LAN/remote access)
   if (API_BASE && API_BASE.includes('localhost')) {
     API_BASE = window.location.origin;
+  }
+} else {
+  // На сервере undici (Node) не поддерживает относительные URL без базового origin.
+  // Собираем абсолютный URL в следующем порядке:
+  // 1) NEXT_PUBLIC_API_URL (если задан)
+  // 2) VERCEL_URL (производство на Vercel) -> https://{VERCEL_URL}
+  // 3) fallback на localhost с портом из env или 3000 (разработка)
+  if (!API_BASE) {
+    if (process.env.VERCEL_URL) {
+      API_BASE = `https://${process.env.VERCEL_URL}`;
+    } else {
+      const port = process.env.PORT || '3000';
+      API_BASE = `http://localhost:${port}`;
+    }
   }
 }
 

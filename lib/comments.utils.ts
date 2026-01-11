@@ -33,15 +33,113 @@ export async function loadChapterComments(
   manhwaId: string,
   chapterId: string
 ): Promise<BaseComment[]> {
-  const { data, error } = await supabase
-    .from('chapter_comments')
-    .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
-    .eq('manhwa_id', manhwaId)
-    .eq('chapter_id', chapterId)
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('chapter_comments')
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
+      .eq('manhwa_id', manhwaId)
+      .eq('chapter_id', chapterId)
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data || [];
+    if (error) throw error;
+    // Если связь users не настроена или возвращает null, вернём данные как есть —
+    // вызывающий код уже умеет падать back к email/'Анонім'.
+    // Однако, чтобы гарантировать наличие username, проверим и подгрузим пользователей при необходимости.
+    const rows = (data || []) as any[];
+    const needFallback = rows.some(r => !r.users || !r.users.username);
+    if (!needFallback) return rows;
+
+    // Подгружаем пользователей отдельно и мапим по user_id
+    const userIds = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
+    if (userIds.length === 0) return rows;
+
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, username, email')
+      .in('id', userIds);
+
+    // Если users table не содержит username, попробуем profiles
+    let usersMap = new Map<string, { username?: string | null; email?: string | null }>();
+
+    if (!usersError && usersData) {
+      (usersData || []).forEach((u: any) => usersMap.set(u.id, { username: u.username, email: u.email }));
+    }
+
+    // Always try profiles if we have missing info or simply to supplement
+    // Especially important because 'users' table often has strict RLS that hides other users
+    if (usersMap.size < userIds.length) {
+      try {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, username, email')
+          .in('id', userIds);
+        
+        (profilesData || []).forEach((u: any) => {
+          const existing = usersMap.get(u.id);
+          usersMap.set(u.id, { 
+            username: u.username || existing?.username, 
+            email: u.email || existing?.email 
+          });
+        });
+      } catch (pe) {
+        // ignore
+      }
+    }
+
+    return rows.map(r => {
+      const u = r.users;
+      const m = usersMap.get(r.user_id);
+      return { ...r, users: (u && u.username) ? u : (m || u || null) };
+    });
+  } catch (err) {
+    // В крайнем случае — пробуем более простой селект без relation
+    const { data, error } = await supabase
+      .from('chapter_comments')
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id')
+      .eq('manhwa_id', manhwaId)
+      .eq('chapter_id', chapterId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    const rows = (data || []) as any[];
+
+    // Попробуем подгрузить пользователей для этих комментариев
+    const userIds = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
+    if (userIds.length > 0) {
+      try {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, username, email')
+          .in('id', userIds);
+
+        let usersMap = new Map<string, { username?: string | null; email?: string | null }>();
+        if (usersData) {
+          (usersData || []).forEach((u: any) => usersMap.set(u.id, { username: u.username, email: u.email }));
+        }
+
+        if (usersMap.size < userIds.length) {
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, username, email')
+            .in('id', userIds);
+          
+          (profilesData || []).forEach((u: any) => {
+             const existing = usersMap.get(u.id);
+             usersMap.set(u.id, { 
+               username: u.username || existing?.username, 
+               email: u.email || existing?.email 
+             });
+          });
+        }
+
+        return rows.map(r => ({ ...r, users: usersMap.get(r.user_id) || null }));
+      } catch (uerr) {
+        return rows;
+      }
+    }
+
+    return rows;
+  }
 }
 
 export async function createChapterComment(
@@ -79,7 +177,7 @@ export async function loadManhwaComments(
   try {
     const { data, error } = await supabase
       .from('manhwa_comments')
-      .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id, display_name, users(username,email)')
       .eq('manhwa_id', manhwaId)
       .order('created_at', { ascending: false });
 
@@ -89,7 +187,7 @@ export async function loadManhwaComments(
     console.warn('Could not select related users for manhwa_comments, retrying without relation', err);
     const { data, error } = await supabase
       .from('manhwa_comments')
-      .select('id, user_id, content, created_at, updated_at, parent_comment_id')
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id, display_name')
       .eq('manhwa_id', manhwaId)
       .order('created_at', { ascending: false });
 
@@ -136,7 +234,7 @@ export async function createManhwaComment(
           parent_comment_id: parentCommentId || null,
         },
       ])
-      .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id, display_name, users(username,email)')
       .single();
 
     if (error) throw error;
@@ -153,7 +251,7 @@ export async function createManhwaComment(
           parent_comment_id: parentCommentId || null,
         },
       ])
-      .select()
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id, display_name')
       .single();
 
     if (error) throw error;
