@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAdminAccess } from '@/lib/admin';
-import { setUserRole } from '@/lib/auth';
+import { getSupabaseAdminClient } from '@/lib/supabase-server';
 
 export async function POST(
   request: NextRequest,
@@ -51,19 +51,35 @@ export async function POST(
 
     const userId = params.id;
 
-    // Изменяем роль
-    const updateResult = await setUserRole(
-      userId,
-      role as 'user' | 'vip' | 'admin',
-      durationType as 'permanent' | 'month' | 'custom_days',
-      customDays
-    );
+    // Изменяем роль (выполняем обновление напрямую, чтобы избежать несоответствий типов при сборке)
+    const supabase = getSupabaseAdminClient();
 
-    if ('error' in updateResult) {
-      return NextResponse.json(
-        { error: updateResult.error },
-        { status: 500 }
-      );
+    let roleExpiration: string | null = null;
+    const dur = (durationType as 'permanent' | 'month' | 'custom_days') || 'permanent';
+
+    if (dur === 'month') {
+      const now = new Date();
+      now.setMonth(now.getMonth() + 1);
+      roleExpiration = now.toISOString();
+    } else if (dur === 'custom_days' && customDays) {
+      const now = new Date();
+      now.setDate(now.getDate() + Number(customDays));
+      roleExpiration = now.toISOString();
+    }
+
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({
+        role,
+        role_duration_type: dur,
+        role_expiration: roleExpiration,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+
+    if (updateError) {
+      console.error('❌ [API] Error updating role:', updateError);
+      return NextResponse.json({ error: updateError.message || 'Failed to update role' }, { status: 500 });
     }
 
     console.log(`✅ [API] Role updated for user ${userId}: ${role}`);
