@@ -26,11 +26,11 @@ if (typeof window !== 'undefined') {
   // На сервере undici (Node) не поддерживает относительные URL без базового origin.
   // Собираем абсолютный URL в следующем порядке:
   // 1) NEXT_PUBLIC_API_URL (если задан)
-  // 2) VERCEL_URL (производство на Vercel) -> https://{VERCEL_URL}
+  // 2) NEXT_PUBLIC_SITE_URL (production) -> use provided public site URL
   // 3) fallback на localhost с портом из env или 3000 (разработка)
   if (!API_BASE) {
-    if (process.env.VERCEL_URL) {
-      API_BASE = `https://${process.env.VERCEL_URL}`;
+    if (process.env.NEXT_PUBLIC_SITE_URL) {
+      API_BASE = process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, '');
     } else {
       const port = process.env.PORT || '3000';
       API_BASE = `http://localhost:${port}`;

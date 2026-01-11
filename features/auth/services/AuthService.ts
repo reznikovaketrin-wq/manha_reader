@@ -8,14 +8,36 @@ import { createAuthError, logAuthEvent, AuthEvents } from '../utils';
 
 class AuthService {
   private getSiteOrigin(): string {
-    // Prefer explicit public site URL (set in Vercel envs) to avoid localhost in production
-    // If not provided, fall back to the current browser origin.
-    // Use `NEXT_PUBLIC_SITE_URL` in production deployments (set to https://your-domain.com).
-    // This helps when emails are generated server-side or build-time and `window.location` is not reliable.
-    const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    if (envUrl && envUrl.length > 0) return envUrl;
+    // Determine site origin used in email links and redirects.
+    // Priority:
+    // 1) NEXT_PUBLIC_SITE_URL (explicit public site URL, e.g. https://example.com)
+    // 2) NEXT_PUBLIC_API_URL (use its origin when provided)
+    // 3) NEXT_PUBLIC_SITE_URL (production -> use provided public site URL)
+    // 4) browser `window.location.origin` when available
+    // 5) fallback to localhost with `PORT` or 3000
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+    if (siteUrl && siteUrl.length > 0) return siteUrl.replace(/\/+$/, '');
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (apiUrl && apiUrl.length > 0) {
+      // If running in browser and env points to localhost, prefer current origin
+      if (typeof window !== 'undefined' && apiUrl.includes('localhost')) {
+        return window.location.origin;
+      }
+      try {
+        return new URL(apiUrl).origin;
+      } catch (e) {
+        // If apiUrl is not a full URL, return as-is
+        return apiUrl.replace(/\/+$/, '');
+      }
+    }
+
+    if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, '');
+
     if (typeof window !== 'undefined' && window.location && window.location.origin) return window.location.origin;
-    return '';
+
+    const port = process.env.PORT || '3000';
+    return `http://localhost:${port}`;
   }
   // ===== SIGN IN =====
   async signIn(email: string, password: string, rememberMe: boolean = false): Promise<{ user: User | null; session: Session | null; error: AuthError | null }> {
