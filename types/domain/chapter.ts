@@ -12,5 +12,8 @@ export interface Chapter {
   pages: number;
   status?: string;
   createdAt?: string;
+  vipOnly?: boolean;
+  vipEarlyDays?: number;
+  publicAvailableAt?: string | null;
   [key: string]: any;
 }

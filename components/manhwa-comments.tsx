@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useUser } from '@/app/providers/UserProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { supabase } from '@/lib/supabase-client';
 import { deleteComment, deleteReply } from '@/lib/comments-actions';
 import {
   loadManhwaComments,
@@ -52,9 +51,12 @@ export function ManhwaCommentsComponent({
             const likesCount = await getCommentLikesCount(c.id);
             return {
               ...c,
-              user_email: user?.email || 'Анонім',
+              // Prefer username from joined user record, otherwise try email
+              user_email: (c as any).users?.email || user?.email || 'Анонім',
               likes_count: likesCount,
               user_liked: userLikes.has(c.id),
+              // keep users object so UI can show username immediately
+              users: (c as any).users,
             };
           })
         );
@@ -95,6 +97,13 @@ export function ManhwaCommentsComponent({
     [comments]
   );
 
+  const formatAuthor = (c: EnrichedComment) => {
+    const usersObj = (c as any).users;
+    const username = usersObj?.username;
+    if (username && String(username).trim()) return String(username);
+    return 'Користувач';
+  };
+
   const handleSubmitComment = useCallback(async () => {
     if (!user?.id) {
       alert('Будь ласка, увійдіть щоб залишити коментар');
@@ -109,21 +118,12 @@ export function ManhwaCommentsComponent({
     setSubmitting(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        console.error('❌ [Comments] No session! Auth not working!');
-        alert('Сессія потеряна. Перелогиньтесь.');
-        setSubmitting(false);
-        return;
-      }
-
-      console.log('✅ [Comments] Session valid, JWT token exists');
-
       const data = await createManhwaComment(manhwaId, user.id, newComment);
       const newEnrichedComment: EnrichedComment = {
         ...data,
         user_email: user.email,
+        // Attach current user's username/email so UI shows username immediately
+        users: { username: (profile as any)?.username, email: user.email },
         likes_count: 0,
         user_liked: false,
       };
@@ -154,15 +154,6 @@ export function ManhwaCommentsComponent({
       setSubmitting(true);
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          console.error('❌ [Reply] No session! Auth not working!');
-          alert('Сессія потеряна. Перелогиньтесь.');
-          setSubmitting(false);
-          return;
-        }
-
         const data = await createManhwaComment(manhwaId, user.id, replyText, parentCommentId);
         const newReply: EnrichedComment = {
           ...data,
@@ -193,14 +184,6 @@ export function ManhwaCommentsComponent({
       }
 
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          console.error('❌ [Like] No session! Auth not working!');
-          alert('Сессія потеряна. Перелогиньтесь.');
-          return;
-        }
-
         const newLikesCount = await toggleCommentLike(commentId, user.id, isLiked);
         setComments(
           comments.map((c) =>
@@ -345,14 +328,14 @@ export function ManhwaCommentsComponent({
           {sortedMainComments.map((comment) => {
             const replies = getReplies(comment.id);
             const isExpanded = expandedReplies.has(comment.id);
-            const canDelete = isAdmin || comment.user_id === profile?.id;
+            const canDelete = isAdmin;
 
             return (
               <div key={comment.id} className={styles.comment}>
                 <div className={styles.commentHeader}>
                   <div className={styles.commentInfo}>
                     <p className={styles.commentAuthor}>
-                      {comment.user_email?.split('@')[0] || 'Анонім'}
+                      {formatAuthor(comment)}
                     </p>
                     <p className={styles.commentDate}>
                       {new Date(comment.created_at).toLocaleDateString('uk-UA')}
@@ -437,14 +420,14 @@ export function ManhwaCommentsComponent({
                     {isExpanded && (
                       <div className={styles.repliesContainer}>
                         {replies.map((reply) => {
-                          const canDeleteReply = isAdmin || reply.user_id === profile?.id;
+                          const canDeleteReply = isAdmin;
 
                           return (
                             <div key={reply.id} className={styles.reply}>
                               <div className="flex items-center justify-between mb-2">
                                 <div>
                                   <p className={styles.replyAuthor}>
-                                    {reply.user_email?.split('@')[0] || 'Анонім'}
+                                    {formatAuthor(reply)}
                                   </p>
                                 </div>
 

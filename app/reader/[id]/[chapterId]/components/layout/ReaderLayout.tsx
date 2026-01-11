@@ -20,10 +20,6 @@ const WIDTH_STYLES: Record<WidthMode, React.CSSProperties> = {
     maxWidth: '100%',
     width: '100%',
   },
-  original: {
-    maxWidth: 'none',
-    width: 'auto',
-  },
   fixed: {
     maxWidth: '720px',
     width: '100%',
@@ -35,7 +31,6 @@ const WIDTH_STYLES: Record<WidthMode, React.CSSProperties> = {
  * 
  * Width modes:
  * - fit: Full width (mobile default)
- * - original: Original image size
  * - fixed: 720px max (desktop comfort)
  */
 export const ReaderLayout = memo(function ReaderLayout({
@@ -102,38 +97,43 @@ export const ReaderLayout = memo(function ReaderLayout({
         </div>
       </div>
 
-      {/* Click zone indicators (desktop only) */}
-      {showUI && (
-        <>
-          <div
-            className="fixed left-0 top-12 bottom-16 w-1/4 z-10 
-                       opacity-0 hover:opacity-100 transition-opacity duration-200
-                       hidden md:flex items-center justify-center cursor-pointer"
+      {/* Click zone indicators (desktop only) — render in both UI states
+          Use touchAction 'pan-y' so overlays don't block vertical scrolling on touch devices */}
+      <>
+        <div
+          className="fixed left-0 top-12 bottom-16 w-1/4 z-10 
+                     opacity-0 hover:opacity-100 transition-opacity duration-200
+                     hidden md:flex items-center justify-center"
+          style={{ touchAction: 'pan-y', pointerEvents: 'none' }}
+        >
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onLeftClick();
             }}
+            className="bg-white/5 rounded-lg px-4 py-2 pointer-events-auto"
           >
-            <div className="bg-white/5 rounded-lg px-4 py-2">
-              <span className="text-white/50 text-sm">← Вгору</span>
-            </div>
-          </div>
+            <span className="text-white/50 text-sm">← Вгору</span>
+          </button>
+        </div>
 
-          <div
-            className="fixed right-0 top-12 bottom-16 w-1/4 z-10 
-                       opacity-0 hover:opacity-100 transition-opacity duration-200
-                       hidden md:flex items-center justify-center cursor-pointer"
+        <div
+          className="fixed right-0 top-12 bottom-16 w-1/4 z-10 
+                     opacity-0 hover:opacity-100 transition-opacity duration-200
+                     hidden md:flex items-center justify-center"
+          style={{ touchAction: 'pan-y', pointerEvents: 'none' }}
+        >
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onRightClick();
             }}
+            className="bg-white/5 rounded-lg px-4 py-2 pointer-events-auto"
           >
-            <div className="bg-white/5 rounded-lg px-4 py-2">
-              <span className="text-white/50 text-sm">Вниз →</span>
-            </div>
-          </div>
-        </>
-      )}
+            <span className="text-white/50 text-sm">Вниз →</span>
+          </button>
+        </div>
+      </>
     </div>
   );
 });

@@ -11,10 +11,19 @@ import type { ReaderContentProps } from '../../types';
  * - Calculate page offsets
  * - Render chapters in order
  * - Pass registration callbacks
+ * - Pass navigation props to chapters
  */
 export const ReaderContent = memo(function ReaderContent({
   chapters,
   registerPage,
+  infiniteScroll,
+  manhwaId,
+  nextChapterId,
+  prevChapterId,
+  hasNext,
+  hasPrev,
+  onLoadPrev,
+  onLoadNext,
 }: ReaderContentProps) {
   // Calculate page offsets for each chapter
   const chapterOffsets = useMemo(() => {
@@ -50,6 +59,18 @@ export const ReaderContent = memo(function ReaderContent({
           registerPage={registerPage}
           isLast={index === chapters.length - 1}
           nextChapterNumber={chapters[index + 1]?.chapterNumber}
+          // Pass chapter-specific neighbor ids for per-divider navigation,
+          // but fall back to global neighbor ids (from props) when missing.
+          prevChapterId={chapters[index - 1]?.id ?? prevChapterId}
+          nextChapterId={chapters[index + 1]?.id ?? nextChapterId}
+          infiniteScroll={infiniteScroll}
+          manhwaId={manhwaId}
+          // keep legacy props for global navigation (if used elsewhere)
+          // these are optional and may be undefined
+          hasNext={hasNext}
+          hasPrev={hasPrev}
+          onLoadPrev={onLoadPrev}
+          onLoadNext={onLoadNext}
         />
       ))}
     </div>

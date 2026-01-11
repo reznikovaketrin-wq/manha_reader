@@ -55,12 +55,15 @@ export function useReaderData({
 
   // Load single chapter (idempotent)
   const loadChapter = useCallback(
-    async (chapterId: string): Promise<void> => {
+    async (chapterId: string): Promise<ChapterData | null> => {
       // Skip if already loaded or loading
       if (loadedChapters.current.has(chapterId) || loadingChapters.current.has(chapterId)) {
-        return;
+        console.log(`[ReaderData] Chapter ${chapterId} already loaded/loading, skipping`);
+        return null;
       }
 
+      const startTime = Date.now();
+      console.log(`[ReaderData] Loading chapter ${chapterId}...`);
       loadingChapters.current.add(chapterId);
 
       try {
@@ -89,9 +92,15 @@ export function useReaderData({
         });
 
         loadedChapters.current.add(chapterId);
+        const elapsed = Date.now() - startTime;
+        console.log(`[ReaderData] ✓ Chapter ${chapterId} loaded in ${elapsed}ms (${chapterData.pages.length} pages)`);
+        return chapterData;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Unknown error');
+        const elapsed = Date.now() - startTime;
+        console.error(`[ReaderData] ✗ Failed to load chapter ${chapterId} after ${elapsed}ms:`, error);
         setError(error);
+        return null;
       } finally {
         loadingChapters.current.delete(chapterId);
       }
@@ -145,6 +154,19 @@ export function useReaderData({
     }
   }, [navigationMeta.nextChapterMeta, loadChapter]);
 
+  // Clear all chapters and load a single one (for non-infinite scroll mode)
+  const clearAndLoadChapter = useCallback(
+    async (chapterId: string): Promise<void> => {
+      // Clear existing chapters
+      setChapters([]);
+      loadedChapters.current.clear();
+      
+      // Load new chapter
+      await loadChapter(chapterId);
+    },
+    [loadChapter]
+  );
+
   // Initial load effect is handled by the parent component
   // to maintain "no implicit fetching via useEffect in UI" rule
 
@@ -156,6 +178,7 @@ export function useReaderData({
     loadChapter,
     preloadNext,
     getChapterIndex,
+    clearAndLoadChapter,
     ...navigationMeta,
 
     // Exposed for initial load
@@ -164,6 +187,7 @@ export function useReaderData({
   } as UseReaderDataReturn & {
     _loadManhwa: () => Promise<Manhwa | null>;
     _setIsLoading: (v: boolean) => void;
+    clearAndLoadChapter: (chapterId: string) => Promise<void>;
   };
 }
 

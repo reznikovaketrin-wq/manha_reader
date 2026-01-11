@@ -18,7 +18,7 @@ export default function HeaderNav() {
       <div className="flex items-center gap-2 md:gap-8 flex-1 min-w-0">
         <Link
           href="/" // ✅ ВАРИАНТ 2
-          className={`font-extrabold text-[15px] md:text-base lg:text-2xl xl:text-[34px] uppercase tracking-tight transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+          className={`font-extrabold text-[15px] md:text-base lg:text-2xl xl:text-[34px] uppercase tracking-tight transition-all duration-200 whitespace-nowrap flex-shrink-0 md:-translate-y-[5px] ${
             isLibrary
               ? 'text-white'
               : 'text-text-muted hover:text-white'
@@ -28,7 +28,7 @@ export default function HeaderNav() {
         </Link>
         <Link
           href="/schedule" // ✅ ВАРИАНТ 2
-          className={`font-extrabold text-[15px] md:text-base lg:text-2xl xl:text-[34px] uppercase tracking-tight transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+          className={`font-extrabold text-[15px] md:text-base lg:text-2xl xl:text-[34px] uppercase tracking-tight transition-all duration-200 whitespace-nowrap flex-shrink-0 md:-translate-y-[5px] ${
             isSchedule
               ? 'text-white'
               : 'text-text-muted hover:text-white'

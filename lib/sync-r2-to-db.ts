@@ -54,7 +54,9 @@ async function listR2Files(prefix: string = '') {
  * 📂 Получить все папки манхв на R2
  */
 async function getManhwaFoldersFromR2() {
-  console.log('📂 Сканирую R2 на предмет папок манхв...\n');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('📂 Сканирую R2 на предмет папок манхв...\n');
+  }
 
   const { folders } = await listR2Files();
   const manhwaFolders: string[] = [];
@@ -65,11 +67,15 @@ async function getManhwaFoldersFromR2() {
 
     if (manhwaId && !manhwaId.startsWith('.')) {
       manhwaFolders.push(manhwaId);
-      console.log(`   📁 ${manhwaId}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`   📁 ${manhwaId}`);
+      }
     }
   }
 
-  console.log(`\n✅ Найдено папок: ${manhwaFolders.length}\n`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`\n✅ Найдено папок: ${manhwaFolders.length}\n`);
+  }
   return manhwaFolders;
 }
 
@@ -145,7 +151,9 @@ async function updateManhwaImages(manhwaId: string, images: { cover: string; bg:
     if (images.char) updates.char_image = images.char;
 
     if (Object.keys(updates).length === 0) {
-      console.log(`   ⚠️ Нет изображений для ${manhwaId}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`   ⚠️ Нет изображений для ${manhwaId}`);
+      }
       return;
     }
 
@@ -156,10 +164,12 @@ async function updateManhwaImages(manhwaId: string, images: { cover: string; bg:
 
     if (error) throw error;
 
-    console.log(`   ✅ Обновлены изображения:`);
-    if (images.cover) console.log(`      📖 cover_image`);
-    if (images.bg) console.log(`      🖼️ bg_image`);
-    if (images.char) console.log(`      👤 char_image`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`   ✅ Обновлены изображения:`);
+      if (images.cover) console.log(`      📖 cover_image`);
+      if (images.bg) console.log(`      🖼️ bg_image`);
+      if (images.char) console.log(`      👤 char_image`);
+    }
   } catch (error) {
     console.error(`   ❌ Ошибка обновления ${manhwaId}:`, error);
   }
@@ -169,7 +179,9 @@ async function updateManhwaImages(manhwaId: string, images: { cover: string; bg:
  * 📚 Создать розділы в БД
  */
 async function createChaptersInDB(manhwaId: string, chapters: { number: string; pages: string[] }[]) {
-  console.log(`   📖 Создание розділов...`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`   📖 Создание розділов...`);
+  }
 
   for (const chapter of chapters) {
     try {
@@ -182,7 +194,9 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
         .single();
 
       if (existing) {
-        console.log(`      ✅ Розділ ${chapter.number} уже есть`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`      ✅ Розділ ${chapter.number} уже есть`);
+        }
         continue;
       }
 
@@ -204,7 +218,9 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
 
       if (chapterError) throw chapterError;
 
-      console.log(`      ✅ Розділ ${chapter.number} создан (${chapter.pages.length} сторінок)`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`      ✅ Розділ ${chapter.number} создан (${chapter.pages.length} сторінок)`);
+      }
 
       // Создать сторінки
       const pages = chapter.pages.map((url, index) => ({
@@ -217,7 +233,9 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
 
       if (pagesError) throw pagesError;
 
-      console.log(`      ✅ Сторінки загружены`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`      ✅ Сторінки загружены`);
+      }
     } catch (error) {
       console.error(`      ❌ Ошибка создания розділа ${chapter.number}:`, error);
     }
@@ -228,22 +246,28 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
  * 🔄 ГЛАВНАЯ ФУНКЦИЯ - Полная синхронизация
  */
 export async function syncR2ToDatabase() {
-  console.log('\n========================================');
-  console.log('🔄 СИНХРОНИЗАЦИЯ R2 → БД');
-  console.log('========================================\n');
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('\n========================================');
+    console.log('🔄 СИНХРОНИЗАЦИЯ R2 → БД');
+    console.log('========================================\n');
+  }
 
   try {
     // 1. Получить папки манхв на R2
     const manhwaFolders = await getManhwaFoldersFromR2();
 
     if (manhwaFolders.length === 0) {
-      console.log('⚠️ Папок манхв не найдено на R2');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('⚠️ Папок манхв не найдено на R2');
+      }
       return;
     }
 
     // 2. Для каждой папки манхвы
     for (const manhwaId of manhwaFolders) {
-      console.log(`\n📁 Обработка: ${manhwaId}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`\n📁 Обработка: ${manhwaId}`);
+      }
 
       // Проверить существует ли манхва в БД
       const { data: manhwa } = await supabase
@@ -253,7 +277,9 @@ export async function syncR2ToDatabase() {
         .single();
 
       if (!manhwa) {
-        console.log(`   ⚠️ Манхва НЕ НАЙДЕНА в БД (создай вручную)`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`   ⚠️ Манхва НЕ НАЙДЕНА в БД (создай вручную)`);
+        }
         continue;
       }
 
@@ -268,13 +294,17 @@ export async function syncR2ToDatabase() {
         // 5. Создать розділы в БД
         await createChaptersInDB(manhwaId, chapters);
       } else {
-        console.log(`   ⚠️ Розділов не найдено`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`   ⚠️ Розділов не найдено`);
+        }
       }
     }
 
-    console.log('\n========================================');
-    console.log('✅ СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА');
-    console.log('========================================\n');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('\n========================================');
+      console.log('✅ СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА');
+      console.log('========================================\n');
+    }
   } catch (error) {
     console.error('❌ Критическая ошибка:', error);
   }

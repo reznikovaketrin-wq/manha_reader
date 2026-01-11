@@ -12,5 +12,8 @@ export interface ChapterAPI {
   title?: string;
   status?: string;
   publishedAt?: string;
+  vipOnly?: boolean;
+  vipEarlyDays?: number;
+  publicAvailableAt?: string | null;
   [key: string]: any;
 }

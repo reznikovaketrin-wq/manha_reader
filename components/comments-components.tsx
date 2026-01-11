@@ -79,11 +79,11 @@ export function CommentItem({
   const { profile, isAdmin } = useUserProfile();
   const [showMenu, setShowMenu] = useState(false);
   
-  const userName = comment.user_email?.split('@')[0] || 'Анонім';
+  const userName = (comment as any).users?.username || comment.user_email?.split('@')[0] || 'Анонім';
   const date = new Date(comment.created_at).toLocaleDateString('uk-UA');
   
-  // ✅ Может ли удалить комментарий?
-  const canDelete = isAdmin || comment.user_id === profile?.id;
+  // ✅ Может ли удалить комментарий? (только админ)
+  const canDelete = isAdmin;
 
   return (
     <div className="border-l-2 border-blue-500 pl-4">
@@ -205,7 +205,7 @@ export function RepliesSection({
       {isExpanded && (
         <div className="mt-3 space-y-3 pl-4 border-l-2 border-blue-400">
           {replies.map((reply) => {
-            const canDeleteReply = isAdmin || reply.user_id === profile?.id;
+            const canDeleteReply = isAdmin;
             const [showReplyMenu, setShowReplyMenu] = useState(false);
 
             return (
@@ -213,7 +213,7 @@ export function RepliesSection({
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-xs">
-                      {reply.user_email?.split('@')[0] || 'Анонім'}
+                      {(reply as any).users?.username || reply.user_email?.split('@')[0] || 'Анонім'}
                     </p>
                     <p className="text-xs text-gray-500">
                       {new Date(reply.created_at).toLocaleDateString('uk-UA')}

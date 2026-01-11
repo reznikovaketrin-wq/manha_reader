@@ -32,14 +32,19 @@ export function useReaderHotkeys({
         return;
       }
 
-      switch (event.key.toLowerCase()) {
+      const key = event.key.toLowerCase();
+      const code = (event as KeyboardEvent).code;
+
+      // Support both character key and physical KeyF (for non-Latin layouts)
+      if (key === 'f' || code === 'KeyF') {
+        event.preventDefault();
+        onToggleFullscreen?.();
+        return;
+      }
+
+      switch (key) {
         case 'escape':
           onToggleUI();
-          break;
-
-        case 'f':
-          event.preventDefault();
-          onToggleFullscreen?.();
           break;
 
         case 'arrowright':

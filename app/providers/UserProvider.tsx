@@ -18,8 +18,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const syncedRef = useRef(false); // ← ДОДАТИ: щоб синхронізувати тільки раз
 
   useEffect(() => {
-    console.log('👤 [UserProvider] Initializing auth...');
-
     let isSubscribed = true;
 
     const initAuth = async () => {
@@ -28,55 +26,38 @@ export function UserProvider({ children }: { children: ReactNode }) {
         
         if (isSubscribed) {
           const currentUser = sessionData.session?.user ?? null;
-          if (currentUser) {
-            console.log('✅ [UserProvider] Initial session found:', currentUser.email);
-          } else {
-            console.log('✅ [UserProvider] Initial session: null');
-          }
           setUser(currentUser);
           // Установка завантаження в false після початкового отримання сесії
           setLoading(false);
         }
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => { // ← async
+          async (event, session) => {
             if (!isSubscribed) return;
-
-            console.log('🔔 [UserProvider] Auth state changed, event:', event);
             
             const currentUser = session?.user ?? null;
             
-            // ✅ ДОДАТИ: Синхронізація історії при логіні
+            // Sync reading history when user signs in
             if (event === 'SIGNED_IN' && currentUser && !syncedRef.current) {
-              console.log('📚 [UserProvider] User signed in, syncing reading history...');
-              
               try {
                 await HistoryService.syncGuestToUser();
                 syncedRef.current = true;
-                console.log('✅ [UserProvider] Reading history synced successfully');
               } catch (error) {
-                console.error('❌ [UserProvider] Error syncing history:', error);
+                console.error('[UserProvider] Error syncing history:', error);
               }
             }
 
-            // ✅ ДОДАТИ: Скинути прапорець при логауті
+            // Reset sync flag on logout
             if (event === 'SIGNED_OUT') {
               syncedRef.current = false;
             }
-            
-            if (currentUser) {
-              console.log('✅ [UserProvider] User logged in:', currentUser.email);
-            } else {
-              console.log('✅ [UserProvider] User logged out');
-            }
-            
+
             setUser(currentUser);
             setLoading(false);
           }
         );
 
         return () => {
-          console.log('🧹 [UserProvider] Unmounting, unsubscribing...');
           isSubscribed = false;
           subscription.unsubscribe();
         };

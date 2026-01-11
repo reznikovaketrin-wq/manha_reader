@@ -12,7 +12,6 @@ export const ReaderFooter = memo(function ReaderFooter({
   progress,
   visible,
   onToggleChapterList,
-  onToggleSettings,
   onToggleComments,
   onToggleAutoScroll,
   onScrollPrev,
@@ -30,10 +29,10 @@ export const ReaderFooter = memo(function ReaderFooter({
     >
       <div className="px-2 py-1.5 md:px-4 md:py-2 h-full flex flex-col justify-center w-full">
         {/* Progress bar */}
-        <div className="w-full h-0.5 bg-gray-800 rounded-full mb-1.5">
+        <div className="w-full h-0.5 bg-gray-700 rounded-full mb-1.5">
           <div
-            className="h-full bg-blue-500 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${progress}%`, background: 'linear-gradient(135deg, #FF1B6D, #A259FF)' }}
           />
         </div>
 
@@ -49,7 +48,7 @@ export const ReaderFooter = memo(function ReaderFooter({
             {/* Chapter list */}
             <button
               onClick={onToggleChapterList}
-              className="p-1.5 hover:bg-gray-800 rounded transition-colors"
+              className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded transition-colors text-gray-300"
               title="Список розділів"
               aria-label="Список розділів"
             >
@@ -68,39 +67,13 @@ export const ReaderFooter = memo(function ReaderFooter({
               </svg>
             </button>
 
-            {/* Settings */}
-            <button
-              onClick={onToggleSettings}
-              className="p-1.5 hover:bg-gray-800 rounded transition-colors"
-              title="Налаштування"
-              aria-label="Налаштування"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-            </button>
+            {/* Settings removed from footer - moved to header */}
 
             {/* Comments */}
             {onToggleComments && (
               <button
                 onClick={onToggleComments}
-                className="p-1.5 hover:bg-gray-800 rounded transition-colors"
+                className="p-1.5 bg-gray-700 hover:bg-gray-600 rounded transition-colors text-gray-300"
                 title="Коментарі розділу"
                 aria-label="Коментарі розділу"
               >
@@ -124,7 +97,7 @@ export const ReaderFooter = memo(function ReaderFooter({
             <button
               onClick={onToggleAutoScroll}
               className={`p-1.5 rounded transition-colors ${
-                autoScrollActive ? 'bg-blue-600' : 'hover:bg-gray-800'
+                autoScrollActive ? 'bg-gradient-to-r from-pink-500 via-pink-400 to-pink-300 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
               }`}
               title="Автопрокрутка"
               aria-label="Автопрокрутка"
@@ -140,7 +113,7 @@ export const ReaderFooter = memo(function ReaderFooter({
           <div className="flex items-center gap-0.5 flex-shrink-0">
             <button
               onClick={onScrollPrev}
-              className="p-1.5 hover:bg-gray-800 rounded transition-colors"
+              className="p-1.5 hover:bg-gray-600 rounded transition-colors bg-transparent"
               title="Попередня сторінка"
               aria-label="Попередня сторінка"
             >
@@ -161,7 +134,7 @@ export const ReaderFooter = memo(function ReaderFooter({
 
             <button
               onClick={onScrollNext}
-              className="p-1.5 hover:bg-gray-800 rounded transition-colors"
+              className="p-1.5 hover:bg-gray-600 rounded transition-colors bg-transparent"
               title="Наступна сторінка"
               aria-label="Наступна сторінка"
             >

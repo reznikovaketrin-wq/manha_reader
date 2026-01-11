@@ -18,8 +18,9 @@ export const ReaderChapterList = memo(function ReaderChapterList({
   return (
     <div
       className="fixed left-0 top-12 md:top-14 bottom-16 md:bottom-14 z-40 
-                 bg-gray-900 border-r border-gray-800 overflow-y-auto 
+                 border-r border-gray-700 overflow-y-auto 
                  w-64 md:w-80 max-w-[80vw]"
+      style={{ background: '#000000' }}
     >
       <div className="p-4">
         <h3 className="text-sm font-semibold text-white mb-4">
@@ -36,35 +37,27 @@ export const ReaderChapterList = memo(function ReaderChapterList({
                 href={`/reader/${manhwaId}/${chapter.id}`}
               >
                 <div
-                  className={`
-                    p-3 rounded-lg transition-colors cursor-pointer
-                    ${
-                      isLoaded
-                        ? 'bg-blue-600/20 border border-blue-500/50'
-                        : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
-                    }
-                  `}
+                  className={`p-3 rounded-lg transition-colors cursor-pointer ${isLoaded ? 'text-white' : 'bg-transparent border text-white/80'}`}
+                  style={isLoaded ? { background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box', border: '2px solid transparent' } : { border: '1px solid rgba(255,255,255,0.06)' }}
                 >
                   <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm truncate">
-                      Розділ {chapter.chapterNumber}
+                    <p className="font-medium text-sm truncate text-white">
+                      {chapter.title ? chapter.title : 'Розділ'}
                     </p>
                     {isLoaded && (
-                      <span className="text-xs text-blue-400 flex-shrink-0 ml-2">
-                        ●
-                      </span>
+                      <span
+                        className="flex-shrink-0 ml-2"
+                        style={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: '9999px',
+                          background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+                          border: '2px solid transparent',
+                          display: 'inline-block'
+                        }}
+                      />
                     )}
                   </div>
-
-                  {chapter.title && (
-                    <p className="text-xs text-gray-400 truncate mt-0.5">
-                      {chapter.title}
-                    </p>
-                  )}
-
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(chapter.publishedAt).toLocaleDateString('uk-UA')}
-                  </p>
                 </div>
               </Link>
             );

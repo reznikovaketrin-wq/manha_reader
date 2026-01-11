@@ -6,11 +6,20 @@ import { MetaBlock } from './MetaBlock';
 import { TitleBlock } from './TitleBlock';
 import { ChaptersList } from './ChaptersList/ChaptersList';
 import { CommentsBlock } from './CommentsBlock';
+import { AddToListButton } from '@/components/AddToListButton/AddToListButton';
 import buttonStyles from './ReadButton.module.css';
 import { ViewProps } from './types';
 
+interface Range {
+  s: number;
+  e: number;
+}
+
 interface DesktopViewExtendedProps extends ViewProps {
   firstChapterId: string;
+  firstChapterPage?: number | null;
+  readChapters?: Set<string>;
+  archivedRanges?: Range[];
 }
 
 /**
@@ -47,6 +56,9 @@ export const DesktopView = memo(function DesktopView({
   canRate = true,
   onRatingModalOpen,
   firstChapterId,
+  firstChapterPage = null,
+  readChapters = new Set(),
+  archivedRanges = [],
 }: DesktopViewExtendedProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -73,6 +85,10 @@ export const DesktopView = memo(function DesktopView({
       pagesCount: chapter.pages,
       status: chapter.status || '',
       publishedAt: chapter.createdAt || new Date().toISOString(),
+      // VIP fields (preserve from domain)
+      vipOnly: (chapter as any).vipOnly,
+      vipEarlyDays: (chapter as any).vipEarlyDays,
+      publicAvailableAt: (chapter as any).publicAvailableAt,
     }));
 
   return (
@@ -98,8 +114,17 @@ export const DesktopView = memo(function DesktopView({
           />
 
           {/* Кнопка "Читати" */}
-          <Link href={`/reader/${manhwa.id}/${firstChapterId}`} style={{ textDecoration: 'none', display: 'block', marginBottom: '12px' }}>
-              <button className={buttonStyles.readButtonGradient} style={{ width: '100%' }}>
+            <Link href={`/reader/${manhwa.id}/${firstChapterId}${firstChapterPage ? `?page=${firstChapterPage}` : ''}`} style={{ textDecoration: 'none', display: 'block', marginBottom: '12px' }}>
+              <button
+                className={buttonStyles.readButtonGradient}
+                style={{ width: '100%' }}
+                  onClick={() => {
+                  const target = `/reader/${manhwa.id}/${firstChapterId}${firstChapterPage ? `?page=${firstChapterPage}` : ''}`;
+                  if (process.env.NODE_ENV !== 'production') {
+                    console.log('[DesktopView] Read button clicked', { target, firstChapterId, firstChapterPage });
+                  }
+                }}
+              >
                 <svg viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
                   <path d="M8 5v14l11-7z" />
                 </svg>
@@ -108,31 +133,7 @@ export const DesktopView = memo(function DesktopView({
           </Link>
 
           {/* Кнопка "Додати в список" */}
-          <button
-            style={{
-              width: '100%',
-              padding: '14px 22px',
-              backgroundColor: 'transparent',
-              color: '#FFFFFF',
-              border: '1px solid #3A3A3A',
-              borderRadius: '12px',
-              transition: 'all 0.2s',
-              fontSize: '16px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.borderColor = '#A259FF'}
-            onMouseLeave={(e) => e.currentTarget.style.borderColor = '#3A3A3A'}
-          >
-            <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Додати в список
-          </button>
+          <AddToListButton manhwaId={manhwaId} />
         </div>
 
         {/* ============================================
@@ -194,7 +195,8 @@ export const DesktopView = memo(function DesktopView({
               <ChaptersList
                 chapters={adaptedChapters}
                 manhwaId={manhwaId}
-                readChapters={new Set()}
+                readChapters={readChapters}
+                archivedRanges={archivedRanges}
                 isMobile={false}
               />
             </div>

@@ -67,7 +67,7 @@ export function ChapterCommentsComponent({
           userLikes = await loadUserLikes(user.id);
         }
 
-        // Enrich comments with user_email and likes
+        // Enrich comments with user_email, user info and likes
         const enrichedData = await Promise.all(
           data.map(async (c) => {
             const likesCount = await getCommentLikesCount(c.id);
@@ -90,7 +90,8 @@ export function ChapterCommentsComponent({
 
             return {
               ...c,
-              user_email: user?.email || 'Анонім',
+              user_email: (c as any).users?.email || user?.email || 'Анонім',
+              users: (c as any).users,
               likes_count: likesCount,
               user_liked: userLikes.has(c.id),
               replies: enrichedReplies,
@@ -150,6 +151,7 @@ export function ChapterCommentsComponent({
         {
           ...data,
           user_email: user.email || 'Анонім',
+          users: { username: (profile as any)?.username, email: user.email },
           likes_count: 0,
           user_liked: false,
         } as any,
@@ -191,7 +193,8 @@ export function ChapterCommentsComponent({
           ...comments,
           {
             ...data,
-            user_email: user.email || 'Анонім',
+              user_email: user.email || 'Анонім',
+              users: { username: (profile as any)?.username, email: user.email },
             likes_count: 0,
             user_liked: false,
           } as any,
@@ -431,14 +434,14 @@ export function ChapterCommentsComponent({
                   {sortedMainComments.map((comment) => {
                     const replies = getReplies(comment.id);
                     const isExpanded = expandedReplies.has(comment.id);
-                    const canDelete = isAdmin || comment.user_id === profile?.id;
+                    const canDelete = isAdmin;
 
                     return (
                       <div key={comment.id} className={styles.comment}>
                         <div className={styles.commentHeader}>
                           <div className={styles.commentInfo}>
                             <p className={styles.commentAuthor}>
-                              {(comment as any).user_email?.split('@')[0] || 'Анонім'}
+                              {(comment as any).users?.username || (comment as any).user_email?.split('@')[0] || 'Анонім'}
                             </p>
                             <p className={styles.commentDate}>
                               {new Date(comment.created_at).toLocaleDateString('uk-UA')}
@@ -578,14 +581,14 @@ export function ChapterCommentsComponent({
           {sortedMainComments.map((comment) => {
             const replies = getReplies(comment.id);
             const isExpanded = expandedReplies.has(comment.id);
-            const canDelete = isAdmin || comment.user_id === profile?.id;
+            const canDelete = isAdmin;
 
             return (
               <div key={comment.id} className={styles.comment}>
                 <div className={styles.commentHeader}>
                   <div className={styles.commentInfo}>
                     <p className={styles.commentAuthor}>
-                      {(comment as any).user_email?.split('@')[0] || 'Анонім'}
+                      {(comment as any).users?.username || (comment as any).user_email?.split('@')[0] || 'Анонім'}
                     </p>
                     <p className={styles.commentDate}>
                       {new Date(comment.created_at).toLocaleDateString('uk-UA')}

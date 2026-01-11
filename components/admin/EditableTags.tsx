@@ -53,7 +53,7 @@ export function EditableTags({ value, manhwaId, token, onUpdate }: EditableTagsP
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           placeholder="МАНХВА, БЕЗ ЦЕНЗУРИ, ДРАМА"
-          className="w-full bg-white text-black rounded px-3 py-2 border border-blue-500 focus:outline-none"
+          className="w-full bg-black border-2 border-white/10 text-text-main rounded-xl px-4 py-3 focus:outline-none resize-none"
           rows={3}
           autoFocus
         />
@@ -61,7 +61,11 @@ export function EditableTags({ value, manhwaId, token, onUpdate }: EditableTagsP
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
+            className="px-4 py-3 relative bg-black text-white font-semibold rounded-xl transition-all overflow-hidden"
+            style={{
+              background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+              border: '2px solid transparent',
+            }}
           >
             ✅ Зберегти
           </button>
@@ -70,7 +74,7 @@ export function EditableTags({ value, manhwaId, token, onUpdate }: EditableTagsP
               setEditValue(value.join(', '));
               setIsEditing(false);
             }}
-            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
+            className="px-4 py-3 bg-transparent text-white font-semibold rounded-xl border-2 border-white/10 hover:border-white/20 transition-all"
           >
             ❌ Скасувати
           </button>
@@ -85,7 +89,7 @@ export function EditableTags({ value, manhwaId, token, onUpdate }: EditableTagsP
         <div className="flex flex-wrap gap-2">
           {value.length > 0 ? (
             value.map((tag) => (
-              <span key={tag} className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">
+              <span key={tag} className="px-3 py-1 bg-white/5 text-text-main rounded-full text-sm">
                 {tag}
               </span>
             ))
@@ -95,7 +99,11 @@ export function EditableTags({ value, manhwaId, token, onUpdate }: EditableTagsP
         </div>
         <button
           onClick={() => setIsEditing(true)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm whitespace-nowrap"
+          className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-1 relative bg-black text-white rounded text-sm whitespace-nowrap overflow-hidden"
+          style={{
+            background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+            border: '2px solid transparent',
+          }}
         >
           🖊️
         </button>

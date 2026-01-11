@@ -12,7 +12,9 @@ import { getSupabaseServerClient } from './supabase-server';
  * ✅ Пользователь может удалить только свой
  */
 export async function deleteComment(commentId: string) {
-  console.log('🗑️ [deleteComment] Attempting to delete comment:', commentId);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🗑️ [deleteComment] Attempting to delete comment:', commentId);
+  }
 
   const currentUser = await getCurrentUser();
 
@@ -36,19 +38,25 @@ export async function deleteComment(commentId: string) {
       return { success: false, error: 'Comment not found' };
     }
 
-    console.log('📋 [deleteComment] Found comment, user_id:', comment.user_id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📋 [deleteComment] Found comment, user_id:', comment.user_id);
+    }
 
     // ✅ ШАГ 2: Проверяем права
     // Если админ - удаляем всё
     if (currentUser.user_metadata?.role === 'admin') {
-      console.log('👑 [deleteComment] Admin delete allowed');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('👑 [deleteComment] Admin delete allowed');
+      }
     }
     // Если обычный пользователь - проверяем что это его комментарий
     else if (comment.user_id !== currentUser.id) {
       console.error('❌ [deleteComment] Not authorized - not own comment');
       return { success: false, error: 'Not authorized' };
     } else {
-      console.log('✅ [deleteComment] User can delete own comment');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ [deleteComment] User can delete own comment');
+      }
     }
 
     // ✅ ШАГ 3: Удаляем комментарий
@@ -62,7 +70,9 @@ export async function deleteComment(commentId: string) {
       return { success: false, error: deleteError.message };
     }
 
-    console.log('✅ [deleteComment] Comment deleted successfully');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ [deleteComment] Comment deleted successfully');
+    }
     return { success: true };
   } catch (error) {
     console.error('❌ [deleteComment] Exception:', error);
@@ -80,7 +90,9 @@ export async function deleteComment(commentId: string) {
  * ✅ Пользователь может удалить только свой reply
  */
 export async function deleteReply(replyId: string) {
-  console.log('🗑️ [deleteReply] Attempting to delete reply:', replyId);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🗑️ [deleteReply] Attempting to delete reply:', replyId);
+  }
 
   const currentUser = await getCurrentUser();
 
@@ -104,16 +116,22 @@ export async function deleteReply(replyId: string) {
       return { success: false, error: 'Reply not found' };
     }
 
-    console.log('📋 [deleteReply] Found reply, user_id:', reply.user_id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📋 [deleteReply] Found reply, user_id:', reply.user_id);
+    }
 
     // ✅ ШАГ 2: Проверяем права
     if (currentUser.user_metadata?.role === 'admin') {
-      console.log('👑 [deleteReply] Admin delete allowed');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('👑 [deleteReply] Admin delete allowed');
+      }
     } else if (reply.user_id !== currentUser.id) {
       console.error('❌ [deleteReply] Not authorized');
       return { success: false, error: 'Not authorized' };
     } else {
-      console.log('✅ [deleteReply] User can delete own reply');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ [deleteReply] User can delete own reply');
+      }
     }
 
     // ✅ ШАГ 3: Удаляем reply из manhwa_comments
@@ -127,7 +145,9 @@ export async function deleteReply(replyId: string) {
       return { success: false, error: deleteError.message };
     }
 
-    console.log('✅ [deleteReply] Reply deleted successfully');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ [deleteReply] Reply deleted successfully');
+    }
     return { success: true };
   } catch (error) {
     console.error('❌ [deleteReply] Exception:', error);
@@ -143,7 +163,9 @@ export async function deleteReply(replyId: string) {
  * Аналогично `deleteComment`, но для таблицы `chapter_comments`
  */
 export async function deleteChapterComment(commentId: string) {
-  console.log('🗑️ [deleteChapterComment] Attempting to delete chapter comment:', commentId);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🗑️ [deleteChapterComment] Attempting to delete chapter comment:', commentId);
+  }
 
   const currentUser = await getCurrentUser();
 
@@ -166,15 +188,21 @@ export async function deleteChapterComment(commentId: string) {
       return { success: false, error: 'Comment not found' };
     }
 
-    console.log('📋 [deleteChapterComment] Found comment, user_id:', comment.user_id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📋 [deleteChapterComment] Found comment, user_id:', comment.user_id);
+    }
 
     if (currentUser.user_metadata?.role === 'admin') {
-      console.log('👑 [deleteChapterComment] Admin delete allowed');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('👑 [deleteChapterComment] Admin delete allowed');
+      }
     } else if (comment.user_id !== currentUser.id) {
       console.error('❌ [deleteChapterComment] Not authorized - not own comment');
       return { success: false, error: 'Not authorized' };
     } else {
-      console.log('✅ [deleteChapterComment] User can delete own comment');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ [deleteChapterComment] User can delete own comment');
+      }
     }
 
     const { error: deleteError } = await supabase
@@ -187,7 +215,9 @@ export async function deleteChapterComment(commentId: string) {
       return { success: false, error: deleteError.message };
     }
 
-    console.log('✅ [deleteChapterComment] Comment deleted successfully');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ [deleteChapterComment] Comment deleted successfully');
+    }
     return { success: true };
   } catch (error) {
     console.error('❌ [deleteChapterComment] Exception:', error);
@@ -202,7 +232,9 @@ export async function deleteChapterComment(commentId: string) {
  * Удалить reply для chapter comments
  */
 export async function deleteChapterReply(replyId: string) {
-  console.log('🗑️ [deleteChapterReply] Attempting to delete chapter reply:', replyId);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🗑️ [deleteChapterReply] Attempting to delete chapter reply:', replyId);
+  }
 
   const currentUser = await getCurrentUser();
 
@@ -225,15 +257,21 @@ export async function deleteChapterReply(replyId: string) {
       return { success: false, error: 'Reply not found' };
     }
 
-    console.log('📋 [deleteChapterReply] Found reply, user_id:', reply.user_id);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📋 [deleteChapterReply] Found reply, user_id:', reply.user_id);
+    }
 
     if (currentUser.user_metadata?.role === 'admin') {
-      console.log('👑 [deleteChapterReply] Admin delete allowed');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('👑 [deleteChapterReply] Admin delete allowed');
+      }
     } else if (reply.user_id !== currentUser.id) {
       console.error('❌ [deleteChapterReply] Not authorized');
       return { success: false, error: 'Not authorized' };
     } else {
-      console.log('✅ [deleteChapterReply] User can delete own reply');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ [deleteChapterReply] User can delete own reply');
+      }
     }
 
     const { error: deleteError } = await supabase
@@ -246,7 +284,9 @@ export async function deleteChapterReply(replyId: string) {
       return { success: false, error: deleteError.message };
     }
 
-    console.log('✅ [deleteChapterReply] Reply deleted successfully');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('✅ [deleteChapterReply] Reply deleted successfully');
+    }
     return { success: true };
   } catch (error) {
     console.error('❌ [deleteChapterReply] Exception:', error);

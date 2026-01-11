@@ -1,0 +1,253 @@
+/* app/auth/auth.module.css */
+
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: transparent;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: #1a1a1a;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #ffffff;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #a0a0a0;
+  line-height: 1.5;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  font-size: 16px;
+  background: #2a2a2a;
+  color: #fff;
+  transition: all 0.3s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.input::placeholder {
+  color: #666;
+}
+
+.error {
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #f87171;
+  font-size: 14px;
+}
+
+.submitButton {
+  /* Primary action: black fill with purple→pink gradient border */
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(#000000, #000000) padding-box,
+              linear-gradient(135deg, #FF1B6D, #A259FF) border-box;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-top: 8px;
+}
+
+.submitButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255, 27, 109, 0.18);
+}
+
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonSecondary {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #333;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #e0e0e0;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 12px;
+}
+
+.buttonSecondary:hover {
+  border-color: #ec4899;
+  background: rgba(236, 72, 153, 0.1);
+}
+
+/* Black fill with purple→pink gradient border (used across app) */
+.buttonGradient {
+  width: 100%;
+  display: block;
+  max-width: 520px;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  background: linear-gradient(#000000, #000000) padding-box,
+              linear-gradient(135deg, #FF1B6D, #A259FF) border-box;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-top: 12px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.buttonGradient:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255, 27, 109, 0.18);
+}
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.link {
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 15px;
+  transition: color 0.2s;
+}
+
+.link:hover {
+  color: #A259FF;
+}
+
+/* Success Block */
+.successBlock {
+  text-align: center;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.successIcon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, #FF1B6D 0%, #A259FF 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  color: #fff;
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.successTitle {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 16px;
+}
+
+.successText {
+  font-size: 16px;
+  color: #d0d0d0;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.successText strong {
+  color: #A259FF;
+}
+
+.successTextSmall {
+  font-size: 14px;
+  color: #888;
+  margin-bottom: 24px;
+}
+
+.countdown {
+  font-size: 14px;
+  color: #888;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .card {
+    padding: 24px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+}

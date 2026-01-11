@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { trackManhwaView } from '@/lib/supabase-client';
+import { trackManhwaViewServer } from '@/lib/supabase-server';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { manhwaId } = body;
+    const { manhwaId, userId } = body;
 
     if (!manhwaId) {
       return NextResponse.json(
@@ -13,7 +13,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await trackManhwaView(manhwaId);
+    // Forward optional userId/clientId to enable server-side dedupe during tests
+    const result = await trackManhwaViewServer(manhwaId, undefined, userId);
 
     if (!result.success) {
       throw result.error;
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error tracking view:', error);
     return NextResponse.json(
-      { error: 'Failed to track view' },
+      { error: 'Failed to track view', details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }

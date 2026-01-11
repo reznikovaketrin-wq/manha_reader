@@ -18,6 +18,9 @@ export function mapChapterAPIToDomain(api: ChapterAPI): Chapter {
     pages: api.pagesCount,
     status: api.status,
     createdAt: api.publishedAt,
+    vipOnly: api.vipOnly,
+    vipEarlyDays: api.vipEarlyDays,
+    publicAvailableAt: api.publicAvailableAt,
   };
 }
 

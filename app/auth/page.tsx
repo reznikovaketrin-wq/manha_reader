@@ -1,7 +1,9 @@
-import { Suspense } from 'react';
-import AuthForm from '@/components/AuthForm';
+'use client';
 
-// ✅ Лоадер для Suspense
+import { Suspense, useState } from 'react';
+import { LoginForm, RegisterForm } from '@/features/auth';
+import { GuestRoute } from '@/shared/components';
+
 function AuthFormSkeleton() {
   return (
     <div className="flex items-center justify-center min-h-screen">
@@ -17,10 +19,26 @@ function AuthFormSkeleton() {
   );
 }
 
+function AuthPageContent() {
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  return (
+    <GuestRoute>
+      <div className="flex items-center justify-center min-h-screen px-4 py-8">
+        {mode === 'login' ? (
+          <LoginForm onSwitchToRegister={() => setMode('register')} />
+        ) : (
+          <RegisterForm onSwitchToLogin={() => setMode('login')} />
+        )}
+      </div>
+    </GuestRoute>
+  );
+}
+
 export default function AuthPage() {
   return (
     <Suspense fallback={<AuthFormSkeleton />}>
-      <AuthForm />
+      <AuthPageContent />
     </Suspense>
   );
 }

@@ -79,7 +79,7 @@ export async function GET(
       status: chapter.status,
       publishedAt: chapter.published_at,
       scheduledAt: chapter.scheduled_at,
-      pages: (pages || []).map((page) => ({
+      pages: (pages || []).map((page: any) => ({
         number: page.page_number,
         imageUrl: page.image_url,
       })),

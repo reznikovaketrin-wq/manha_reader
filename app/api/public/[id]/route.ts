@@ -61,6 +61,20 @@ export async function GET(
     const ratingCount = ratings?.length || 0;
     console.log(`⭐ Оценок найдено: ${ratingCount}`);
 
+    // Получить количество просмотров из таблицы `views` (если есть)
+    const { data: viewsData, error: viewsError } = await supabase
+      .from('views')
+      .select('view_count')
+      .eq('manhwa_id', id)
+      .single();
+
+    if (viewsError && viewsError.code !== 'PGRST116') {
+      console.warn('Warning fetching views count:', viewsError.message);
+    }
+
+    const totalViews = viewsData?.view_count || 0;
+
+
     // ✅ Строим точную структуру JSON
     const scheduleDay = manhwa.schedule_day 
       ? {
@@ -74,6 +88,7 @@ export async function GET(
       id: manhwa.id,
       title: manhwa.title,
       description: manhwa.description,
+      totalViews,
       shortDescription: manhwa.short_description || null,
       coverImage: manhwa.cover_image,
       bgImage: manhwa.bg_image,
@@ -86,7 +101,7 @@ export async function GET(
       publicationType: manhwa.publication_type,
       scheduleDay: scheduleDay,
       createdAt: manhwa.created_at,
-      chapters: (chapters || []).map((ch) => ({
+      chapters: (chapters || []).map((ch: any) => ({
         id: ch.id,
         chapterNumber: ch.chapter_number,
         title: ch.title,
@@ -95,6 +110,9 @@ export async function GET(
         status: ch.status,
         publishedAt: ch.published_at,
         scheduledAt: ch.scheduled_at,
+        vipOnly: ch.vip_only || false,
+        vipEarlyDays: ch.vip_early_days || 0,
+        publicAvailableAt: ch.public_available_at || null,
       })),
     };
 

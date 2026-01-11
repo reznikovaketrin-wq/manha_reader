@@ -88,6 +88,8 @@ export async function POST(request: NextRequest) {
       char_image,
       publication_type,
       type,
+      vip_only,
+      vip_early_days,
     } = body;
 
     if (!id || !title) {
@@ -111,6 +113,8 @@ export async function POST(request: NextRequest) {
         char_image: char_image || null,
         publication_type: publication_type || 'uncensored',
         type: type || 'manhwa',
+        vip_only: vip_only || false,
+        vip_early_days: vip_early_days || 0,
       })
       .select()
       .single();

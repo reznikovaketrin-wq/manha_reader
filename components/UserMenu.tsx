@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUser } from '@/app/providers/UserProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { signOutClient } from '@/lib/auth-client';
+import { useAuth } from '@/features/auth';
 
 export default function UserMenu() {
   const router = useRouter();
   const { user, loading: authLoading } = useUser();
   const { profile, loading: profileLoading, isAdmin } = useUserProfile();
+  const { signOut } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
 
@@ -45,7 +46,7 @@ export default function UserMenu() {
         {/* Desktop кнопка с серой обводкой */}
         <Link
           href="/auth"
-          className="hidden md:inline-flex px-6 py-2 text-white font-semibold rounded-lg transition-all items-center gap-2 flex-shrink-0 border-2 border-text-muted/20 hover:border-text-muted/40"
+          className="hidden md:inline-flex md:-translate-y-[5px] px-6 py-2 text-white font-semibold rounded-lg transition-all items-center gap-2 flex-shrink-0 border-2 border-text-muted/20 hover:border-text-muted/40"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
@@ -61,35 +62,26 @@ export default function UserMenu() {
     );
   }
 
-  // ✅ Якщо є user - показуємо UserMenu
-  console.log('👤 [UserMenu] User logged in:', profile.email, 'isAdmin:', isAdmin);
-
+  // Show UserMenu for logged in users
   const username = profile.username || profile.email?.split('@')[0] || 'User';
 
-  // ✅ ПРАВИЛЬНО: SignOut в браузере + router.refresh()
   const handleSignOut = async () => {
     startTransition(async () => {
       try {
         console.log('🔐 [UserMenu] Signing out...');
         
-        // ✅ Вызываем signOut в браузере (не Server Action!)
-        const result = await signOutClient();
+        await signOut();
         
-        if (result.success) {
-          console.log('✅ [UserMenu] Sign out successful');
-          console.log('🔔 [UserMenu] onAuthStateChange triggered, UserProvider updated');
-          
-          setOpen(false);
-          
-          // ✅ router.refresh() - обновляет server components, но НЕ перезагружает страницу
-          // UserProvider уже обновил состояние через onAuthStateChange
-          setTimeout(() => {
-            router.refresh();
-            router.push('/');
-          }, 300);
-        } else {
-          alert('Помилка при виході. Спробуйте ще раз.');
-        }
+        console.log('✅ [UserMenu] Sign out successful');
+        console.log('🔔 [UserMenu] onAuthStateChange triggered, UserProvider updated');
+        
+        setOpen(false);
+        
+        // router.refresh() updates server components
+        setTimeout(() => {
+          router.refresh();
+          router.push('/');
+        }, 300);
       } catch (error) {
         console.error('Error signing out:', error);
         alert('Неочікувана помилка');
@@ -129,7 +121,7 @@ export default function UserMenu() {
       {/* Desktop кнопка с градиентом */}
       <button
         onClick={() => setOpen(!open)}
-        className="hidden md:inline-flex items-center gap-2 px-3 py-2 text-white font-medium rounded-lg transition-all flex-shrink-0 disabled:opacity-50"
+        className="hidden md:inline-flex md:-translate-y-[5px] items-center gap-2 px-3 py-2 text-white font-medium rounded-lg transition-all flex-shrink-0 disabled:opacity-50"
         style={{
           background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
           border: '2px solid transparent'
@@ -169,7 +161,7 @@ export default function UserMenu() {
         <div className="absolute right-0 mt-2 w-56 bg-card-bg border border-text-muted/20 rounded-lg shadow-xl overflow-hidden z-50 max-md:w-[180px] max-md:max-w-[calc(100vw-40px)]">
           <div className="px-4 py-3 border-b border-text-muted/10 bg-card-hover/50">
             <p className="text-text-main font-semibold">{username}</p>
-            <p className="text-text-muted text-xs">{profile.email}</p>
+            <p className="text-text-muted text-xs">{profile.username || profile.email?.split('@')[0]}</p>
             {isAdmin && (
               <p className="text-blue-400 text-xs mt-1">👑 Адміністратор</p>
             )}
@@ -192,6 +184,17 @@ export default function UserMenu() {
           </Link>
 
           <Link
+            href="/profile/library"
+            onClick={() => setOpen(false)}
+            className="block w-full text-left px-4 py-3 text-text-main hover:bg-card-hover transition-colors text-sm flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+            </svg>
+            Бібліотека
+          </Link>
+
+          <Link
             href="/profile/reading-history"
             onClick={() => setOpen(false)}
             className="block w-full text-left px-4 py-3 text-text-main hover:bg-card-hover transition-colors text-sm flex items-center gap-2"
@@ -211,7 +214,7 @@ export default function UserMenu() {
             <>
               <div className="border-t border-text-muted/10" />
               <Link
-                href="/admin/manhwa"
+                href="/admin"
                 onClick={() => setOpen(false)}
                 className="block w-full text-left px-4 py-3 text-blue-400 hover:bg-blue-600/20 transition-colors text-sm flex items-center gap-2"
               >

@@ -6,13 +6,22 @@ import { MetaBlock } from './MetaBlock';
 import { TitleBlock } from './TitleBlock';
 import { ChaptersList } from './ChaptersList/ChaptersList';
 import { CommentsBlock } from './CommentsBlock';
+import { AddToListButton } from '@/components/AddToListButton/AddToListButton';
 import buttonStyles from './ReadButton.module.css';
 import styles from './MobileView.module.css';
 import metaStyles from './MetaBlock.module.css';
 import { MobileViewProps } from './types';
 
+interface Range {
+  s: number;
+  e: number;
+}
+
 interface MobileViewExtendedProps extends MobileViewProps {
   firstChapterId?: string;
+  firstChapterPage?: number | null;
+  readChapters?: Set<string>;
+  archivedRanges?: Range[];
 }
 
 /**
@@ -51,6 +60,9 @@ export const MobileView = memo(function MobileView({
   onTabChange,
   onRatingModalOpen,
   firstChapterId = '',
+  firstChapterPage = null,
+  readChapters = new Set(),
+  archivedRanges = [],
 }: MobileViewExtendedProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -78,6 +90,10 @@ export const MobileView = memo(function MobileView({
       pagesCount: chapter.pages,
       status: chapter.status || '',
       publishedAt: chapter.createdAt || new Date().toISOString(),
+      // VIP fields (preserve from domain)
+      vipOnly: (chapter as any).vipOnly,
+      vipEarlyDays: (chapter as any).vipEarlyDays,
+      publicAvailableAt: (chapter as any).publicAvailableAt,
     }));
 
   return (
@@ -99,16 +115,28 @@ export const MobileView = memo(function MobileView({
 
       {/* Кнопка "Читати" */}
       <Link 
-        href={`/reader/${manhwa.id}/${firstChapterId || manhwa.chapters[0]?.id}`}
+        href={`/reader/${manhwa.id}/${firstChapterId || manhwa.chapters[0]?.id}${firstChapterPage ? `?page=${firstChapterPage}` : ''}`}
         style={{ textDecoration: 'none', display: 'block', marginBottom: '16px' }}
       >
-        <button className={buttonStyles.readButtonGradient} style={{ width: '100%' }}>
+        <button
+          className={buttonStyles.readButtonGradient}
+          style={{ width: '100%' }}
+          onClick={() => {
+            const target = `/reader/${manhwa.id}/${firstChapterId || manhwa.chapters[0]?.id}${firstChapterPage ? `?page=${firstChapterPage}` : ''}`;
+            console.log('[MobileView] Read button clicked', { target, firstChapterId, firstChapterPage });
+          }}
+        >
           <svg viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
             <path d="M8 5v14l11-7z" />
           </svg>
           {firstChapterId && firstChapterId !== manhwa.chapters[0]?.id ? 'Продовжити' : 'Читати'}
         </button>
       </Link>
+
+      {/* Кнопка "Додати в список" */}
+      <div style={{ marginBottom: '16px' }}>
+        <AddToListButton manhwaId={manhwaId} />
+      </div>
 
       {/* ============================================
           ВЕРХНІЙ БЛОК - MetaBlock з класом topBlock
@@ -227,7 +255,8 @@ export const MobileView = memo(function MobileView({
               <ChaptersList
                 chapters={adaptedChapters}
                 manhwaId={manhwaId}
-                readChapters={new Set()}
+                readChapters={readChapters}
+                archivedRanges={archivedRanges}
                 isMobile={true}
               />
             </div>

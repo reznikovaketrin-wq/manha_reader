@@ -16,6 +16,8 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
     short_description: '',
     status: 'ongoing',
     tags: '',
+    vip_only: false,
+    vip_early_days: 0,
   });
 
   const [images, setImages] = useState<Record<string, { file: File | null; preview: string | null }>>({
@@ -31,10 +33,12 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'rating' ? parseFloat(value) : value,
+      [name]: type === 'number' ? (value === '' ? 0 : parseFloat(value)) : 
+              type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
+              value,
     }));
   };
 
@@ -109,6 +113,8 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
           status: formData.status,
           rating: 0,
           tags: formData.tags.split(',').map((tag) => tag.trim()),
+          vip_only: formData.vip_only,
+          vip_early_days: formData.vip_early_days,
           ...uploadedImages,
         }),
       });
@@ -159,7 +165,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               value={formData.id}
               onChange={handleInputChange}
               placeholder="lycar-ta-vidma"
-              className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d]"
               required
             />
           </div>
@@ -173,7 +179,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               value={formData.title}
               onChange={handleInputChange}
               placeholder="Лицар та Відьма"
-              className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d]"
               required
             />
           </div>
@@ -186,7 +192,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               value={formData.description}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500 resize-none"
+              className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d] resize-none"
             />
           </div>
 
@@ -200,7 +206,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               placeholder="Коротке описання для карточки (макс 150 символів)"
               rows={2}
               maxLength={150}
-              className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500 resize-none"
+              className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d] resize-none"
             />
             <p className="text-xs text-text-muted mt-1">
               {formData.short_description.length}/150
@@ -214,7 +220,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               name="status"
               value={formData.status}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+              className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d]"
             >
               <option value="ongoing">Онгоїнг</option>
               <option value="completed">Завершена</option>
@@ -231,8 +237,50 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               value={formData.tags}
               onChange={handleInputChange}
               placeholder="БЕЗ ЦЕНЗУРИ, МАНХВА"
-              className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+              className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-accent-gradient"
             />
+          </div>
+
+          {/* VIP Settings */}
+          <div className="border-t border-text-muted/20 pt-4">
+            <h3 className="text-lg font-semibold text-text-main mb-3">⭐ VIP Налаштування</h3>
+            
+            {/* VIP Only */}
+            <div className="mb-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="vip_only"
+                  checked={formData.vip_only}
+                  onChange={handleInputChange}
+                  className="w-5 h-5 text-[#ff1b6d] bg-gray-100 border-gray-300 rounded focus:ring-[#ff1b6d]"
+                />
+                <div>
+                  <span className="text-sm font-medium text-text-main">🔒 Тільки для VIP</span>
+                  <p className="text-xs text-text-muted">Контент доступний лише VIP та адміністраторам</p>
+                </div>
+              </label>
+            </div>
+
+            {/* VIP Early Access */}
+            <div>
+              <label className="block text-sm font-medium text-text-main mb-2">
+                ⏰ Ранній доступ для VIP (днів)
+              </label>
+              <input
+                type="number"
+                name="vip_early_days"
+                min="0"
+                max="30"
+                value={formData.vip_early_days}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d]"
+                placeholder="0"
+              />
+              <p className="text-xs text-text-muted mt-1">
+                VIP користувачі отримають доступ на {formData.vip_early_days} {formData.vip_early_days === 1 ? 'день' : 'днів'} раніше
+              </p>
+            </div>
           </div>
 
           {/* Изображения */}
@@ -302,7 +350,11 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors disabled:opacity-50"
+              className="flex-1 py-3 px-4 relative bg-black text-white font-semibold rounded-xl transition-all overflow-hidden disabled:opacity-50"
+              style={{
+                background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+                border: '2px solid transparent',
+              }}
             >
               {loading ? '⏳ Створення...' : '➕ Створити'}
             </button>
@@ -310,7 +362,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               type="button"
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition-colors"
+              className="px-4 py-3 bg-transparent text-white font-semibold rounded-xl border-2 border-white/10 hover:border-white/20 transition-all"
             >
               Скасувати
             </button>

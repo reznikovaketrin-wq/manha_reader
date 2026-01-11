@@ -23,7 +23,16 @@ export interface ChapterData {
 
 // ===== Width Mode =====
 
-export type WidthMode = 'fit' | 'original' | 'fixed';
+export type WidthMode = 'fit' | 'fixed';
+
+// ===== Scroll Result =====
+
+export interface ScrollResult {
+  success: boolean;
+  reason?: 'already-visible' | 'registered' | 'timeout' | 'no-container';
+  pageNumber?: number;
+  elapsedMs?: number;
+}
 
 // ===== Hook Contracts =====
 
@@ -32,7 +41,8 @@ export interface UseReaderDataReturn {
   chapters: ChapterData[];
   isLoading: boolean;
   error: Error | null;
-  loadChapter: (id: string) => Promise<void>;
+  loadChapter: (id: string) => Promise<ChapterData | null>;
+  
   preloadNext: () => void;
   getChapterIndex: (id: string) => number;
   hasNext: boolean;
@@ -51,6 +61,8 @@ export interface UseReaderScrollReturn {
   scrollNext: () => void;
   scrollPrev: () => void;
   scrollToTop: () => void;
+  scrollToPage: (pageNumber: number) => boolean;
+  waitForAndScroll: (pageNumber: number, timeoutMs?: number) => Promise<ScrollResult>;
   shouldPreload: boolean;
 }
 
@@ -105,11 +117,27 @@ export interface ReaderChapterProps {
   registerPage: (pageNumber: number) => (el: HTMLElement | null) => void;
   isLast: boolean;
   nextChapterNumber?: number;
+  infiniteScroll: boolean;
+  manhwaId?: string;
+  prevChapterId?: string;
+  nextChapterId?: string;
+  hasNext?: boolean;
+  hasPrev?: boolean;
+  onLoadPrev?: () => void;
+  onLoadNext?: () => void;
 }
 
 export interface ReaderContentProps {
   chapters: ChapterData[];
   registerPage: (pageNumber: number) => (el: HTMLElement | null) => void;
+  infiniteScroll: boolean;
+  manhwaId: string;
+  nextChapterId?: string;
+  prevChapterId?: string;
+  hasNext: boolean;
+  hasPrev: boolean;
+  onLoadPrev?: () => void;
+  onLoadNext?: () => void;
 }
 
 export interface ReaderHeaderProps {
@@ -117,6 +145,7 @@ export interface ReaderHeaderProps {
   chapterNumber?: number;
   manhwaId: string;
   visible: boolean;
+  onToggleSettings?: () => void;
 }
 
 export interface ReaderFooterProps {
@@ -125,7 +154,6 @@ export interface ReaderFooterProps {
   progress: number;
   visible: boolean;
   onToggleChapterList: () => void;
-  onToggleSettings: () => void;
   onToggleComments?: () => void;
   onToggleAutoScroll: () => void;
   onScrollPrev: () => void;
@@ -140,12 +168,14 @@ export interface ReaderSettingsPanelProps {
   isFullscreen: boolean;
   autoScrollSpeed: number;
   autoScrollActive: boolean;
+  infiniteScroll: boolean;
   onBrightnessChange: (value: number) => void;
   onReset: () => void;
   onWidthModeChange: (mode: WidthMode) => void;
   onToggleFullscreen: () => void;
   onAutoScrollSpeedChange: (speed: number) => void;
   onToggleAutoScroll: () => void;
+  onToggleInfiniteScroll: () => void;
 }
 
 export interface ReaderChapterListProps {

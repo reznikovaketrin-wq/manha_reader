@@ -1,0 +1,237 @@
+/* 📁 app/profile/library/library.module.css */
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  font-family: Inter, sans-serif;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  font-size: 16px;
+  color: #8a8a8a;
+  margin: 0;
+}
+
+/* Вкладки */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 32px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.tab {
+  padding: 12px 20px;
+  background-color: transparent;
+  color: #8a8a8a;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab:hover {
+  color: #ffffff;
+}
+
+.tabActive {
+  color: #a259ff;
+  border-bottom-color: #a259ff;
+}
+
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 8px;
+  background-color: #3a3a3a;
+  color: #ffffff;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tabActive .tabCount {
+  background-color: #a259ff;
+}
+
+/* Завантаження */
+.loading {
+  text-align: center;
+  padding: 80px 20px;
+  color: #8a8a8a;
+  font-size: 16px;
+}
+
+/* Порожній стан */
+.empty {
+  text-align: center;
+  padding: 80px 20px;
+}
+
+.emptyText {
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.emptySubtext {
+  font-size: 15px;
+  color: #8a8a8a;
+  margin: 0;
+}
+
+/* Сітка карток */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+  }
+}
+
+/* Картка манхви */
+.card {
+  display: block;
+  text-decoration: none;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #0a0a0a;
+  border: 1px solid #3a3a3a;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.card:hover {
+  border-color: #a259ff;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(162, 89, 255, 0.2);
+}
+
+.cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background-size: cover;
+  background-position: center;
+  background-color: #2a2a2a;
+}
+
+/* Статус бейдж */
+.statusBadge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  color: #a259ff;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Плашка останньої прочитаної глави */
+.lastReadBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 6px 10px;
+  background-color: rgba(162, 89, 255, 0.95);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.lastReadIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Інформація під обкладинкою */
+.info {
+  padding: 12px;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.4;
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: #8a8a8a;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 24px 16px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .tabs {
+    gap: 4px;
+  }
+
+  .tab {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .cardTitle {
+    font-size: 13px;
+  }
+
+  .cardMeta {
+    font-size: 11px;
+  }
+}
