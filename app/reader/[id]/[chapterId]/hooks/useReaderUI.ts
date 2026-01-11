@@ -3,10 +3,11 @@ import { useState, useCallback, useEffect } from 'react';
 const BRIGHTNESS_KEY = 'manhwa-brightness';
 const WIDTH_MODE_KEY = 'manhwa-width-mode';
 const AUTO_SCROLL_SPEED_KEY = 'manhwa-auto-scroll-speed';
+const INFINITE_SCROLL_KEY = 'manhwa-infinite-scroll';
 const DEFAULT_BRIGHTNESS = 100;
 const DEFAULT_AUTO_SCROLL_SPEED = 50; // 1-100 scale, 50 = medium
 
-export type WidthMode = 'fit' | 'original' | 'fixed';
+export type WidthMode = 'fit' | 'fixed';
 
 export interface UseReaderUIReturn {
   // Visibility
@@ -20,6 +21,7 @@ export interface UseReaderUIReturn {
   autoScrollSpeed: number;
   widthMode: WidthMode;
   isFullscreen: boolean;
+  infiniteScroll: boolean;
   
   // Actions
   toggleUI: () => void;
@@ -34,6 +36,7 @@ export interface UseReaderUIReturn {
   toggleFullscreen: () => void;
   enterFullscreen: () => void;
   exitFullscreen: () => void;
+  toggleInfiniteScroll: () => void;
 }
 
 /**
@@ -50,7 +53,9 @@ export function useReaderUI(): UseReaderUIReturn {
   const [widthMode, setWidthModeState] = useState<WidthMode>(() => {
     if (typeof window === 'undefined') return 'fit';
     const saved = localStorage.getItem(WIDTH_MODE_KEY);
-    return (saved as WidthMode) || 'fit';
+    // If user had the removed 'original' value saved, migrate it to 'fixed' (comfortable)
+    if (saved === 'original') return 'fixed';
+    return (saved as WidthMode) || 'fixed';
   });
 
   const [showUI, setShowUI] = useState(true);
@@ -65,6 +70,12 @@ export function useReaderUI(): UseReaderUIReturn {
     return saved ? parseInt(saved, 10) : DEFAULT_AUTO_SCROLL_SPEED;
   });
 
+  const [infiniteScroll, setInfiniteScroll] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    const saved = localStorage.getItem(INFINITE_SCROLL_KEY);
+    return saved ? saved === 'true' : true;
+  });
+
   // Persist settings
   useEffect(() => {
     localStorage.setItem(BRIGHTNESS_KEY, brightness.toString());
@@ -77,6 +88,10 @@ export function useReaderUI(): UseReaderUIReturn {
   useEffect(() => {
     localStorage.setItem(AUTO_SCROLL_SPEED_KEY, autoScrollSpeed.toString());
   }, [autoScrollSpeed]);
+
+  useEffect(() => {
+    localStorage.setItem(INFINITE_SCROLL_KEY, infiniteScroll.toString());
+  }, [infiniteScroll]);
 
   // Listen for fullscreen changes
   useEffect(() => {
@@ -186,6 +201,10 @@ export function useReaderUI(): UseReaderUIReturn {
     setWidthModeState(mode);
   }, []);
 
+  const toggleInfiniteScroll = useCallback(() => {
+    setInfiniteScroll((prev) => !prev);
+  }, []);
+
   return {
     showUI,
     showSettings,
@@ -195,6 +214,7 @@ export function useReaderUI(): UseReaderUIReturn {
     autoScrollSpeed,
     widthMode,
     isFullscreen,
+    infiniteScroll,
     
     toggleUI,
     toggleSettings,
@@ -208,5 +228,6 @@ export function useReaderUI(): UseReaderUIReturn {
     toggleFullscreen,
     enterFullscreen,
     exitFullscreen,
+    toggleInfiniteScroll,
   };
 }

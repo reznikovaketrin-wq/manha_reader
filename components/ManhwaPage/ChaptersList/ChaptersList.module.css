@@ -48,6 +48,15 @@
   opacity: 0.8;
 }
 
+.chapterItem.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chapterItem.locked:hover {
+  opacity: 0.5;
+}
+
 .chapterContent {
   display: flex;
   align-items: center;
@@ -141,6 +150,16 @@
 .chapterItemMobile:active {
   background-color: #1A1A1A;
   border-color: #A259FF;
+}
+
+.chapterItemMobile.locked {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chapterItemMobile.locked:active {
+  background-color: #0A0A0A;
+  border-color: #3A3A3A;
 }
 
 .chapterContentMobile {

@@ -17,7 +17,9 @@ import { mapChaptersAPIToDomain } from './chapterMapper';
  * ✅ Полный маппинг (не только главы)
  */
 export function mapManhwaAPIToDomain(api: ManhwaAPI): Manhwa {
-  console.log('🔄 Mapping API to Domain:', api);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🔄 Mapping API to Domain:', api);
+  }
   
   return {
     // Основные поля (обязательные)

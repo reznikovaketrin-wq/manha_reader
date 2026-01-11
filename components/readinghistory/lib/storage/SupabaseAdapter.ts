@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase-client';
+import { authService } from '@/features/auth/services/AuthService';
 import type { ReadingProgress, StorageAdapter, MergeResult } from '@/components/readinghistory/types/reading-history.types';
 
 /**
@@ -8,9 +9,8 @@ import type { ReadingProgress, StorageAdapter, MergeResult } from '@/components/
 export class SupabaseAdapter implements StorageAdapter {
   private async getUserId(): Promise<string | null> {
     try {
-      const { data, error } = await supabase.auth.getUser();
-      if (error || !data?.user?.id) return null;
-      return data.user.id;
+      const session = await authService.getSession();
+      return session?.user?.id || null;
     } catch {
       return null;
     }

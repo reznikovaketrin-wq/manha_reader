@@ -17,6 +17,12 @@ export interface EnrichedComment extends BaseComment {
   user_email?: string;
   likes_count?: number;
   user_liked?: boolean;
+  users?: { username?: string | null; email?: string | null } | null;
+}
+
+// Include related user info when loading comments
+export interface CommentWithUser extends BaseComment {
+  users?: { username?: string | null; email?: string | null } | null;
 }
 
 // ============================================
@@ -29,7 +35,7 @@ export async function loadChapterComments(
 ): Promise<BaseComment[]> {
   const { data, error } = await supabase
     .from('chapter_comments')
-    .select('id, user_id, content, created_at, updated_at, parent_comment_id')
+    .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
     .eq('manhwa_id', manhwaId)
     .eq('chapter_id', chapterId)
     .order('created_at', { ascending: false });
@@ -69,15 +75,48 @@ export async function createChapterComment(
 
 export async function loadManhwaComments(
   manhwaId: string
-): Promise<BaseComment[]> {
-  const { data, error } = await supabase
-    .from('manhwa_comments')
-    .select('id, user_id, content, created_at, updated_at, parent_comment_id')
-    .eq('manhwa_id', manhwaId)
-    .order('created_at', { ascending: false });
+): Promise<CommentWithUser[]> {
+  try {
+    const { data, error } = await supabase
+      .from('manhwa_comments')
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
+      .eq('manhwa_id', manhwaId)
+      .order('created_at', { ascending: false });
 
-  if (error) throw error;
-  return data || [];
+    if (error) throw error;
+    return (data || []) as CommentWithUser[];
+  } catch (err) {
+    console.warn('Could not select related users for manhwa_comments, retrying without relation', err);
+    const { data, error } = await supabase
+      .from('manhwa_comments')
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id')
+      .eq('manhwa_id', manhwaId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    const rows = (data || []) as CommentWithUser[];
+
+    // Try to fetch user records separately (no foreign key relationship)
+    const userIds = Array.from(new Set(rows.map(r => r.user_id).filter(Boolean)));
+    if (userIds.length > 0) {
+      try {
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, username, email')
+          .in('id', userIds);
+
+        if (!usersError && usersData) {
+          const usersMap = new Map<string, { id: string; username?: string | null; email?: string | null }>();
+          usersData.forEach((u: any) => usersMap.set(u.id, u));
+          return rows.map((r) => ({ ...r, users: usersMap.get(r.user_id) || null }));
+        }
+      } catch (uerr) {
+        console.warn('Could not fetch users fallback for comments', uerr);
+      }
+    }
+
+    return rows;
+  }
 }
 
 export async function createManhwaComment(
@@ -85,22 +124,41 @@ export async function createManhwaComment(
   userId: string,
   content: string,
   parentCommentId?: string | null
-): Promise<BaseComment> {
-  const { data, error } = await supabase
-    .from('manhwa_comments')
-    .insert([
-      {
-        user_id: userId,
-        manhwa_id: manhwaId,
-        content,
-        parent_comment_id: parentCommentId || null,
-      },
-    ])
-    .select()
-    .single();
+): Promise<CommentWithUser> {
+  try {
+    const { data, error } = await supabase
+      .from('manhwa_comments')
+      .insert([
+        {
+          user_id: userId,
+          manhwa_id: manhwaId,
+          content,
+          parent_comment_id: parentCommentId || null,
+        },
+      ])
+      .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
+      .single();
 
-  if (error) throw error;
-  return data;
+    if (error) throw error;
+    return data as CommentWithUser;
+  } catch (err) {
+    console.warn('Could not select related users for created manhwa_comment, falling back', err);
+    const { data, error } = await supabase
+      .from('manhwa_comments')
+      .insert([
+        {
+          user_id: userId,
+          manhwa_id: manhwaId,
+          content,
+          parent_comment_id: parentCommentId || null,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as CommentWithUser;
+  }
 }
 
 // ============================================

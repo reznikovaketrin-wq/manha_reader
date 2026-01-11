@@ -15,12 +15,16 @@ export function useHistorySync() {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session && !syncedRef.current) {
-          console.log('[useHistorySync] User signed in, syncing history...');
-          
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('[useHistorySync] User signed in, syncing history...');
+          }
+
           try {
             await HistoryService.syncGuestToUser();
             syncedRef.current = true;
-            console.log('[useHistorySync] ✅ History synced successfully');
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('[useHistorySync] ✅ History synced successfully');
+            }
           } catch (error) {
             console.error('[useHistorySync] Error syncing history:', error);
           }

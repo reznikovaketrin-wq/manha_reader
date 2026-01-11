@@ -22,6 +22,8 @@ interface Chapter {
   published_at: string | null;
   scheduled_at: string | null;
   created_at: string;
+  vip_only?: boolean;
+  vip_early_days?: number;
 }
 
 interface Manhwa {
@@ -63,11 +65,18 @@ export default function AdminManhwaDetailPage() {
   const [modal, setModal] = useState<ModalType>('none');
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
 
-  const [createFormData, setCreateFormData] = useState({ title: '', description: '' });
+  const [createFormData, setCreateFormData] = useState({ 
+    title: '', 
+    description: '',
+    vip_only: false,
+    vip_early_days: 0,
+  });
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [publishMode, setPublishMode] = useState<'now' | 'schedule'>('now');
   const [publishDate, setPublishDate] = useState('');
   const [publishTime, setPublishTime] = useState('12:00');
+  const [publishVipOnly, setPublishVipOnly] = useState(false);
+  const [publishVipEarlyDays, setPublishVipEarlyDays] = useState(0);
 
   const [uploading, setUploading] = useState(false);
 
@@ -316,14 +325,19 @@ export default function AdminManhwaDetailPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(createFormData),
+        body: JSON.stringify({
+          title: createFormData.title,
+          description: createFormData.description,
+          vip_only: createFormData.vip_only,
+          vip_early_days: createFormData.vip_early_days,
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to create');
 
       const data = await response.json();
       setChapters((prev) => [...prev, data.data]);
-      setCreateFormData({ title: '', description: '' });
+      setCreateFormData({ title: '', description: '', vip_only: false, vip_early_days: 0 });
       setModal('none');
       await invalidateManhwaCache(id);
       console.log('✅ Chapter created');
@@ -401,7 +415,11 @@ export default function AdminManhwaDetailPage() {
       if (!token) throw new Error('No token');
 
       if (publishMode === 'now') {
-        const body = { action: 'publish' };
+        const body = { 
+          action: 'publish',
+          vip_only: publishVipOnly,
+          vip_early_days: publishVipEarlyDays,
+        };
         
         const response = await fetch(`/api/admin/chapters/${activeChapter.id}/publish`, {
           method: 'PUT',
@@ -424,6 +442,8 @@ export default function AdminManhwaDetailPage() {
         setPublishDate('');
         setPublishTime('12:00');
         setPublishMode('now');
+        setPublishVipOnly(false);
+        setPublishVipEarlyDays(0);
         await invalidateManhwaCache(id);
         console.log('✅ Chapter published now');
       } else {
@@ -450,6 +470,8 @@ export default function AdminManhwaDetailPage() {
         const body = {
           action: 'schedule',
           scheduledAt: scheduledAtISO,
+          vip_only: publishVipOnly,
+          vip_early_days: publishVipEarlyDays,
         };
 
         const response = await fetch(`/api/admin/chapters/${activeChapter.id}/publish`, {
@@ -473,6 +495,8 @@ export default function AdminManhwaDetailPage() {
         setPublishDate('');
         setPublishTime('12:00');
         setPublishMode('now');
+        setPublishVipOnly(false);
+        setPublishVipEarlyDays(0);
         await invalidateManhwaCache(id);
         console.log('✅ Chapter scheduled for publication');
       }
@@ -552,7 +576,7 @@ export default function AdminManhwaDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-gradient mx-auto mb-4"></div>
           <p className="text-text-muted">Завантаження...</p>
         </div>
       </div>
@@ -565,7 +589,11 @@ export default function AdminManhwaDetailPage() {
         <div className="max-w-2xl mx-auto">
           <button
             onClick={() => router.push('/admin/manhwa')}
-            className="mb-4 text-blue-400 hover:text-blue-300 transition-colors"
+            className="mb-4 relative px-4 py-2 bg-black text-white rounded-lg overflow-hidden font-medium"
+            style={{
+              background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+              border: '2px solid transparent',
+            }}
           >
             ← Назад
           </button>
@@ -585,7 +613,11 @@ export default function AdminManhwaDetailPage() {
           <div className="max-w-7xl mx-auto flex justify-between items-center">
             <button
               onClick={() => router.push('/admin/manhwa')}
-              className="text-blue-400 hover:text-blue-300 transition-colors"
+              className="relative px-4 py-2 bg-black text-white rounded-lg overflow-hidden font-medium"
+              style={{
+                background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+                border: '2px solid transparent',
+              }}
             >
               ← Назад
             </button>
@@ -610,7 +642,7 @@ export default function AdminManhwaDetailPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
               <div className="lg:col-span-1 space-y-4">
                 <div
-                  className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-blue-500 transition-colors group cursor-pointer bg-gray-700 aspect-[3/4]"
+                  className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-accent-gradient transition-colors group cursor-pointer bg-gray-700 aspect-[3/4]"
                   onClick={() => document.getElementById('cover-input')?.click()}
                 >
                   <input
@@ -647,7 +679,7 @@ export default function AdminManhwaDetailPage() {
                 </div>
 
                 <div
-                  className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-blue-500 transition-colors group cursor-pointer bg-gray-700 h-32"
+                  className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-accent-gradient transition-colors group cursor-pointer bg-gray-700 h-32"
                   onClick={() => document.getElementById('bg-input')?.click()}
                 >
                   <input
@@ -684,7 +716,7 @@ export default function AdminManhwaDetailPage() {
                 </div>
 
                 <div
-                  className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-blue-500 transition-colors group cursor-pointer bg-gray-700 aspect-square"
+                  className="relative rounded-lg overflow-hidden border-2 border-dashed border-text-muted/50 hover:border-accent-gradient transition-colors group cursor-pointer bg-gray-700 aspect-square"
                   onClick={() => document.getElementById('char-input')?.click()}
                 >
                   <input
@@ -784,7 +816,7 @@ export default function AdminManhwaDetailPage() {
                             .catch(() => setError('Помилка при оновленні'));
                         }
                       }}
-                      className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded text-sm focus:outline-none focus:border-accent-gradient"
                     >
                       <option value="uncensored">🔞 Без цензури</option>
                       <option value="censored">🔒 Цензурована</option>
@@ -812,7 +844,7 @@ export default function AdminManhwaDetailPage() {
                             .catch(() => setError('Помилка при оновленні'));
                         }
                       }}
-                      className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded text-sm focus:outline-none focus:border-blue-500"
+                      className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded text-sm focus:outline-none focus:border-accent-gradient"
                     >
                       <option value="manhwa">🇰🇷 Манхва</option>
                       <option value="manga">🇯🇵 Манга</option>
@@ -848,9 +880,13 @@ export default function AdminManhwaDetailPage() {
                 <button
                   onClick={() => {
                     setModal('create');
-                    setCreateFormData({ title: '', description: '' });
+                    setCreateFormData({ title: '', description: '', vip_only: false, vip_early_days: 0 });
                   }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                  className="px-4 py-2 relative bg-black text-white rounded-lg font-semibold overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+                    border: '2px solid transparent',
+                  }}
                 >
                   ➕ Завантажити розділ
                 </button>
@@ -862,9 +898,13 @@ export default function AdminManhwaDetailPage() {
                   <button
                     onClick={() => {
                       setModal('create');
-                      setCreateFormData({ title: '', description: '' });
+                      setCreateFormData({ title: '', description: '', vip_only: false, vip_early_days: 0 });
                     }}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
+                    className="px-4 py-2 relative bg-black text-white rounded-lg font-semibold overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+                      border: '2px solid transparent',
+                    }}
                   >
                     ➕ Завантажити розділ
                   </button>
@@ -874,7 +914,7 @@ export default function AdminManhwaDetailPage() {
                   {chapters.map((chapter) => (
                     <div
                       key={chapter.id}
-                      className="group p-4 bg-bg-main border border-text-muted/20 rounded-lg hover:border-blue-500 transition-all"
+                      className="group p-4 bg-bg-main border border-text-muted/20 rounded-lg hover:border-accent-gradient transition-all"
                     >
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
@@ -883,6 +923,16 @@ export default function AdminManhwaDetailPage() {
                               Розділ {chapter.chapter_number}
                             </h3>
                             {getStatusBadge(chapter.status)}
+                            {chapter.vip_only && (
+                              <span className="px-2 py-1 bg-purple-600/20 text-purple-400 text-xs rounded border border-purple-500/30">
+                                🔒 VIP Only
+                              </span>
+                            )}
+                            {!chapter.vip_only && chapter.vip_early_days && chapter.vip_early_days > 0 && (
+                              <span className="px-2 py-1 bg-indigo-600/20 text-indigo-400 text-xs rounded border border-indigo-500/30">
+                                ⏰ VIP +{chapter.vip_early_days}д
+                              </span>
+                            )}
                           </div>
 
                           <p className="text-sm text-text-muted mb-2">{chapter.description}</p>
@@ -917,6 +967,8 @@ export default function AdminManhwaDetailPage() {
                               setModal('publish');
                               setPublishDate('');
                               setPublishTime('12:00');
+                              setPublishVipOnly(false);
+                              setPublishVipEarlyDays(0);
                             }}
                             disabled={uploading || chapter.pages_count === 0}
                             className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
@@ -969,6 +1021,43 @@ export default function AdminManhwaDetailPage() {
                   placeholder="Опис розділу"
                 />
               </div>
+
+              {/* VIP Settings */}
+              <div className="border-t border-text-muted/20 pt-4 space-y-3">
+                <h3 className="text-sm font-semibold text-text-main">⭐ VIP Налаштування</h3>
+                
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={createFormData.vip_only}
+                    onChange={(e) => setCreateFormData({...createFormData, vip_only: e.target.checked})}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-text-main">🔒 Тільки для VIP</span>
+                    <p className="text-xs text-text-muted">Доступ лише VIP та адміністраторам</p>
+                  </div>
+                </label>
+
+                <div>
+                  <label className="block text-sm font-medium text-text-main mb-2">
+                    ⏰ Ранній доступ для VIP (днів)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    value={createFormData.vip_early_days}
+                    onChange={(e) => setCreateFormData({...createFormData, vip_early_days: parseInt(e.target.value) || 0})}
+                    className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+                    placeholder="0"
+                  />
+                  <p className="text-xs text-text-muted mt-1">
+                    VIP отримають доступ на {createFormData.vip_early_days} {createFormData.vip_early_days === 1 ? 'день' : 'днів'} раніше
+                  </p>
+                </div>
+              </div>
+
               <div className="flex gap-2">
                 <button
                   type="submit"
@@ -1092,6 +1181,74 @@ export default function AdminManhwaDetailPage() {
                   </div>
                 </>
               )}
+
+              {/* VIP Settings */}
+              <div className="border-t border-text-muted/20 pt-4 space-y-3">
+                <h3 className="text-sm font-semibold text-text-main">⭐ VIP Налаштування</h3>
+                
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={publishVipOnly}
+                    onChange={(e) => {
+                      setPublishVipOnly(e.target.checked);
+                      if (e.target.checked) {
+                        setPublishVipEarlyDays(0);
+                      }
+                    }}
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-text-main">🔒 Тільки для VIP</span>
+                    <p className="text-xs text-text-muted">Доступ лише VIP та адміністраторам</p>
+                  </div>
+                </label>
+
+                {!publishVipOnly && (
+                  <div>
+                    <label className="block text-sm font-medium text-text-main mb-2">
+                      ⏰ Ранній доступ для VIP (днів)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="30"
+                      value={publishVipEarlyDays}
+                      onChange={(e) => setPublishVipEarlyDays(parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+                      placeholder="0"
+                    />
+                    {publishMode === 'now' ? (
+                      <p className="text-xs text-text-muted mt-1">
+                        {publishVipEarlyDays === 0 ? (
+                          '✅ Доступно всім одразу'
+                        ) : (
+                          <>
+                            VIP отримають доступ <span className="text-green-400">зараз</span>, звичайні користувачі — через{' '}
+                            <span className="text-yellow-400">{publishVipEarlyDays} {publishVipEarlyDays === 1 ? 'день' : publishVipEarlyDays < 5 ? 'дні' : 'днів'}</span>
+                            {' '}({new Date(Date.now() + publishVipEarlyDays * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA')})
+                          </>
+                        )}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-text-muted mt-1">
+                        {publishVipEarlyDays === 0 ? (
+                          '✅ Доступно всім в запланований час'
+                        ) : publishDate ? (
+                          <>
+                            VIP отримають доступ{' '}
+                            <span className="text-green-400">{new Date(`${publishDate}T${publishTime}`).toLocaleDateString('uk-UA')}</span>, 
+                            звичайні — через {publishVipEarlyDays} {publishVipEarlyDays === 1 ? 'день' : 'днів'}{' '}
+                            ({new Date(new Date(`${publishDate}T${publishTime}`).getTime() + publishVipEarlyDays * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA')})
+                          </>
+                        ) : (
+                          `VIP отримають доступ на ${publishVipEarlyDays} ${publishVipEarlyDays === 1 ? 'день' : 'днів'} раніше`
+                        )}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-2">
                 <button

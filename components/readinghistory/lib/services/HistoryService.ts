@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase-client';
+import { authService } from '@/features/auth/services/AuthService';
 import { LocalStorageAdapter } from '../storage/LocalStorageAdapter';
 import { SupabaseAdapter } from '../storage/SupabaseAdapter';
 import type {
@@ -33,8 +33,8 @@ class HistoryServiceClass {
    */
   private async isAuthenticated(): Promise<boolean> {
     try {
-      const { data, error } = await supabase.auth.getUser();
-      return !error && !!data?.user?.id;
+      const session = await authService.getSession();
+      return !!session?.user?.id;
     } catch {
       return false;
     }

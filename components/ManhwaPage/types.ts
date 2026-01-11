@@ -52,6 +52,9 @@ export interface ManhwaPageProps {
   canRate?: boolean;
   canComment?: boolean;
 
+  // Optional optimistic override for displayed average rating
+  clientRatingOverride?: number | null;
+
   // Состояния загрузки
   loading?: boolean;
   error?: AppError | null;
@@ -68,6 +71,8 @@ export interface ViewProps {
   canRate?: boolean;
   canComment?: boolean;
   onRatingModalOpen: () => void;
+  // Если есть сохраненная позиция в главе, передаем номер страницы
+  firstChapterPage?: number | null;
 }
 
 /**

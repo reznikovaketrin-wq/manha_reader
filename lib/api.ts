@@ -76,9 +76,11 @@ export interface ChapterWithPages extends Chapter {
 export async function fetchManhwas(): Promise<Manhwa[]> {
   try {
     const apiUrl = `${API_BASE}/api/public`;
-    console.log('📚 [API Client] Fetching all manhwas...');
-    console.log('📍 [API Client] URL:', apiUrl);
-    console.log('⏰ [API Client] Timestamp:', new Date().toISOString());
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📚 [API Client] Fetching all manhwas...');
+      console.log('📍 [API Client] URL:', apiUrl);
+      console.log('⏰ [API Client] Timestamp:', new Date().toISOString());
+    }
 
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -92,7 +94,9 @@ export async function fetchManhwas(): Promise<Manhwa[]> {
       },
     });
 
-    console.log('📡 [API Client] Response status:', response.status);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('📡 [API Client] Response status:', response.status);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -114,13 +118,15 @@ export async function fetchManhwas(): Promise<Manhwa[]> {
       return dateB - dateA;
     });
 
-    console.log(`✅ [API Client] Loaded ${sorted.length} manhwas at ${new Date().toISOString()}`);
-    console.log('🔄 [API Client] Sorted by last chapter date (newest first)');
-    console.log('📦 [API Client] First item:', sorted.length > 0 ? {
-      id: sorted[0].id,
-      title: sorted[0].title,
-      lastChapterDate: sorted[0].lastChapterDate,
-    } : 'No data');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ [API Client] Loaded ${sorted.length} manhwas at ${new Date().toISOString()}`);
+      console.log('🔄 [API Client] Sorted by last chapter date (newest first)');
+      console.log('📦 [API Client] First item:', sorted.length > 0 ? {
+        id: sorted[0].id,
+        title: sorted[0].title,
+        lastChapterDate: sorted[0].lastChapterDate,
+      } : 'No data');
+    }
     
     return sorted;
   } catch (error) {
@@ -134,7 +140,9 @@ export async function fetchManhwas(): Promise<Manhwa[]> {
  */
 export async function fetchManhwaById(id: string): Promise<Manhwa & { chapters: Chapter[] }> {
   try {
-    console.log(`📖 [API Client] Fetching manhwa: ${id}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📖 [API Client] Fetching manhwa: ${id}`);
+    }
 
     const response = await fetch(`${API_BASE}/api/public/${id}`, {
       method: 'GET',
@@ -155,7 +163,9 @@ export async function fetchManhwaById(id: string): Promise<Manhwa & { chapters: 
     }
 
     const data = await response.json();
-    console.log(`✅ Loaded manhwa: ${data.title}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ Loaded manhwa: ${data.title}`);
+    }
     return data;
   } catch (error) {
     console.error(`❌ Error fetching manhwa ${id}:`, error);
@@ -171,7 +181,9 @@ export async function fetchChapterPages(
   chapterId: string
 ): Promise<ChapterWithPages> {
   try {
-    console.log(`📄 [API Client] Fetching pages: ${manhwaId}/${chapterId}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`📄 [API Client] Fetching pages: ${manhwaId}/${chapterId}`);
+    }
 
     const response = await fetch(
       `${API_BASE}/api/public/${manhwaId}/chapters/${chapterId}`,
@@ -195,7 +207,9 @@ export async function fetchChapterPages(
     }
 
     const data = await response.json();
-    console.log(`✅ Loaded ${data.pages.length} pages`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`✅ Loaded ${data.pages.length} pages`);
+    }
     return data;
   } catch (error) {
     console.error(`❌ Error fetching chapter pages:`, error);

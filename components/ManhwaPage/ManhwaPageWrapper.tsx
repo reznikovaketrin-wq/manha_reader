@@ -1,6 +1,8 @@
-'use client';
+ 'use client';
 
 import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/app/providers/UserProvider';
 import { useParams } from 'next/navigation';
 import { useManhwaPageUI } from '../../hooks/useManhwaPageUI';
 import { useScreen } from '../../hooks/useScreen';
@@ -47,7 +49,8 @@ function ManhwaPageContent() {
   const { 
     manhwa, 
     loading: manhwaLoading, 
-    error: manhwaApiError 
+    error: manhwaApiError,
+    refetch: refetchManhwa,
   } = useManhwaData(manhwaId);
 
   // 2️⃣ Фильтрация глав
@@ -79,6 +82,9 @@ function ManhwaPageContent() {
   const canRate = isAuthenticated;
   const canComment = isAuthenticated;
 
+  // ✅ Получаем текущего user один раз в компоненте (чтобы не использовать хук внутри обработчика)
+  const { user } = useUser();
+
   // ============================================
   // UI СОСТОЯНИЯ
   // ============================================
@@ -90,12 +96,19 @@ function ManhwaPageContent() {
   // ОБРАБОТЧИКИ
   // ============================================
 
+  const router = useRouter();
+
   const handleRatingSubmit = async (rating: number) => {
     try {
-      const response = await fetch(`/api/manhwa/${manhwaId}/rating`, {
+      // Prefer public rate endpoint which expects { rating, userId }
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await fetch(`/api/public/${manhwaId}/rate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating }),
+        body: JSON.stringify({ rating, userId: user.id }),
       });
 
       if (!response.ok) {
@@ -104,6 +117,32 @@ function ManhwaPageContent() {
 
       console.log('✅ Rating submitted:', rating);
       ui.onRatingModalClose();
+
+      // Try to read API response and apply optimistic rating override
+      const json = await response.json().catch(() => null);
+      const optimistic = json?.newAverageRating ?? json?.new_average_rating ?? json?.admin_manhwa?.rating ?? json?.rating ?? null;
+      if (optimistic != null && (ui as any).setRatingOverride) {
+        (ui as any).setRatingOverride(optimistic);
+      }
+
+      // Refetch the manhwa data using the local hook to get authoritative value.
+      try {
+        if (refetchManhwa) {
+          await refetchManhwa();
+          console.log('🔁 Manhwa data refetched after rating');
+        } else {
+          // Fallback to router.refresh if refetch isn't available
+          router.refresh();
+          console.log('🔁 router.refresh() fallback after rating');
+        }
+      } catch (err) {
+        console.warn('⚠️ Could not refetch manhwa data', err);
+      }
+
+      // Clear optimistic override after refetch completes (or after fallback)
+      if ((ui as any).setRatingOverride) {
+        try { (ui as any).setRatingOverride(null); } catch (_) {}
+      }
     } catch (error) {
       console.error('❌ Error submitting rating:', error);
     }
@@ -160,6 +199,9 @@ function ManhwaPageContent() {
       // Флаги доступа (на основе авторизации)
       canRate={canRate}
       canComment={canComment}
+
+      // Optimistic client override for rating
+      clientRatingOverride={ui.ratingOverride}
 
       // Ошибки
       error={manhwaError}

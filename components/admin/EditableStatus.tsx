@@ -59,7 +59,7 @@ export function EditableStatus({ value, manhwaId, token, onUpdate }: EditableSta
         <select
           value={value}
           onChange={(e) => handleChange(e.target.value)}
-          className="px-3 py-2 bg-white text-black rounded-lg border border-blue-500"
+          className="px-4 py-3 bg-black border-2 border-white/10 text-text-main rounded-xl focus:outline-none"
           autoFocus
         >
           <option value="ongoing">🔴 ongoing</option>
@@ -69,7 +69,8 @@ export function EditableStatus({ value, manhwaId, token, onUpdate }: EditableSta
       ) : (
         <button
           onClick={() => setIsEditing(true)}
-          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-opacity group-hover:opacity-80 ${statusColor}`}
+          className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all ${statusColor.replace('bg-', 'bg-')}`}
+          style={{ border: '2px solid rgba(255,255,255,0.06)' }}
         >
           {statusLabel}
         </button>

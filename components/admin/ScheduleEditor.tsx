@@ -93,17 +93,20 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
       </label>
 
       {scheduleDay ? (
-        <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg space-y-2">
+        <div className="p-4 bg-gradient-to-br from-[#ff1b6d]/10 to-[#a259ff]/10 border border-accent-gradient/30 rounded-lg space-y-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-bold text-blue-400">
+              <p className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#ff1b6d] to-[#a259ff]">
                 {scheduleDay.dayBig} — {scheduleDay.dayLabel}
               </p>
               <p className="text-sm text-text-muted">{scheduleDay.note}</p>
             </div>
             <button
               onClick={handleOpenModal}
-              className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+              className="px-3 py-1 text-sm rounded-lg font-medium text-white transition-all"
+              style={{
+                background: 'linear-gradient(135deg, #FF1B6D, #A259FF)',
+              }}
             >
               Изменить
             </button>
@@ -112,7 +115,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
       ) : (
         <button
           onClick={handleOpenModal}
-          className="w-full p-3 border-2 border-dashed border-text-muted/50 hover:border-blue-500 rounded-lg text-text-muted hover:text-blue-400 transition-colors font-semibold"
+          className="w-full p-3 border-2 border-dashed border-white/10 rounded-xl text-text-muted hover:border-white/20 transition-all font-semibold bg-transparent"
         >
           + Добавить в расписание
         </button>
@@ -145,7 +148,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
                       onClick={() => setSelectedDay(day.dayBig)}
                       className={`px-3 py-2 rounded font-bold transition-colors ${
                         selectedDay === day.dayBig
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-[#ff1b6d] text-white'
                           : 'bg-text-muted/10 text-text-main hover:bg-text-muted/20'
                       }`}
                     >
@@ -167,16 +170,16 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
                     setHasNoteChanged(true);
                   }}
                   placeholder="Например: Новое обновление каждый понедельник"
-                  className="w-full px-3 py-2 bg-bg-main border border-text-muted/30 rounded-lg text-text-main placeholder-text-muted/50 focus:outline-none focus:border-blue-500"
+                  className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main placeholder-text-muted/50 focus:outline-none focus:border-[#ff1b6d]"
                   rows={3}
                 />
               </div>
 
               {/* Preview */}
               {selectedDay && (
-                <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="p-3 bg-gradient-to-br from-[#ff1b6d]/10 to-[#a259ff]/10 border border-accent-gradient/30 rounded-lg">
                   <p className="text-sm text-text-muted">Превью:</p>
-                  <p className="font-bold text-blue-400">
+                  <p className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#ff1b6d] to-[#a259ff]">
                     {selectedDay} — {DAYS.find(d => d.dayBig === selectedDay)?.dayLabel}
                   </p>
                   <p className="text-sm text-text-muted">
@@ -189,7 +192,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
             <div className="p-6 flex gap-3 border-t border-text-muted/20">
               <button
                 onClick={() => setIsOpen(false)}
-                className="flex-1 px-4 py-2 bg-text-muted/20 hover:bg-text-muted/30 text-text-main font-semibold rounded-lg transition-colors"
+                className="flex-1 px-4 py-3 bg-transparent text-white font-semibold rounded-xl border-2 border-white/10 hover:border-white/20 transition-all"
               >
                 Отмена
               </button>
@@ -197,7 +200,7 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
               {scheduleDay && (
                 <button
                   onClick={handleRemove}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-colors"
+                  className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all"
                 >
                   Удалить расписание
                 </button>
@@ -206,7 +209,11 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
               {selectedDay && (
                 <button
                   onClick={handleSave}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                  className="flex-1 py-3 px-4 relative bg-black text-white font-semibold rounded-xl transition-all overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+                    border: '2px solid transparent',
+                  }}
                 >
                   Сохранить
                 </button>

@@ -93,6 +93,8 @@ export async function POST(request: NextRequest, { params }: any) {
         description: body.description || '',
         status: 'draft',
         pages_count: 0,
+        vip_only: body.vip_only || false,
+        vip_early_days: body.vip_early_days || 0,
       })
       .select()
       .single();

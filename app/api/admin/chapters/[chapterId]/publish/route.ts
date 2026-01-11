@@ -43,7 +43,7 @@ export async function PUT(request: NextRequest, { params }: any) {
     await verifyAdmin(token);
 
     const body = await request.json();
-    const { action, scheduledAt } = body; // action: 'publish' или 'schedule'
+    const { action, scheduledAt, vip_only, vip_early_days } = body; // action: 'publish' или 'schedule'
 
     const supabase = getSupabaseAdmin();
 
@@ -52,10 +52,23 @@ export async function PUT(request: NextRequest, { params }: any) {
     if (action === 'publish') {
       // Опубликовать сейчас
       console.log('📤 Publishing now');
+      
+      const publishedAt = new Date();
+      let publicAvailableAt = null;
+      
+      // Если не VIP-only и есть ранний доступ, рассчитываем дату для обычных пользователей
+      if (!vip_only && vip_early_days && vip_early_days > 0) {
+        publicAvailableAt = new Date(publishedAt.getTime() + vip_early_days * 24 * 60 * 60 * 1000);
+        console.log(`⏰ VIP early access: ${vip_early_days} days. Public available at: ${publicAvailableAt.toISOString()}`);
+      }
+      
       updateData = {
         status: 'published',
-        published_at: new Date().toISOString(),
+        published_at: publishedAt.toISOString(),
         scheduled_at: null,
+        vip_only: vip_only || false,
+        vip_early_days: vip_early_days || 0,
+        public_available_at: publicAvailableAt ? publicAvailableAt.toISOString() : null,
       };
     } else if (action === 'schedule') {
       // Отложенная публикация
@@ -66,9 +79,22 @@ export async function PUT(request: NextRequest, { params }: any) {
         );
       }
       console.log('⏰ Scheduling for:', scheduledAt);
+      
+      let publicAvailableAt = null;
+      
+      // Если не VIP-only и есть ранний доступ, рассчитываем дату для обычных пользователей
+      if (!vip_only && vip_early_days && vip_early_days > 0) {
+        const scheduledDate = new Date(scheduledAt);
+        publicAvailableAt = new Date(scheduledDate.getTime() + vip_early_days * 24 * 60 * 60 * 1000);
+        console.log(`⏰ VIP early access: ${vip_early_days} days. Public available at: ${publicAvailableAt.toISOString()}`);
+      }
+      
       updateData = {
         status: 'scheduled',
         scheduled_at: scheduledAt,
+        vip_only: vip_only || false,
+        vip_early_days: vip_early_days || 0,
+        public_available_at: publicAvailableAt ? publicAvailableAt.toISOString() : null,
       };
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

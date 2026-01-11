@@ -1,14 +1,14 @@
 // components/Header.tsx
 // ✅ Server Component - читает user из cookies для логирования
 
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { getSupabaseServerComponentClient } from '@/lib/supabase-server';
 import Image from 'next/image';
 import Link from 'next/link';
 import HeaderNav from './HeaderNav';
 
 export default async function Header() {
   // ✅ Читаем user с server cookies (для логирования)
-  const supabase = await getSupabaseServerClient();
+  const supabase = await getSupabaseServerComponentClient();
   const { data } = await supabase.auth.getUser();
 
   // ✅ Логируем статус (для отладки)

@@ -11,7 +11,7 @@ export interface UserProfile {
   id: string;
   email: string;
   username?: string;
-  role: 'user' | 'admin';
+  role: 'user' | 'vip' | 'admin';
 }
 
 export function useUserProfile() {
@@ -28,27 +28,31 @@ export function useUserProfile() {
       return;
     }
 
-    console.log('📋 [useUserProfile] Loading profile for:', user.email);
-
     const loadProfile = async () => {
       try {
-        // ✅ Загружаем полный профиль из таблицы users (БЕЗ user_metadata - её нет!)
+        // Загружаем профиль из таблицы users — используем maybeSingle чтобы
+        // избежать 406 ошибки, если строки нет
         const { data, error } = await supabase
           .from('users')
           .select('id, email, username, role')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('❌ [useUserProfile] Error loading profile:', error);
-          // Fallback: используем auth user data
+          setProfile({
+            id: user.id,
+            email: user.email || '',
+            role: 'user',
+          });
+        } else if (!data) {
+          // No profile row found — fall back to minimal data from auth
           setProfile({
             id: user.id,
             email: user.email || '',
             role: 'user',
           });
         } else {
-          console.log('✅ [useUserProfile] Profile loaded:', data?.role);
           setProfile({
             id: data.id,
             email: data.email,
@@ -71,5 +75,10 @@ export function useUserProfile() {
     loadProfile();
   }, [user, authLoading]);
 
-  return { profile, loading, isAdmin: profile?.role === 'admin' };
+  return { 
+    profile, 
+    loading, 
+    isAdmin: profile?.role === 'admin',
+    isVip: profile?.role === 'vip'
+  };
 }

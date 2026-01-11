@@ -125,7 +125,7 @@ export default function ContinueReading() {
           return (
             <Link
               key={item.manhwaId}
-              href={`/reader/${item.manhwaId}/${chapter.id}`}
+              href={`/reader/${item.manhwaId}/${chapter.id}?page=${item.pageNumber}`}
             >
               <div className="bg-card-bg rounded-lg overflow-hidden hover:border-text-muted/30 border border-transparent transition-colors w-max flex-shrink-0 snap-start">
                   <div

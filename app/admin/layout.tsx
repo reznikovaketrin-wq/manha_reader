@@ -46,8 +46,8 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
   console.log('✅ [AdminLayout] Admin verified:', admin.email);
 
   return (
-    <div className="admin-layout">
+    <>
       {children}
-    </div>
+    </>
   );
 }

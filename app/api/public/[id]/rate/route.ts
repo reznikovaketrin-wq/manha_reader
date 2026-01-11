@@ -153,7 +153,7 @@ export async function POST(
     }
 
     // Вычисляем среднюю оценку
-    const totalSum = allRatings.reduce((sum, r) => sum + r.rating, 0);
+    const totalSum = allRatings.reduce((sum: number, r: any) => sum + (r.rating || 0), 0);
     const newAverageRating = parseFloat((totalSum / allRatings.length).toFixed(1));
     const totalRatings = allRatings.length;
 

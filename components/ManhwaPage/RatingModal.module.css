@@ -88,16 +88,18 @@
 }
 
 .starActive {
-  background: linear-gradient(135deg, #ff1b6d, #a259ff);
-  border-color: transparent;
+  background: linear-gradient(#000000, #000000) padding-box,
+              linear-gradient(135deg, #FF1B6D, #A259FF) border-box;
+  border: 2px solid transparent;
   color: #ffffff;
 }
 
 .selectedRating {
   text-align: center;
   margin-bottom: 20px;
-  font-size: 14px;
-  color: #cfcfcf;
+  background: linear-gradient(#000000, #000000) padding-box,
+              linear-gradient(135deg, #FF1B6D, #A259FF) border-box;
+  border: 2px solid transparent;
 }
 
 .selectedRating span {
@@ -136,8 +138,9 @@
 
 .submitButton {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #ff1b6d, #a259ff);
-  border: none;
+  background: linear-gradient(#000000, #000000) padding-box,
+              linear-gradient(135deg, #FF1B6D, #A259FF) border-box;
+  border: 2px solid transparent;
   border-radius: 6px;
   color: #ffffff;
   font-size: 14px;
@@ -160,7 +163,9 @@
 .submitButtonDisabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: linear-gradient(135deg, rgba(255, 27, 109, 0.3), rgba(162, 89, 255, 0.3));
+  background: linear-gradient(#000000, #000000) padding-box,
+              linear-gradient(135deg, rgba(255, 27, 109, 0.3), rgba(162, 89, 255, 0.3)) border-box;
+  border: 2px solid transparent;
 }
 
 @keyframes fadeIn {

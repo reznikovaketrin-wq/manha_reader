@@ -48,14 +48,19 @@ export function EditableTitle({ value, manhwaId, token, onUpdate }: EditableTitl
           type="text"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          className="w-full text-3xl font-bold bg-white text-black rounded px-3 py-2 border border-blue-500 focus:outline-none"
+          className="w-full text-3xl font-bold bg-black border-2 border-white/10 text-text-main rounded-xl px-4 py-3 focus:outline-none"
+          style={{ outlineColor: '#ff1b6d' }}
           autoFocus
         />
         <div className="flex gap-2">
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
+            className="px-4 py-3 relative bg-black text-white font-semibold rounded-xl transition-all overflow-hidden"
+            style={{
+              background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+              border: '2px solid transparent',
+            }}
           >
             ✅ Зберегти
           </button>
@@ -64,7 +69,7 @@ export function EditableTitle({ value, manhwaId, token, onUpdate }: EditableTitl
               setEditValue(value);
               setIsEditing(false);
             }}
-            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm transition-colors"
+            className="px-4 py-3 bg-transparent text-white font-semibold rounded-xl border-2 border-white/10 hover:border-white/20 transition-all"
           >
             ❌ Скасувати
           </button>
@@ -78,7 +83,11 @@ export function EditableTitle({ value, manhwaId, token, onUpdate }: EditableTitl
       <h1 className="text-4xl font-bold text-text-main">{value}</h1>
       <button
         onClick={() => setIsEditing(true)}
-        className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm"
+        className="opacity-0 group-hover:opacity-100 transition-opacity px-3 py-2 relative bg-black text-white rounded-lg text-sm overflow-hidden"
+        style={{
+          background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+          border: '2px solid transparent',
+        }}
       >
         🖊️ Редагувати
       </button>

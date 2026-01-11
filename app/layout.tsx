@@ -1,9 +1,7 @@
-// app/layout.tsx
-// ✅ ПРАВИЛЬНО: Server Component (БЕЗ 'use client'!)
-
 import { Manrope } from 'next/font/google';
 import Header from '@/components/Header';
 import { UserProvider } from '@/app/providers/UserProvider';
+import { AuthProvider } from '@/features/auth';
 import './globals.css';
 
 const manrope = Manrope({
@@ -15,6 +13,11 @@ const manrope = Manrope({
 export const metadata = {
   title: 'TriW - Щоденник манхви',
   description: 'Щоденник читання манхви',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -26,19 +29,23 @@ export default function RootLayout({
     <html lang="uk" suppressHydrationWarning>
       <body className={`${manrope.variable} font-manrope`}>
         <div className="min-h-screen flex flex-col bg-page-bg text-text-main">
-          {/* ✅ Обворачиваем в UserProvider для Context auth */}
-          <UserProvider>
-            {/* ✅ ЕДИНЫЙ SITE CONTAINER для Header и контента */}
-            <div className="site-container">
-              {/* ✅ Header компонент - включает логотип и навигацию */}
-              <Header />
+          {/* ✅ Auth providers для системы авторизации */}
+          <AuthProvider>
+            <UserProvider>
+              {/* ✅ ЕДИНЫЙ SITE CONTAINER для Header и контента */}
+              <div className="site-container">
+                {/* ✅ Header компонент - включает логотип и навигацию */}
+                <Header />
 
-              {/* Main Content */}
-              <main className="flex-1" style={{ marginTop: '12px' }}>
-                {children}
-              </main>
-            </div>
-          </UserProvider>
+                {/* Main Content */}
+                <main className="flex-1" style={{ marginTop: '12px' }}>
+                  {children}
+                </main>
+
+                {/* Global client modals (none) */}
+              </div>
+            </UserProvider>
+          </AuthProvider>
         </div>
       </body>
     </html>
