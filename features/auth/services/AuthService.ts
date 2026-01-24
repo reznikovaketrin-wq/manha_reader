@@ -309,7 +309,7 @@ class AuthService {
   async checkUsernameAvailable(username: string): Promise<{ available: boolean; error: AuthError | null }> {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('profiles')
         .select('username')
         .eq('username', username)
         .single();
