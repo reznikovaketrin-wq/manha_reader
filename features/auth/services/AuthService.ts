@@ -394,7 +394,7 @@ class AuthService {
       // Generate unique filename and place inside a user-specific folder
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${currentUser.id}/${fileName}`;
+      const filePath = `${currentUser.id}/${fileName}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
