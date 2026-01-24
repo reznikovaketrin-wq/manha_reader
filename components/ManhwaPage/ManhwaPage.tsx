@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { RatingModal } from './RatingModal';
 import { DesktopView } from './DesktopView';
 import { MobileView } from './MobileView';
-import { ProgressDebugInfo } from './ProgressDebugInfo';
 import { ManhwaPageProps } from './types';
 import { useReadingProgress, createReadChaptersSet } from '@/lib/reading-progress';
 
