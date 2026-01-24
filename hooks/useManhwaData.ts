@@ -46,7 +46,9 @@ export function useManhwaData(id: string): UseManhwaDataReturn {
         setError(null);
       }
 
-      console.log(`📖 Starting fetch for id: ${id}`);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`📖 Starting fetch for id: ${id}`);
+      }
 
       const response = await fetch(`/api/public/${id}`);
 
@@ -58,18 +60,24 @@ export function useManhwaData(id: string): UseManhwaDataReturn {
       // ✅ Типизируем JSON response
       const apiData: ManhwaAPI = await response.json();
 
-      console.log(`📦 API Response:`, apiData);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`� API Response:`, apiData);
+      }
 
       // ✅ Используем ПОЛНЫЙ mapper для конвертации
       const domainManhwa = mapManhwaAPIToDomain(apiData);
 
       // ✅ Проверяем монтирование ПЕРЕД setState
       if (isMountedRef.current) {
-        console.log(`✅ Манхва завантажена: ${domainManhwa.title}`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`✅ Манхва завантажена: ${domainManhwa.title}`);
+        }
         setManhwa(domainManhwa);
         setError(null);
       } else {
-        console.log('⚠️ Component unmounted, skipping setState');
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('⚠️ Component unmounted, skipping setState');
+        }
       }
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');

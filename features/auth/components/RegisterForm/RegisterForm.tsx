@@ -6,15 +6,18 @@ import React from 'react';
 import Link from 'next/link';
 import { useRegister } from '../../hooks';
 import styles from './RegisterForm.module.css';
+import authStyles from '@/app/auth/auth.module.css';
 
 interface RegisterFormProps {
   onSuccess?: () => void;
   onSwitchToLogin?: () => void;
+  externalSuccess?: boolean; // 🔥 External success state to survive re-renders
 }
 
-export const RegisterForm: React.FC<RegisterFormProps> = ({
+const RegisterFormComponent: React.FC<RegisterFormProps> = ({
   onSuccess,
   onSwitchToLogin,
+  externalSuccess = false,
 }) => {
   const {
     formState,
@@ -29,22 +32,42 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     handleSubmit,
     togglePasswordVisibility,
     toggleConfirmPasswordVisibility,
+    resetForm,
   } = useRegister();
 
   React.useEffect(() => {
     if (success && onSuccess) {
+      console.log('✅ [RegisterForm] Success state changed, calling onSuccess');
       onSuccess();
     }
   }, [success, onSuccess]);
+
+  React.useEffect(() => {
+    console.log('🔍 [RegisterForm] Rendered with success:', success, 'externalSuccess:', externalSuccess);
+  }, [success, externalSuccess]);
+
+  // 🔥 FIX: Use external success if provided, otherwise use internal
+  const showSuccess = externalSuccess || success;
 
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Реєстрація</h2>
       
-      {success ? (
-        <div className={styles.successBox}>
-          <p>Реєстрація успішна!</p>
-          <p>Перевірте свій email для підтвердження акаунту.</p>
+      {showSuccess ? (
+        <div className={authStyles.successBlock}>
+          <div className={authStyles.successIcon}>✓</div>
+          <h3 className={authStyles.successTitle}>Реєстрація успішна!</h3>
+          <p className={authStyles.successText}>
+            Ми відправили лист з підтвердженням на вашу електронну пошту.
+          </p>
+          <p className={authStyles.successTextSmall}>
+            Перевірте вашу поштову скриньку (можливо теку "Спам") та натисніть на посилання для підтвердження.
+          </p>
+          {onSwitchToLogin && (
+            <Link href="/auth" className={authStyles.buttonGradient} onClick={resetForm}>
+              Повернутися до входу
+            </Link>
+          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className={styles.form}>
@@ -161,21 +184,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             )}
           </div>
 
-          {/* Terms */}
-          <label className={styles.termsLabel}>
-            <input
-              type="checkbox"
-              checked={formState.values.agreedToTerms}
-              onChange={(e) => handleChange('agreedToTerms', e.target.checked)}
-              className={styles.checkbox}
-            />
-            <span>
-              Я приймаю <Link href="/terms" className={styles.link}>умови використання</Link>
-            </span>
-          </label>
-          {formState.touched.agreedToTerms && formState.errors.agreedToTerms && (
-            <span className={styles.error}>{formState.errors.agreedToTerms}</span>
-          )}
+          {/* Terms checkbox removed per request */}
 
           {error && <div className={styles.errorBox}>{error}</div>}
 
@@ -204,3 +213,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     </div>
   );
 };
+
+// 🔥 Wrap in memo to prevent unnecessary re-renders from AuthContext updates
+export const RegisterForm = React.memo(RegisterFormComponent);

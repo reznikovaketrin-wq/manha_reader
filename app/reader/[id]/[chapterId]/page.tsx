@@ -15,7 +15,6 @@ import {
   useSwipeGestures,
   useChapterTracking,
 } from './hooks';
-import { incrementViews } from '@/lib/views-tracker';
 import { trackManhwaView, upsertReadChapter } from '@/lib/supabase-client';
 import { getOrCreateClientId } from '@/lib/client-id';
 import { useUser } from '@/app/providers/UserProvider';
@@ -188,8 +187,6 @@ export default function ReaderPage() {
                 if (sessionStorage.getItem(SESSION_CONFIRMED)) return;
                 sessionStorage.setItem(SESSION_CONFIRMED, '1');
 
-                const local = incrementViews(manhwaId, chapterId);
-
                 // Determine id to pass to server: prefer authenticated user id, otherwise client cookie id
                 const idForServer = (currentUser && currentUser.id) ? currentUser.id : getOrCreateClientId();
 
@@ -214,7 +211,8 @@ export default function ReaderPage() {
                   try {
                     if (sessionStorage.getItem(SESSION_CONFIRMED)) {
                       const currentUserForHeartbeat = userRef.current;
-                      trackManhwaView(manhwaId, (currentUserForHeartbeat && currentUserForHeartbeat.id) ? currentUserForHeartbeat.id : undefined).catch(() => {});
+                      const idForHeartbeat = (currentUserForHeartbeat && currentUserForHeartbeat.id) ? currentUserForHeartbeat.id : getOrCreateClientId();
+                      trackManhwaView(manhwaId, chapterId, idForHeartbeat).catch(() => {});
                     }
                   } catch (e) {}
                 }, HEARTBEAT_MS);

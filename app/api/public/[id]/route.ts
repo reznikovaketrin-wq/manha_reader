@@ -8,8 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAnon } from '@/lib/supabase-server';
 
-export const revalidate = 60;
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 export async function GET(
   request: NextRequest,

@@ -4,7 +4,7 @@ import { trackManhwaViewServer } from '@/lib/supabase-server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { manhwaId, userId } = body;
+    const { manhwaId, chapterId, userId } = body;
 
     if (!manhwaId) {
       return NextResponse.json(
@@ -13,8 +13,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Forward optional userId/clientId to enable server-side dedupe during tests
-    const result = await trackManhwaViewServer(manhwaId, undefined, userId);
+    // Forward optional userId/clientId and chapterId to enable server-side dedupe
+    const result = await trackManhwaViewServer(manhwaId, chapterId || undefined, userId);
 
     if (!result.success) {
       throw result.error;

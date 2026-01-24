@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import type { UseReaderScrollReturn, ScrollResult } from '../types';
 
 // Debug flag - set to false in production
-const DEBUG_SCROLL = true;
+const DEBUG_SCROLL = process.env.NODE_ENV !== 'production';
 
 interface UseReaderScrollConfig {
   totalPages: number;

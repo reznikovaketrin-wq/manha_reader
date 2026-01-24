@@ -1,5 +1,5 @@
 import { fetchManhwas } from '@/lib/api';
-import ContinueReading from '@/components/readinghistory/ContinueReading';
+import ContinueReading from '@/components/home/ContinueReading';
 import ManhwaFilterDisplay from '@/components/ManhwaFilterDisplay';
 
 interface ManhwaDisplay {
@@ -23,18 +23,26 @@ export default async function HomePage() {
   const transformedManhwa: ManhwaDisplay[] = [];
   
   try {
-    console.log('🏠 [HomePage] Starting to load data...');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🏠 [HomePage] Starting to load data...');
+    }
     
     // Получить все манхвы из API
     const response = await fetchManhwas();
     
-    console.log('🏠 [HomePage] Got response:', response?.length, 'items');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🏠 [HomePage] Got response:', response?.length, 'items');
+    }
     
     // Преобразуем API формат в формат компонента (API уже возвращает camelCase)
     if (Array.isArray(response)) {
-      console.log('🏠 [HomePage] Response is array, transforming...');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('🏠 [HomePage] Response is array, transforming...');
+      }
       const transformed = response.map((m: any) => {
-        console.log('🔄 [HomePage] Mapping:', m?.id, m?.title);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('🔄 [HomePage] Mapping:', m?.id, m?.title);
+        }
         return {
           id: m.id,
           title: m.title,

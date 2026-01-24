@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useUser } from '@/app/providers/UserProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { deleteChapterComment, deleteChapterReply } from '@/lib/comments-actions';
@@ -44,6 +44,7 @@ export function ChapterCommentsComponent({
   const { user } = useUser();
   const { profile, isAdmin } = useUserProfile();
   const [comments, setComments] = useState<EnrichedComment[]>([]);
+  const commentsRef = useRef<EnrichedComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
@@ -53,6 +54,11 @@ export function ChapterCommentsComponent({
     new Set()
   );
   const [liking, setLiking] = useState<Set<string>>(new Set());
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    commentsRef.current = comments;
+  }, [comments]);
 
   // Load comments when drawer opens or initially for card
   useEffect(() => {
@@ -315,7 +321,7 @@ export function ChapterCommentsComponent({
   );
 
   const handleLikeReply = useCallback(
-    async (replyId: string, isLiked: boolean) => {
+    async (replyId: string) => {
       if (!user?.id) {
         alert('Будь ласка, увійдіть щоб лайкнути');
         return;
@@ -326,20 +332,25 @@ export function ChapterCommentsComponent({
         return;
       }
 
+      // Find current state from commentsRef - replies are stored as separate comments with parent_comment_id
+      const currentReply = commentsRef.current.find((c: any) => c.id === replyId);
+      const isLiked = currentReply?.user_liked || false;
+
       setLiking(prev => new Set([...prev, replyId]));
 
       try {
         const newLikesCount = await toggleCommentLike(replyId, user.id, isLiked);
-        setComments(
-          comments.map((c) => ({
-            ...c,
-            replies: (c as any).replies?.map((r: any) =>
-              r.id === replyId
-                ? { ...r, likes_count: newLikesCount, user_liked: !isLiked }
-                : r
-            ),
-          }))
-        );
+        
+        // Update the reply in the flat comments array
+        setComments((prevComments) => {
+          const updated = prevComments.map((c) =>
+            c.id === replyId
+              ? { ...c, likes_count: newLikesCount, user_liked: !isLiked }
+              : c
+          );
+          commentsRef.current = updated;
+          return updated;
+        });
       } catch (err) {
         console.error('Error liking reply:', err);
         alert('Помилка при лайкуванні. Спробуйте ще раз.');
@@ -351,24 +362,22 @@ export function ChapterCommentsComponent({
         });
       }
     },
-    [user?.id, comments, liking]
+    [user?.id]
   );
 
   // Drawer mode
   if (mode === 'drawer') {
+    if (!isOpen) return null;
+    
     return (
       <>
-        {isOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-            onClick={onClose}
-          />
-        )}
+        <div
+          className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+          onClick={onClose}
+        />
 
         <div
-          className={`fixed right-0 top-0 h-screen w-full max-w-md bg-black border-l border-text-muted/20 shadow-xl z-50 transition-transform duration-300 ease-in-out ${
-            isOpen ? 'translate-x-0' : 'translate-x-full'
-          }`}
+          className="fixed right-0 top-0 h-screen w-full max-w-md bg-black border-l border-text-muted/20 shadow-xl z-50 transition-transform duration-300 ease-in-out translate-x-0"
         >
           <div className="flex items-center justify-between p-4 border-b border-text-muted/20">
             <h2 className="text-lg font-semibold">
@@ -527,7 +536,7 @@ export function ChapterCommentsComponent({
                           onToggleExpand={() =>
                             handleToggleReplyExpand(comment.id)
                           }
-                          onReplyLike={(replyId) => handleLikeReply(replyId, (replies.find(r => r.id === replyId) as any)?.user_liked || false)}
+                          onReplyLike={(replyId) => handleLikeReply(replyId)}
                           onReplyDelete={(replyId) => {
                             if (window.confirm('Ви впевнені?')) {
                               handleDeleteReply(replyId);
@@ -674,7 +683,7 @@ export function ChapterCommentsComponent({
                   onToggleExpand={() =>
                     handleToggleReplyExpand(comment.id)
                   }
-                  onReplyLike={(replyId) => handleLikeReply(replyId, (replies.find(r => r.id === replyId) as any)?.user_liked || false)}
+                  onReplyLike={(replyId) => handleLikeReply(replyId)}
                   onReplyDelete={(replyId) => {
                     if (window.confirm('Ви впевнені?')) {
                       handleDeleteReply(replyId);

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useCallback } from 'react';
 import { LoginForm, RegisterForm } from '@/features/auth';
 import { GuestRoute } from '@/shared/components';
 
@@ -22,13 +22,23 @@ function AuthFormSkeleton() {
 function AuthPageContent() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
 
+  // 🔥 Memoize callbacks to prevent RegisterForm remount
+  const handleSwitchToRegister = useCallback(() => setMode('register'), []);
+  const handleSwitchToLogin = useCallback(() => setMode('login'), []);
+
   return (
     <GuestRoute>
       <div className="flex items-center justify-center min-h-screen px-4 py-8">
         {mode === 'login' ? (
-          <LoginForm onSwitchToRegister={() => setMode('register')} />
+          <LoginForm 
+            key="login-form"
+            onSwitchToRegister={handleSwitchToRegister} 
+          />
         ) : (
-          <RegisterForm onSwitchToLogin={() => setMode('login')} />
+          <RegisterForm 
+            key="register-form"
+            onSwitchToLogin={handleSwitchToLogin} 
+          />
         )}
       </div>
     </GuestRoute>

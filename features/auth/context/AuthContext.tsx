@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { User, Session, AuthState } from '../types';
 import { authService, dataMigrationService } from '../services';
 
@@ -103,9 +103,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signUp = useCallback(async (email: string, password: string, username?: string) => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
+    console.log('🔄 [AuthContext] Calling authService.signUp...');
     const result = await authService.signUp(email, password, { username });
 
     if (result.error) {
+      console.error('❌ [AuthContext] SignUp returned error:', result.error);
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -115,6 +117,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     if (result.user && result.session) {
+      console.log('✅ [AuthContext] User & session received, migrating data...');
       // Migrate guest data
       if (dataMigrationService.hasGuestData()) {
         await dataMigrationService.migrateAllData(result.user.id);
@@ -129,6 +132,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } else {
       // Email confirmation required
+      console.log('📧 [AuthContext] Email confirmation required (no session)');
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -241,7 +245,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, [checkAuth]);
 
-  const value: AuthContextValue = {
+  // 🔥 FIX: Memoize value to prevent infinite re-renders
+  const value: AuthContextValue = useMemo(() => ({
     ...state,
     signIn,
     signUp,
@@ -251,7 +256,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkAuth,
     refreshSession,
     refreshUser,
-  };
+  }), [state, signIn, signUp, signOut, resetPassword, updatePassword, checkAuth, refreshSession, refreshUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

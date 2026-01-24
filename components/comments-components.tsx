@@ -189,6 +189,101 @@ export function CommentItem({
 }
 
 // ============================================
+// ReplyItem - Отдельный компонент для reply (чтобы хуки работали корректно)
+// ============================================
+
+function ReplyItem({
+  reply,
+  onReplyLike,
+  onReplyDelete,
+}: {
+  reply: EnrichedComment;
+  onReplyLike?: (replyId: string) => void;
+  onReplyDelete?: (replyId: string) => void;
+}) {
+  const { isAdmin } = useUserProfile();
+  const [showReplyMenu, setShowReplyMenu] = useState(false);
+  const canDeleteReply = isAdmin;
+
+  return (
+    <div className="border-l-2 border-green-500 pl-3">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <p className="font-semibold text-xs">
+            {(reply as any).users?.username || reply.user_email?.split('@')[0] || 'Анонім'}
+          </p>
+          <p className="text-xs text-gray-500">
+            {new Date(reply.created_at).toLocaleDateString('uk-UA')}
+          </p>
+        </div>
+
+        {/* ✅ МЕНЮ REPLY */}
+        {canDeleteReply && (
+          <div className="relative">
+            <button
+              onClick={() => setShowReplyMenu(!showReplyMenu)}
+              className="p-1 hover:bg-card-hover rounded text-text-muted hover:text-text-main transition-colors"
+              title="Опції"
+            >
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+
+            {showReplyMenu && (
+              <>
+                <div className="absolute right-0 top-6 bg-card-bg border border-text-muted/20 rounded-lg shadow-xl z-50 min-w-[140px]">
+                  <button
+                    onClick={() => {
+                      onReplyDelete?.(reply.id);
+                      setShowReplyMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-red-400 hover:bg-red-500/10 text-sm flex items-center gap-2 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                    Видалити
+                  </button>
+                </div>
+
+                {/* Backdrop */}
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowReplyMenu(false)}
+                />
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      <p className="text-gray-300 text-sm mb-2">{reply.content}</p>
+
+      {onReplyLike && (
+        <button
+          onClick={() => onReplyLike(reply.id)}
+          className={`text-xs font-medium flex items-center gap-1 transition-colors ${
+            (reply as any).user_liked
+              ? 'text-red-500 hover:text-red-400'
+              : 'text-gray-400 hover:text-gray-300'
+          }`}
+        >
+          {(reply as any).user_liked ? '♥' : '♡'} {reply.likes_count || 0}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ============================================
 // RepliesSection - Секция с ответами
 // ============================================
 
@@ -207,8 +302,6 @@ export function RepliesSection({
   onReplyLike,
   onReplyDelete,
 }: RepliesSectionProps) {
-  const { profile, isAdmin } = useUserProfile();
-
   if (replies.length === 0) return null;
 
   return (
@@ -222,83 +315,14 @@ export function RepliesSection({
 
       {isExpanded && (
         <div className="mt-3 space-y-3 pl-4 border-l-2 border-blue-400">
-          {replies.map((reply) => {
-            const canDeleteReply = isAdmin;
-            const [showReplyMenu, setShowReplyMenu] = useState(false);
-
-            return (
-              <div key={reply.id} className="border-l-2 border-green-500 pl-3">
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <p className="font-semibold text-xs">
-                      {(reply as any).users?.username || reply.user_email?.split('@')[0] || 'Анонім'}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(reply.created_at).toLocaleDateString('uk-UA')}
-                    </p>
-                  </div>
-
-                  {/* ✅ МЕНЮ REPLY */}
-                  {canDeleteReply && (
-                    <div className="relative">
-                      <button
-                        onClick={() => setShowReplyMenu(!showReplyMenu)}
-                        className="p-1 hover:bg-card-hover rounded text-text-muted hover:text-text-main transition-colors"
-                        title="Опції"
-                      >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                          <circle cx="12" cy="5" r="2" />
-                          <circle cx="12" cy="12" r="2" />
-                          <circle cx="12" cy="19" r="2" />
-                        </svg>
-                      </button>
-
-                      {showReplyMenu && (
-                        <>
-                          <div className="absolute right-0 top-6 bg-card-bg border border-text-muted/20 rounded-lg shadow-xl z-50 min-w-[140px]">
-                            <button
-                              onClick={() => {
-                                onReplyDelete?.(reply.id);
-                                setShowReplyMenu(false);
-                              }}
-                              className="w-full text-left px-4 py-2 text-red-400 hover:bg-red-500/10 text-sm flex items-center gap-2 transition-colors"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                />
-                              </svg>
-                              Видалити
-                            </button>
-                          </div>
-
-                          {/* Backdrop */}
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setShowReplyMenu(false)}
-                          />
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <p className="text-gray-300 text-sm mb-2">{reply.content}</p>
-
-                {onReplyLike && (
-                  <button
-                    onClick={() => onReplyLike(reply.id)}
-                    className="text-xs text-gray-400 hover:text-gray-300 font-medium flex items-center gap-1"
-                  >
-                    ♥ {reply.likes_count || 0}
-                  </button>
-                )}
-              </div>
-            );
-          })}
+          {replies.map((reply) => (
+            <ReplyItem
+              key={reply.id}
+              reply={reply}
+              onReplyLike={onReplyLike}
+              onReplyDelete={onReplyDelete}
+            />
+          ))}
         </div>
       )}
     </div>

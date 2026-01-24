@@ -9,7 +9,6 @@ import {
   validateEmail, 
   validatePassword, 
   validateUsername, 
-  validateTerms,
   matchPasswords,
   checkPasswordStrength
 } from '../utils';
@@ -20,7 +19,6 @@ const initialFormData: RegisterFormData = {
   password: '',
   confirmPassword: '',
   username: '',
-  agreedToTerms: false,
 };
 
 export const useRegister = () => {
@@ -37,8 +35,25 @@ export const useRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  
+  // 🔥 FIX: Check sessionStorage for persisted success state
+  const [success, setSuccess] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('registration_success') === 'true';
+      console.log('🔄 [useRegister] Initializing success from sessionStorage:', saved);
+      return saved;
+    }
+    return false;
+  });
+  
   const [usernameCheckLoading, setUsernameCheckLoading] = useState(false);
+
+  // 🔍 DEBUG: Track success state changes (don't remove from sessionStorage here!)
+  useEffect(() => {
+    console.log('🎯 [useRegister] Success state changed to:', success);
+    // Note: We save to sessionStorage immediately in handleSubmit, not here
+    // Only remove on explicit reset via resetForm()
+  }, [success]);
 
   // ===== PASSWORD STRENGTH =====
   const passwordStrength = checkPasswordStrength(formState.values.password);
@@ -47,6 +62,11 @@ export const useRegister = () => {
   const checkUsername = useCallback(async (username: string) => {
     if (username.length < 3) return;
 
+    // DISABLED: Username availability check - causing 406 errors
+    // Will validate on server side during registration instead
+    return;
+
+    /* 
     setUsernameCheckLoading(true);
     
     try {
@@ -65,6 +85,7 @@ export const useRegister = () => {
     } finally {
       setUsernameCheckLoading(false);
     }
+    */
   }, []);
 
   // Debounce username check
@@ -98,9 +119,7 @@ export const useRegister = () => {
         const usernameResult = validateUsername(value);
         return usernameResult.isValid ? '' : usernameResult.error!;
       
-      case 'agreedToTerms':
-        const termsResult = validateTerms(value);
-        return termsResult.isValid ? '' : termsResult.error!;
+      
       
       default:
         return '';
@@ -124,13 +143,11 @@ export const useRegister = () => {
       
       // Check if form is valid
       const isValid = !newErrors.email && 
-                      !newErrors.password && 
-                      !newErrors.confirmPassword && 
-                      !newErrors.agreedToTerms &&
-                      newValues.email !== '' && 
-                      newValues.password !== '' &&
-                      newValues.confirmPassword !== '' &&
-                      newValues.agreedToTerms;
+              !newErrors.password && 
+              !newErrors.confirmPassword && 
+              newValues.email !== '' && 
+              newValues.password !== '' &&
+              newValues.confirmPassword !== '';
       
       return {
         ...prev,
@@ -169,7 +186,6 @@ export const useRegister = () => {
       password: validateField('password', formState.values.password),
       confirmPassword: validateField('confirmPassword', formState.values.confirmPassword),
       username: validateField('username', formState.values.username),
-      agreedToTerms: validateField('agreedToTerms', formState.values.agreedToTerms),
     };
 
     const hasErrors = Object.values(errors).some(err => err !== '');
@@ -183,7 +199,6 @@ export const useRegister = () => {
           password: true,
           confirmPassword: true,
           username: true,
-          agreedToTerms: true,
         },
       }));
       return;
@@ -192,23 +207,31 @@ export const useRegister = () => {
     setFormState(prev => ({ ...prev, isSubmitting: true }));
 
     try {
+      console.log('🔄 [useRegister] Starting signup...');
       await signUp(
         formState.values.email,
         formState.values.password,
         formState.values.username || undefined
       );
 
-      setSuccess(true);
+      console.log('✅ [useRegister] Signup successful, setting success=true');
       
-      // Reset form
-      setFormState({
-        values: initialFormData,
-        errors: {} as Record<keyof RegisterFormData, string>,
-        touched: {} as Record<keyof RegisterFormData, boolean>,
-        isSubmitting: false,
-        isValid: false,
-      });
+      // 🔥 FIX: Save to sessionStorage IMMEDIATELY before state update
+      // This ensures the value is persisted before any potential remount
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('registration_success', 'true');
+        console.log('💾 [useRegister] Saved success to sessionStorage');
+      }
+      
+      setSuccess(true);
+      console.log('✅ [useRegister] Success state updated');
+      
+      // ⚠️ ВАЖНО: НЕ сбрасываем форму сразу, иначе компонент перерисуется
+      // Форма все равно скрыта за {success ? ... : <form>}
+      // Сброс произойдет когда пользователь вернется к логину
+      setFormState(prev => ({ ...prev, isSubmitting: false }));
     } catch (err: any) {
+      console.error('❌ [useRegister] Signup failed:', err);
       setError(err.message || 'Помилка реєстрації');
       setFormState(prev => ({ ...prev, isSubmitting: false }));
     }
@@ -236,6 +259,10 @@ export const useRegister = () => {
     setSuccess(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
+    // Clear persisted success state
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('registration_success');
+    }
   }, []);
 
   return {

@@ -41,7 +41,6 @@ export interface RegisterFormData {
   password: string;
   confirmPassword: string;
   username?: string;
-  agreedToTerms: boolean;
 }
 
 export interface ForgotPasswordFormData {

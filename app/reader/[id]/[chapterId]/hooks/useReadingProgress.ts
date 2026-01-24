@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { HistoryService } from '@/components/readinghistory/lib/services/HistoryService';
+import { useSaveProgress, saveLocalProgress, LOCAL_STORAGE_KEY } from '@/lib/reading-progress';
 import type { ChapterData } from '../types';
 
 interface UseReadingProgressConfig {
@@ -19,19 +19,20 @@ interface ChapterInfo {
 /**
  * useReadingProgress - зберігає прогрес читання
  * 
- * Використовує HistoryService для автоматичного вибору джерела:
+ * Використовує React Query мутацію для автоматичного вибору джерела:
  * - Supabase для авторизованих користувачів
  * - localStorage для гостей
  * 
  * Debouncing запобігає спаму запитів
  */
-export function useReadingProgress({
+export function useReaderProgress({
   manhwaId,
   chapters,
   currentPage,
   debounceMs = 2000,
   debug = false,
 }: UseReadingProgressConfig): void {
+  const { mutate: saveProgress } = useSaveProgress();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<string>('');
 
@@ -108,23 +109,24 @@ export function useReadingProgress({
     // Debounced save
     timeoutRef.current = setTimeout(async () => {
       try {
-        await HistoryService.saveProgress({
+        saveProgress({
           manhwaId,
           chapterId: chapterInfo.chapterId,
+          chapterNumber: chapterInfo.chapterNumber,
           pageNumber: chapterInfo.pageInChapter,
         });
         
         lastSavedRef.current = saveKey;
         
         if (debug) {
-          console.log('[useReadingProgress] ✅ Saved:', {
+          console.log('[useReaderProgress] ✅ Saved:', {
             manhwaId,
             chapterId: chapterInfo.chapterId,
             page: chapterInfo.pageInChapter,
           });
         }
       } catch (error) {
-        console.error('[useReadingProgress] ❌ Error saving:', error);
+        console.error('[useReaderProgress] ❌ Error saving:', error);
       }
     }, debounceMs);
 
@@ -144,21 +146,23 @@ export function useReadingProgress({
       try {
         // Синхронне збереження в localStorage як fallback
         if (typeof window !== 'undefined') {
-          const key = 'triw_reading_history';
-          const stored = localStorage.getItem(key);
+          const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
           const map = stored ? JSON.parse(stored) : {};
           
           map[manhwaId] = {
             manhwaId,
-            chapterId: chapterInfo.chapterId,
-            pageNumber: chapterInfo.pageInChapter,
-            progressPercent: 0,
-            updatedAt: new Date().toISOString(),
+            currentChapterId: chapterInfo.chapterId,
+            currentChapterNumber: chapterInfo.chapterNumber,
+            currentPage: chapterInfo.pageInChapter,
+            readChapterIds: map[manhwaId]?.readChapterIds || [],
+            archivedRanges: map[manhwaId]?.archivedRanges || [],
+            startedAt: map[manhwaId]?.startedAt || new Date().toISOString(),
+            lastReadAt: new Date().toISOString(),
           };
           
-          localStorage.setItem(key, JSON.stringify(map));
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(map));
           
-          if (debug) console.log('[useReadingProgress] Saved on unload');
+          if (debug) console.log('[useReaderProgress] Saved on unload');
         }
       } catch (e) {
         // Ignore errors on unload
@@ -174,3 +178,6 @@ export function useReadingProgress({
 }
 
 export type { UseReadingProgressConfig, ChapterInfo };
+
+// Re-export with old name for backwards compatibility
+export { useReaderProgress as useReadingProgress };

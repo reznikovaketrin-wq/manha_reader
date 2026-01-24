@@ -1,20 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { RatingModal } from './RatingModal';
 import { DesktopView } from './DesktopView';
 import { MobileView } from './MobileView';
+import { ProgressDebugInfo } from './ProgressDebugInfo';
 import { ManhwaPageProps } from './types';
-import { useUser } from '@/app/providers/UserProvider';
-import { getLastReadChapter, getReadingProgress } from '@/lib/supabase-client';
-
-interface Range {
-  s: number;
-  e: number;
-}
+import { useReadingProgress, createReadChaptersSet } from '@/lib/reading-progress';
 
 /**
- * ManhwaPage - ИСПРАВЛЕННЫЙ с работающей RatingModal
+ * ManhwaPage - с React Query для прогресса чтения
+ * ✅ Использует useReadingProgress для кеширования
  * ✅ Правильно управляет состоянием модалки
  * ✅ Правильно передает пропсы
  */
@@ -33,86 +29,54 @@ function ManhwaPage({
   canComment = true,
   clientRatingOverride = null,
 }: ManhwaPageProps) {
-  const { user } = useUser();
-  const [lastReadEntry, setLastReadEntry] = useState<any | null>(null);
-  const [readChaptersSet, setReadChaptersSet] = useState<Set<string>>(new Set());
-  const [archivedRanges, setArchivedRanges] = useState<Range[]>([]);
+  // React Query хук для прогресса чтения
+  const { data: progress, isLoading: isProgressLoading, error: progressError } = useReadingProgress(manhwaId);
 
-  // Do not return early here — render a loading placeholder inside JSX
-  // so hook order remains stable between renders.
-
-  // Load last read chapter
-  useEffect(() => {
-    let mounted = true;
-    const loadLast = async () => {
-      if (!user?.id) {
-        setLastReadEntry(null);
-        return;
-      }
-
-      try {
-        const last = await getLastReadChapter(user.id, manhwaId);
-        if (!mounted) return;
-        if (last) {
-          setLastReadEntry(last as any);
-        } else {
-          setLastReadEntry(null);
-        }
-      } catch (err) {
-        console.error('Error loading last read chapter:', err);
-        if (mounted) setLastReadEntry(null);
-      }
-    };
-
-    loadLast();
-    return () => { mounted = false; };
-  }, [user?.id, manhwaId]);
-
-  // Load reading progress (read chapters and archived ranges)
-  useEffect(() => {
-    let mounted = true;
-    const loadProgress = async () => {
-      if (!user?.id) {
-        setReadChaptersSet(new Set());
-        setArchivedRanges([]);
-        return;
-      }
-      try {
-        const progress = await getReadingProgress(user.id, manhwaId);
-        if (!mounted) return;
-
-        if (progress) {
-          // read_chapters is already an array of chapter IDs (strings)
-          const readChapterIds = new Set<string>(progress.read_chapters || []);
-          setReadChaptersSet(readChapterIds);
-          setArchivedRanges(progress.archived_ranges || []);
-        } else {
-          if (mounted) {
-            setReadChaptersSet(new Set());
-            setArchivedRanges([]);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading reading progress:', err);
-        if (mounted) {
-          setReadChaptersSet(new Set());
-          setArchivedRanges([]);
-        }
-      }
-    };
-
-    loadProgress();
-    return () => { mounted = false; };
-  }, [user?.id, manhwaId, manhwa?.chapters?.length]);
-  // compute first chapter to open (memoized at top-level to respect Hooks rules)
-  const { computedFirstChapterId, computedFirstChapterPage } = useMemo(() => {
-    if (!manhwa?.chapters) {
-      return { computedFirstChapterId: '', computedFirstChapterPage: null };
+  // Вычисляем Set прочитанных глав из данных прогресса
+  const readChaptersSet = useMemo(() => {
+    if (!progress) {
+      return new Set<string>();
     }
-    const id = (lastReadEntry as any)?.chapter_id || manhwa.chapters?.[0]?.id || '';
-    const page = (lastReadEntry as any)?.page_number ?? null;
-    return { computedFirstChapterId: id, computedFirstChapterPage: page };
-  }, [lastReadEntry?.chapter_id, lastReadEntry?.page_number, manhwa?.chapters?.length]);
+    const set = createReadChaptersSet(progress.readChapterIds);
+    
+    // Временный лог для отладки
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[ManhwaPage] ReadChapters debug:', {
+        manhwaId,
+        progressExists: !!progress,
+        // Детальная информация по ID:
+        savedChapterIds: JSON.stringify(progress.readChapterIds),
+        allChapterIds: JSON.stringify(manhwa?.chapters?.map(ch => ch.id)),
+        firstChapters: manhwa?.chapters?.slice(0, 5).map(ch => ({ id: ch.id, number: ch.chapterNumber })),
+        // Проверка конкретных ID:
+        hasChapter3: progress.readChapterIds?.includes('24'),
+        hasChapter4: progress.readChapterIds?.includes('34'),
+        expectedIDs: ['13', '18', '24', '34'], // Если пользователь читал 4 главы
+      });
+    }
+    
+    return set;
+  }, [progress?.readChapterIds, manhwa?.chapters]);
+
+  // Архивированные диапазоны из прогресса
+  const archivedRanges = useMemo(() => {
+    return progress?.archivedRanges ?? [];
+  }, [progress?.archivedRanges]);
+
+  // compute first chapter to open (memoized at top-level to respect Hooks rules)
+  const { computedFirstChapterId, computedFirstChapterPage, hasProgress } = useMemo(() => {
+    if (!manhwa?.chapters) {
+      return { computedFirstChapterId: '', computedFirstChapterPage: null, hasProgress: false };
+    }
+    const id = progress?.currentChapterId || manhwa.chapters?.[0]?.id || '';
+    const page = progress?.currentPage ?? null;
+    const hasProgressValue = !!progress && !!progress.currentChapterId;
+    return { 
+      computedFirstChapterId: id, 
+      computedFirstChapterPage: page, 
+      hasProgress: hasProgressValue 
+    };
+  }, [progress?.currentChapterId, progress?.currentPage, manhwa?.chapters?.length, progress]);
 
   return (
     <div style={{ fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
@@ -151,6 +115,7 @@ function ManhwaPage({
               firstChapterPage={computedFirstChapterPage}
               readChapters={readChaptersSet}
               archivedRanges={archivedRanges}
+              hasProgress={hasProgress}
             />
           ) : (
             <DesktopView
@@ -164,6 +129,7 @@ function ManhwaPage({
               firstChapterPage={computedFirstChapterPage}
               readChapters={readChaptersSet}
               archivedRanges={archivedRanges}
+              hasProgress={hasProgress}
             />
           )}
         </>

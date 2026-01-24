@@ -71,8 +71,12 @@ export interface ViewProps {
   canRate?: boolean;
   canComment?: boolean;
   onRatingModalOpen: () => void;
-  // Если есть сохраненная позиция в главе, передаем номер страницы
+  // Поля для прогресса чтения
+  firstChapterId?: string;
   firstChapterPage?: number | null;
+  readChapters?: Set<string>;
+  archivedRanges?: Array<{ s: number; e: number }>;
+  hasProgress?: boolean;
 }
 
 /**

@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { ManhwaCommentsComponent } from '@/components/manhwa-comments';
+import ManhwaCommentsComponent from '@/components/manhwa-comments';
 
 interface CommentsBlockProps {
   manhwaId: string;

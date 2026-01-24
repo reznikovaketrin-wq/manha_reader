@@ -1,18 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useUser } from '@/app/providers/UserProvider';
-import { supabase } from '@/lib/supabase-client';
+import { useReadingHistory, ReadingProgress } from '@/lib/reading-progress';
 import { getManhwaById } from '@/data/manhwa';
-
-interface ReadingHistoryRow {
-  manhwa_id: string;
-  chapter_id: string;
-  page_number: number;
-  timestamp: string; // ✅ ВИПРАВЛЕНО: було read_at
-}
+import type { Manhwa } from '@/types/manhwa';
 
 interface ManhwaWithProgress {
   id: string;
@@ -26,93 +19,72 @@ interface ManhwaWithProgress {
 }
 
 export default function ReadingHistoryPage() {
-  const router = useRouter();
-  const { user, loading } = useUser();
-
-  const [history, setHistory] = useState<ManhwaWithProgress[]>([]);
-  const [filteredHistory, setFilteredHistory] = useState<ManhwaWithProgress[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(true);
+  const { user, loading: userLoading } = useUser();
+  
+  // React Query хук для історії читання
+  const { data: rawHistory = [], isLoading: historyLoading } = useReadingHistory();
+  
+  const [manhwas, setManhwas] = useState<Record<string, Manhwa>>({});
+  const [manhwasLoading, setManhwasLoading] = useState(false);
   const [sortBy, setSortBy] = useState<'recent' | 'alphabetical' | 'progress'>('recent');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ✅ Завантажуємо історію коли user готовий
+  // ✅ Завантажуємо дані манхв
   useEffect(() => {
-    if (!user) return;
+    if (rawHistory.length === 0) return;
 
-    const loadHistory = async () => {
-      setLoadingHistory(true);
-
-      try {
-        const { data, error } = await supabase
-          .from('reading_history')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('timestamp', { ascending: false }); // ✅ ВИПРАВЛЕНО: було read_at
-
-        if (error) {
-          console.error('Supabase error loading reading_history:', error);
-          return;
-        }
-
-        if (!data) {
-          return;
-        }
-
-        const unique = new Map<string, ReadingHistoryRow>();
-
-        data.forEach((item: ReadingHistoryRow) => {
-          if (!unique.has(item.manhwa_id)) {
-            unique.set(item.manhwa_id, item);
+    const loadManhwas = async () => {
+      setManhwasLoading(true);
+      const entries = await Promise.all(
+        rawHistory.map(async (item) => {
+          try {
+            const manhwa = await getManhwaById(item.manhwaId);
+            return manhwa ? [item.manhwaId, manhwa] : null;
+          } catch (error) {
+            console.error(`Error loading manhwa ${item.manhwaId}:`, error);
+            return null;
           }
-        });
+        })
+      );
 
-        const result = await Promise.all(
-          [...unique.entries()].map(async ([manhwaId, item]) => {
-            try {
-              const manhwa = await getManhwaById(manhwaId);
-              if (!manhwa) return null;
+      const map = Object.fromEntries(
+        entries.filter(Boolean) as [string, Manhwa][]
+      );
 
-              const chapter = manhwa.chapters.find(
-                (ch) => ch.id === item.chapter_id
-              );
-
-              const totalPages = chapter?.pagesCount || 0;
-
-              return {
-                id: manhwaId,
-                title: manhwa.title,
-                imageUrl: manhwa.coverImage || '/placeholder.png',
-                currentChapter: chapter?.number.toString() || '—',
-                currentPage: item.page_number,
-                totalPages,
-                lastRead: new Date(item.timestamp).toLocaleDateString('uk-UA'), // ✅ ВИПРАВЛЕНО: було read_at
-                progress:
-                  totalPages > 0
-                    ? (item.page_number / totalPages) * 100
-                    : 0,
-              };
-            } catch (error) {
-              console.error('Error loading manhwa:', error);
-              return null;
-            }
-          })
-        );
-
-        const clean = result.filter(Boolean) as ManhwaWithProgress[];
-        setHistory(clean);
-        setFilteredHistory(clean);
-      } catch (error) {
-        console.error('Error loading reading history:', error);
-      } finally {
-        setLoadingHistory(false);
-      }
+      setManhwas(map);
+      setManhwasLoading(false);
     };
 
-    loadHistory();
-  }, [user]);
+    loadManhwas();
+  }, [rawHistory]);
+
+  // ✅ Трансформуємо історію в формат для відображення
+  const history = useMemo(() => {
+    return rawHistory.map((item): ManhwaWithProgress | null => {
+      const manhwa = manhwas[item.manhwaId];
+      if (!manhwa) return null;
+
+      const chapter = manhwa.chapters.find(
+        (ch) => String(ch.id) === String(item.currentChapterId)
+      );
+
+      const totalPages = chapter?.pages?.length || 0;
+
+      return {
+        id: item.manhwaId,
+        title: manhwa.title,
+        imageUrl: manhwa.coverImage || '/placeholder.png',
+        currentChapter: chapter?.number.toString() || '—',
+        currentPage: item.currentPage,
+        totalPages,
+        lastRead: new Date(item.lastReadAt).toLocaleDateString('uk-UA'),
+        progress: totalPages > 0 ? (item.currentPage / totalPages) * 100 : 0,
+      };
+    }).filter(Boolean) as ManhwaWithProgress[];
+  }, [rawHistory, manhwas]);
 
   // ✅ Фільтрація та сортування
-  useEffect(() => {
+  const filteredHistory = useMemo(() => {
     let data = [...history];
 
     if (searchQuery) {
@@ -129,10 +101,12 @@ export default function ReadingHistoryPage() {
       data.sort((a, b) => b.progress - a.progress);
     }
 
-    setFilteredHistory(data);
+    return data;
   }, [searchQuery, sortBy, history]);
 
-  if (loading || loadingHistory) {
+  const isLoading = userLoading || historyLoading || manhwasLoading;
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-bg-primary text-text-main flex items-center justify-center">
         <div className="text-center">

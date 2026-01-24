@@ -95,11 +95,25 @@ class AuthService {
       });
 
       if (error) {
+        // Enhanced error logging for database issues
+        if (error.message.includes('Database error')) {
+          console.error('❌ [AUTH] Database error during signup:', {
+            error: error.message,
+            status: error.status,
+            email,
+            hint: 'Check if users table exists and trigger is configured properly'
+          });
+        }
         logAuthEvent(AuthEvents.SIGN_UP_ERROR, { error: error.message });
         return {
           user: null,
           session: null,
-          error: createAuthError(error.message, error.status)
+          error: createAuthError(
+            error.message.includes('Database error') 
+              ? 'Unable to create account. Please contact support.' 
+              : error.message,
+            error.status
+          )
         };
       }
 
@@ -111,11 +125,12 @@ class AuthService {
         error: null
       };
     } catch (error: any) {
+      console.error('❌ [AUTH] Unexpected error during signup:', error);
       logAuthEvent(AuthEvents.SIGN_UP_ERROR, { error: error.message });
       return {
         user: null,
         session: null,
-        error: createAuthError(error.message)
+        error: createAuthError('An unexpected error occurred. Please try again.')
       };
     }
   }
@@ -294,7 +309,7 @@ class AuthService {
   async checkUsernameAvailable(username: string): Promise<{ available: boolean; error: AuthError | null }> {
     try {
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users')
         .select('username')
         .eq('username', username)
         .single();

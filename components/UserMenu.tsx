@@ -24,7 +24,10 @@ export default function UserMenu() {
 
   // ✅ Если нет user - показываем кнопку "Войти" с серой обводкой
   if (!user || !profile) {
-    console.log('👤 [UserMenu] No user, showing login buttons');
+    // Only log in development to avoid console spam
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👤 [UserMenu] No user, showing login buttons');
+    }
     return (
       <>
         {/* Мобильная кнопка с серой обводкой */}

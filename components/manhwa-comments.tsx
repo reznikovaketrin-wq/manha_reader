@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { useUser } from '@/app/providers/UserProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { deleteComment, deleteReply } from '@/lib/comments-actions';
@@ -20,7 +20,7 @@ interface ManhwaCommentsComponentProps {
   onCommentsCountChange?: (count: number) => void;
 }
 
-export function ManhwaCommentsComponent({
+export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
   manhwaId,
   hideHeader = false,
   onCommentsCountChange,
@@ -498,4 +498,6 @@ export function ManhwaCommentsComponent({
       )}
     </div>
   );
-}
+});
+
+export default ManhwaCommentsComponent;

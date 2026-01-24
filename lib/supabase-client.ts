@@ -28,34 +28,7 @@ export const supabase = createBrowserClient(
 // (debug exposure removed)
 
 // ===== READING HISTORY =====
-
-export async function saveReadingProgress(
-  userId: string,
-  manhwaId: string,
-  chapterId: string,
-  pageNumber: number
-) {
-  try {
-    const { error } = await supabase
-      .from('reading_history')
-      .upsert(
-        {
-          user_id: userId,
-          manhwa_id: manhwaId,
-          chapter_id: chapterId,
-          page_number: pageNumber,
-          timestamp: new Date().toISOString(),
-        },
-        { onConflict: 'user_id,manhwa_id,chapter_id' }
-      );
-
-    if (error) throw error;
-    return { success: true };
-  } catch (error) {
-    console.error('Error saving reading progress:', error);
-    return { success: false, error };
-  }
-}
+// Функции чтения прогресса перенесены в lib/reading-progress/
 
 export async function getUserReadingHistory(userId: string) {
   try {
@@ -73,24 +46,7 @@ export async function getUserReadingHistory(userId: string) {
   }
 }
 
-export async function getLastReadChapter(userId: string, manhwaId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('reading_history')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('manhwa_id', manhwaId)
-      .order('timestamp', { ascending: false })
-      .limit(1)
-      .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return data || null;
-  } catch (error) {
-    console.error('Error fetching last read chapter:', error);
-    return null;
-  }
-}
 
 // ===== VIEWS =====
 
@@ -109,92 +65,41 @@ export async function trackManhwaView(
   dedupeHours: number = 24
 ) {
   try {
-    const cutoff = new Date(Date.now() - dedupeHours * 3600 * 1000).toISOString();
-
-    // Try server-side dedupe using a views_logs table (recommended).
+    // Client-side localStorage-based dedupe to reduce unnecessary API calls
     try {
-      if (userId) {
-        // Check if user has a recent log for this manhwa
-        const { data: recent, error: recentErr } = await supabase
-          .from('views_logs')
-          .select('id, created_at')
-          .eq('manhwa_id', manhwaId)
-          .eq('user_id', userId)
-          .gt('created_at', cutoff)
-          .limit(1)
-          .single();
-
-        if (recentErr && recentErr.code !== 'PGRST116') throw recentErr;
-
-        if (!recent) {
-          // insert log and increment views
-          const { error: insertErr } = await supabase.from('views_logs').insert({
-            manhwa_id: manhwaId,
-            chapter_id: chapterId || null,
-            user_id: userId,
-            created_at: new Date().toISOString(),
-          });
-          if (insertErr) throw insertErr;
-
-          // increment views table (upsert)
-          const { data: existingView } = await supabase
-            .from('views')
-            .select('view_count')
-            .eq('manhwa_id', manhwaId)
-            .single();
-
-          if (existingView) {
-            const { error } = await supabase
-              .from('views')
-              .update({
-                view_count: existingView.view_count + 1,
-                last_viewed_at: new Date().toISOString(),
-              })
-              .eq('manhwa_id', manhwaId);
-            if (error) throw error;
-          } else {
-            const { error } = await supabase.from('views').insert({
-              manhwa_id: manhwaId,
-              view_count: 1,
-              last_viewed_at: new Date().toISOString(),
-            });
-            if (error) throw error;
+      if (typeof window !== 'undefined') {
+        const storageKey = `view_${manhwaId}_${userId || 'anon'}`;
+        const lastViewTime = localStorage.getItem(storageKey);
+        const now = Date.now();
+        
+        if (lastViewTime) {
+          const timeDiff = now - parseInt(lastViewTime, 10);
+          const hoursDiff = timeDiff / (1000 * 60 * 60);
+          
+          // Skip if viewed within dedupe hours
+          if (hoursDiff < dedupeHours) {
+            return { success: true, dedupe: true };
           }
         }
-        return { success: true };
+        
+        // Store current timestamp for future dedupe
+        localStorage.setItem(storageKey, now.toString());
       }
     } catch (err) {
-      // If anything fails (e.g., views_logs table missing), fall back to simple increment below
-      console.warn('views_logs dedupe failed, falling back to simple increment', err);
+      // localStorage may fail in some environments, continue without dedupe
+      console.warn('localStorage dedupe failed', err);
     }
 
-    // Fallback: simple increment (no dedupe)
-    const { data: existingView } = await supabase
-      .from('views')
-      .select('view_count')
-      .eq('manhwa_id', manhwaId)
-      .single();
+    // Call API route instead of direct DB access (which is blocked by RLS)
+    const response = await fetch('/api/views/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manhwaId, chapterId, userId }),
+    });
 
-    if (existingView) {
-      const { error } = await supabase
-        .from('views')
-        .update({
-          view_count: existingView.view_count + 1,
-          last_viewed_at: new Date().toISOString(),
-        })
-        .eq('manhwa_id', manhwaId);
-
-      if (error) throw error;
-    } else {
-      const { error } = await supabase
-        .from('views')
-        .insert({
-          manhwa_id: manhwaId,
-          view_count: 1,
-          last_viewed_at: new Date().toISOString(),
-        });
-
-      if (error) throw error;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
     return { success: true };
@@ -358,29 +263,7 @@ export function isChapterRead(
   return isInRanges(chapterNumber, archivedRanges);
 }
 
-/**
- * Get reading progress for a user+manhwa (via RPC to bypass PostgREST cache)
- */
-export async function getReadingProgress(userId: string, manhwaId: string) {
-  try {
-    // Use RPC instead of direct SELECT to bypass PostgREST schema cache
-    const { data, error } = await supabase.rpc('get_reading_progress', {
-      p_user_id: userId,
-      p_manhwa_id: manhwaId
-    });
 
-    if (error) {
-      console.error('[getReadingProgress] RPC error:', error);
-      return null;
-    }
-    
-    // RPC returns array, take first row
-    return data && data.length > 0 ? data[0] : null;
-  } catch (error) {
-    console.error('Error fetching reading progress:', error);
-    return null;
-  }
-}
 
 /**
  * Add a read chapter to user's progress (atomic via RPC or client-side fallback)
@@ -428,19 +311,38 @@ async function upsertReadChapterFallback(
   cap: number
 ) {
   try {
-    // Get existing progress
-    const existing = await getReadingProgress(userId, manhwaId);
+    // Get existing progress (inline query instead of removed getReadingProgress)
+    const { data: existing } = await supabase
+      .from('reading_progress')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('manhwa_id', manhwaId)
+      .maybeSingle();
     
     console.log('[upsertReadChapterFallback] existing progress', { userId, manhwaId, existing });
 
-    let recent: string[] = (existing?.read_chapters as string[]) ?? [];
+    // ИСПРАВЛЕНО: Нормализуем все ID к строкам для консистентности
+    const rawChapters = (existing?.read_chapters as any[]) ?? [];
+    let recent: string[] = rawChapters.map(id => String(id));
     let archived: Range[] = (existing?.archived_ranges as Range[]) ?? [];
     
+    // Убедимся что chapterId тоже строка
+    const chapterIdStr = String(chapterId);
+    
+    console.log('[upsertReadChapterFallback] normalization debug', {
+      rawChapters,
+      rawTypes: rawChapters.map(id => typeof id),
+      recent,
+      recentTypes: recent.map(id => typeof id),
+      chapterIdStr,
+      chapterIdStrType: typeof chapterIdStr
+    });
+    
     // Remove if already present (for recency)
-    recent = recent.filter(id => id !== chapterId);
+    recent = recent.filter(id => id !== chapterIdStr);
     
     // Add to end (most recent)
-    recent.push(chapterId);
+    recent.push(chapterIdStr);
     
     // If exceeds cap, archive oldest
     let toArchiveNumbers: number[] = [];
@@ -467,9 +369,10 @@ async function upsertReadChapterFallback(
     console.log('[upsertReadChapterFallback] writing progress', {
       userId,
       manhwaId,
-      chapterId,
+      chapterId: chapterIdStr,
       chapterNumber,
       recentLength: recent.length,
+      recentValues: recent, // ДОБАВЛЕНО: Показать актуальные значения
       archivedLength: archived.length,
       totalCount,
     });
@@ -480,7 +383,7 @@ async function upsertReadChapterFallback(
       .upsert({
         user_id: userId,
         manhwa_id: manhwaId,
-        chapter_id: chapterId,
+        chapter_id: chapterIdStr, // ИСПРАВЛЕНО: используем нормализованный ID
         page_number: 0,
         read_chapters: recent,
         archived_ranges: archived,

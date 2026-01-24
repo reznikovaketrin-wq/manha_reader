@@ -1,6 +1,7 @@
 import { Manrope } from 'next/font/google';
 import Header from '@/components/Header';
 import { UserProvider } from '@/app/providers/UserProvider';
+import { QueryProvider } from '@/app/providers/QueryProvider';
 import { AuthProvider } from '@/features/auth';
 import './globals.css';
 
@@ -29,9 +30,11 @@ export default function RootLayout({
     <html lang="uk" suppressHydrationWarning>
       <body className={`${manrope.variable} font-manrope`}>
         <div className="min-h-screen flex flex-col bg-page-bg text-text-main">
-          {/* ✅ Auth providers для системы авторизации */}
-          <AuthProvider>
-            <UserProvider>
+          {/* ✅ React Query для кеширования и синхронизации данных */}
+          <QueryProvider>
+            {/* ✅ Auth providers для системы авторизации */}
+            <AuthProvider>
+              <UserProvider>
               {/* ✅ ЕДИНЫЙ SITE CONTAINER для Header и контента */}
               <div className="site-container">
                 {/* ✅ Header компонент - включает логотип и навигацию */}
@@ -46,6 +49,7 @@ export default function RootLayout({
               </div>
             </UserProvider>
           </AuthProvider>
+          </QueryProvider>
         </div>
       </body>
     </html>

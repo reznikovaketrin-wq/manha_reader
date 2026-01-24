@@ -40,8 +40,18 @@ next-env.d.ts
 
 # IDE
 .vscode
-.md
 .idea
 *.swp
 *.swo
 *~
+
+# Workspace and local utilities
+*.code-workspace
+clean-cache.bat
+clear-all-cache.bat
+
+# Test pages
+/app/test-registration
+
+# Debug components
+/components/ManhwaPage/ProgressDebugInfo.tsx

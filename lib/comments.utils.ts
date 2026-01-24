@@ -39,7 +39,7 @@ export async function loadChapterComments(
       .from('chapter_comments')
       .select('id, user_id, content, created_at, updated_at, parent_comment_id, users(username,email)')
       .eq('manhwa_id', manhwaId)
-      .eq('chapter_id', chapterId)
+      .eq('chapter_id', parseInt(chapterId, 10))
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -325,49 +325,41 @@ export async function toggleCommentLike(
   userId: string,
   isCurrentlyLiked: boolean
 ): Promise<number> {
+  // Определяем, это комментарий главы или манхвы
+  const { data: chapterComment } = await supabase
+    .from('chapter_comments')
+    .select('id')
+    .eq('id', commentId)
+    .maybeSingle();
+
+  const isChapterComment = !!chapterComment;
+  const likesTable = isChapterComment ? 'chapter_comment_likes' : 'comment_likes';
+
   if (isCurrentlyLiked) {
-    // Delete from chapter_comment_likes
-    const { error: error1 } = await supabase
-      .from('chapter_comment_likes')
+    // Удаляем лайк из правильной таблицы
+    const { error } = await supabase
+      .from(likesTable)
       .delete()
       .eq('comment_id', commentId)
       .eq('user_id', userId);
 
-    // Then delete from comment_likes
-    const { error: error2 } = await supabase
-      .from('comment_likes')
-      .delete()
-      .eq('comment_id', commentId)
-      .eq('user_id', userId);
-
-    // Ignore errors - like might not exist in either table
+    if (error && error.code !== 'PGRST116') {
+      console.warn(`Could not delete like from ${likesTable}:`, error);
+    }
   } else {
-    // Try to insert into chapter_comment_likes first
-    const { error: chapterError } = await supabase
-      .from('chapter_comment_likes')
+    // Вставляем лайк в правильную таблицу
+    const { error } = await supabase
+      .from(likesTable)
       .insert([{ comment_id: commentId, user_id: userId }]);
 
-    // If chapter_comment_likes insert failed, try comment_likes
-    if (chapterError) {
-      // Only try comment_likes if chapter insert failed
-      // This is for backwards compatibility with existing chapter comments
-      const { error: manhwaError } = await supabase
-        .from('comment_likes')
-        .insert([{ comment_id: commentId, user_id: userId }]);
-
-      // Log if both failed (but don't throw - user just won't see the like count update)
-      if (
-        manhwaError &&
-        chapterError.code !== 'PGRST116' &&
-        manhwaError.code !== '409' &&
-        manhwaError.code !== 'PGRST116'
-      ) {
-        console.warn('Could not insert like:', { chapterError, manhwaError });
-      }
+    // 23505 = duplicate key (лайк уже существует)
+    if (error && error.code !== '23505' && error.code !== 'PGRST116') {
+      console.warn(`Could not insert like into ${likesTable}:`, error);
     }
   }
 
-  return await getCommentLikesCount(commentId);
+  const finalCount = await getCommentLikesCount(commentId);
+  return finalCount;
 }
 
 // ============================================

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, memo } from 'react';
 import AutoFitTitle from './AutoFitTitle';
 import AutoFitStatusGroup from './AutoFitStatusGroup';
 
@@ -17,7 +17,7 @@ interface ManhwaCardProps {
   };
 }
 
-export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
+const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const bgImgRef = useRef<HTMLImageElement>(null);
@@ -342,4 +342,6 @@ export default function ManhwaCard({ manhwa }: ManhwaCardProps) {
       </section>
     </Link>
   );
-}
+});
+
+export default ManhwaCard;

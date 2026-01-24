@@ -26,6 +26,15 @@ export async function deleteComment(commentId: string) {
   try {
     const supabase = await getSupabaseServerClient();
 
+    // Проверяем роль пользователя из БД
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
     // ✅ ШАГ 1: Получаем комментарий
     const { data: comment, error: fetchError } = await supabase
       .from('manhwa_comments')
@@ -44,7 +53,7 @@ export async function deleteComment(commentId: string) {
 
     // ✅ ШАГ 2: Проверяем права
     // Если админ - удаляем всё
-    if (currentUser.user_metadata?.role === 'admin') {
+    if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
         console.log('👑 [deleteComment] Admin delete allowed');
       }
@@ -104,6 +113,15 @@ export async function deleteReply(replyId: string) {
   try {
     const supabase = await getSupabaseServerClient();
 
+    // Проверяем роль пользователя из БД
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
     // ✅ ШАГ 1: Получаем reply из manhwa_comments (replies хранятся там с parent_comment_id!)
     const { data: reply, error: fetchError } = await supabase
       .from('manhwa_comments')
@@ -121,7 +139,7 @@ export async function deleteReply(replyId: string) {
     }
 
     // ✅ ШАГ 2: Проверяем права
-    if (currentUser.user_metadata?.role === 'admin') {
+    if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
         console.log('👑 [deleteReply] Admin delete allowed');
       }
@@ -177,6 +195,15 @@ export async function deleteChapterComment(commentId: string) {
   try {
     const supabase = await getSupabaseServerClient();
 
+    // Проверяем роль пользователя из БД
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
     const { data: comment, error: fetchError } = await supabase
       .from('chapter_comments')
       .select('id, user_id')
@@ -192,7 +219,7 @@ export async function deleteChapterComment(commentId: string) {
       console.log('📋 [deleteChapterComment] Found comment, user_id:', comment.user_id);
     }
 
-    if (currentUser.user_metadata?.role === 'admin') {
+    if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
         console.log('👑 [deleteChapterComment] Admin delete allowed');
       }
@@ -212,6 +239,7 @@ export async function deleteChapterComment(commentId: string) {
 
     if (deleteError) {
       console.error('❌ [deleteChapterComment] Delete error:', deleteError);
+      console.error('❌ [deleteChapterComment] Delete failed - possibly RLS policy issue. Admin:', isAdmin, 'User:', currentUser.id);
       return { success: false, error: deleteError.message };
     }
 
@@ -246,6 +274,15 @@ export async function deleteChapterReply(replyId: string) {
   try {
     const supabase = await getSupabaseServerClient();
 
+    // Проверяем роль пользователя из БД
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', currentUser.id)
+      .single();
+
+    const isAdmin = userProfile?.role === 'admin';
+
     const { data: reply, error: fetchError } = await supabase
       .from('chapter_comments')
       .select('id, user_id, parent_comment_id')
@@ -261,7 +298,7 @@ export async function deleteChapterReply(replyId: string) {
       console.log('📋 [deleteChapterReply] Found reply, user_id:', reply.user_id);
     }
 
-    if (currentUser.user_metadata?.role === 'admin') {
+    if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
         console.log('👑 [deleteChapterReply] Admin delete allowed');
       }
@@ -281,6 +318,7 @@ export async function deleteChapterReply(replyId: string) {
 
     if (deleteError) {
       console.error('❌ [deleteChapterReply] Delete error:', deleteError);
+      console.error('❌ [deleteChapterReply] Delete failed - possibly RLS policy issue. Admin:', isAdmin, 'User:', currentUser.id);
       return { success: false, error: deleteError.message };
     }
 

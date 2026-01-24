@@ -3,7 +3,7 @@
 import { memo, useState } from 'react';
 import Link from 'next/link';
 import styles from './ChaptersList.module.css';
-import { isChapterRead } from '@/lib/supabase-client';
+import { isChapterRead, ArchivedRange } from '@/lib/reading-progress';
 import { useUser } from '@/app/providers/UserProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
@@ -19,16 +19,11 @@ interface Chapter {
   publicAvailableAt?: string | null;
 }
 
-interface Range {
-  s: number;
-  e: number;
-}
-
 interface ChaptersListProps {
   chapters: Chapter[];
   manhwaId: string;
   readChapters: Set<string>;
-  archivedRanges?: Range[];
+  archivedRanges?: ArchivedRange[];
   isMobile?: boolean;
 }
 
@@ -36,7 +31,7 @@ interface ChaptersListProps {
  * ChaptersList - единый компонент для desktop и mobile версий
  * Отображает список глав с поддержкой состояния "прочитано"
  */
-export const ChaptersList = memo(function ChaptersList({
+const ChaptersList = memo(function ChaptersList({
   chapters,
   manhwaId,
   readChapters,
@@ -52,18 +47,22 @@ export const ChaptersList = memo(function ChaptersList({
   const checkChapterAccess = (chapter: Chapter): { hasAccess: boolean; reason?: string; availableDate?: Date } => {
     // DEBUG: Проверяем роль пользователя
     const resolvedRole = profile?.role ?? (user as any)?.role;
-    console.log('🔐 Access check:', {
-      chapterNumber: chapter.chapterNumber,
-      userId: user?.id,
-      userRole: resolvedRole,
-      userEmail: user?.email,
-      vipOnly: chapter.vipOnly,
-      vipEarlyDays: chapter.vipEarlyDays,
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔐 Access check:', {
+        chapterNumber: chapter.chapterNumber,
+        userId: user?.id,
+        userRole: resolvedRole,
+        userEmail: user?.email,
+        vipOnly: chapter.vipOnly,
+        vipEarlyDays: chapter.vipEarlyDays,
+      });
+    }
 
     // Админы имеют доступ ко всему
     if (resolvedRole === 'admin') {
-      console.log('✅ Admin access granted');
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('✅ Admin access granted');
+      }
       return { hasAccess: true };
     }
 
@@ -120,11 +119,24 @@ export const ChaptersList = memo(function ChaptersList({
             archivedRanges
           );
 
+          // Debug: Enhanced logging for read status
+          if (chapter.chapterNumber <= 5 && process.env.NODE_ENV !== 'production') {
+            const idStr = String(chapter.id);
+            console.log(`[ChaptersList] Chapter ${chapter.chapterNumber} read status:`, {
+              chapterId: chapter.id,
+              chapterIdString: idStr,
+              isRead,
+              readChaptersSize: readChapters.size,
+              readChaptersHasId: readChapters.has(idStr),
+              readChaptersValues: Array.from(readChapters),
+            });
+          }
+
           const access = checkChapterAccess(chapter);
           const isLocked = !access.hasAccess;
           
           // DEBUG: Лог для перевірки VIP полів
-          if (chapter.chapterNumber === 1) {
+          if (chapter.chapterNumber === 1 && process.env.NODE_ENV !== 'production') {
             console.log('🔍 Chapter 1 VIP data:', {
               vipOnly: chapter.vipOnly,
               vipEarlyDays: chapter.vipEarlyDays,
@@ -339,3 +351,5 @@ export const ChaptersList = memo(function ChaptersList({
     </>
   );
 });
+
+export default ChaptersList;

@@ -9,6 +9,15 @@ const nextConfig = {
     ],
     formats: ['image/webp', 'image/avif'],
   },
+  
+  // 🔥 Fix webpack cache allocation errors
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Disable cache in development to prevent memory issues
+      config.cache = false;
+    }
+    return config;
+  },
 }
 
 module.exports = nextConfig

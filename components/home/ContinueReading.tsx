@@ -1,45 +1,36 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { HistoryService } from '@/components/readinghistory/lib/services/HistoryService';
+import { useContinueReading } from '@/lib/reading-progress';
 import { getManhwaById } from '@/data/manhwa';
-import type { ReadingProgress } from '@/components/readinghistory/types/reading-history.types';
 import type { Manhwa } from '@/types/manhwa';
 
 export default function ContinueReading() {
-  const [history, setHistory] = useState<ReadingProgress[]>([]);
+  // React Query хук для отримання історії
+  const { data: history = [], isLoading: loading } = useContinueReading({ limit: 8 });
   const [manhwas, setManhwas] = useState<Record<string, Manhwa>>({});
-  const [loading, setLoading] = useState(true);
+  const [loadingManhwas, setLoadingManhwas] = useState(false);
 
-  // Завантаження історії
-  useEffect(() => {
-    const loadHistory = async () => {
-      setLoading(true);
+  // Мемоизируем ID манхв для сравнения
+  const manhwaIds = useMemo(() => 
+    history.map(item => item.manhwaId).sort().join(','),
+    [history]
+  );
 
-      try {
-        // HistoryService автоматично визначає джерело (Supabase/localStorage)
-        // та робить дедуплікацію
-        const recent = await HistoryService.getRecentList(8);
-        setHistory(recent);
-      } catch (error) {
-        console.error('[ContinueReading] Error loading history:', error);
-        setHistory([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadHistory();
-  }, []);
-
-  // Завантаження даних манхв
-  useEffect(() => {
-    if (history.length === 0) return;
-
-    const loadManhwas = async () => {
+  // Завантаження даних манхв с защитой от повторных вызовов
+  const loadManhwas = useCallback(async (items: typeof history) => {
+    if (items.length === 0 || loadingManhwas) return;
+    
+    setLoadingManhwas(true);
+    try {
       const entries = await Promise.all(
-        history.map(async (item) => {
+        items.map(async (item) => {
+          // Проверяем, нет ли уже этой манхвы в кеше
+          if (manhwas[item.manhwaId]) {
+            return [item.manhwaId, manhwas[item.manhwaId]];
+          }
+          
           try {
             const manhwa = await getManhwaById(item.manhwaId);
             return manhwa ? [item.manhwaId, manhwa] : null;
@@ -54,14 +45,18 @@ export default function ContinueReading() {
         entries.filter(Boolean) as [string, Manhwa][]
       );
 
-      setManhwas(map);
-    };
+      setManhwas(prevManhwas => ({ ...prevManhwas, ...map }));
+    } finally {
+      setLoadingManhwas(false);
+    }
+  }, [loadingManhwas, manhwas]);
 
-    loadManhwas();
-  }, [history]);
+  useEffect(() => {
+    loadManhwas(history);
+  }, [manhwaIds]); // Используем manhwaIds вместо history
 
   // Skeleton під час завантаження
-  if (loading) {
+  if (loading || loadingManhwas) {
     return (
       <div className="mb-6">
         <h2 className="text-2xl font-extrabold uppercase mb-6">
@@ -97,24 +92,24 @@ export default function ContinueReading() {
           if (!manhwa) return null;
 
           let chapter = manhwa.chapters.find(
-            (ch) => String(ch.id) === String(item.chapterId)
+            (ch) => String(ch.id) === String(item.currentChapterId)
           );
 
           if (!chapter) {
             // Попробовать подобрать по номеру главы, если в базе сохранён номер, а не внутренний id
             const fallbackByNumber = manhwa.chapters.find(
-              (ch) => String(ch.number) === String(item.chapterId) || Number(ch.number) === Number(item.chapterId)
+              (ch) => String(ch.number) === String(item.currentChapterId) || Number(ch.number) === Number(item.currentChapterId)
             );
 
             if (fallbackByNumber) {
               console.warn('[ContinueReading] Chapter id mismatch — using fallback by number', {
-                originalChapterId: item.chapterId,
+                originalChapterId: item.currentChapterId,
                 matchedChapterId: fallbackByNumber.id,
               });
               chapter = fallbackByNumber;
             } else {
               console.warn('[ContinueReading] Chapter not found:', {
-                chapterId: item.chapterId,
+                chapterId: item.currentChapterId,
                 availableIds: manhwa.chapters.map(c => c.id),
                 availableNumbers: manhwa.chapters.map(c => c.number),
               });
@@ -125,7 +120,7 @@ export default function ContinueReading() {
           return (
             <Link
               key={item.manhwaId}
-              href={`/reader/${item.manhwaId}/${chapter.id}?page=${item.pageNumber}`}
+              href={`/reader/${item.manhwaId}/${chapter.id}?page=${item.currentPage}`}
             >
               <div className="bg-card-bg rounded-lg overflow-hidden hover:border-text-muted/30 border border-transparent transition-colors w-max flex-shrink-0 snap-start">
                   <div

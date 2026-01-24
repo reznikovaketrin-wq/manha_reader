@@ -4,7 +4,7 @@ import { memo, useState } from 'react';
 import Link from 'next/link';
 import { MetaBlock } from './MetaBlock';
 import { TitleBlock } from './TitleBlock';
-import { ChaptersList } from './ChaptersList/ChaptersList';
+import ChaptersList from './ChaptersList/ChaptersList';
 import { CommentsBlock } from './CommentsBlock';
 import { AddToListButton } from '@/components/AddToListButton/AddToListButton';
 import buttonStyles from './ReadButton.module.css';
@@ -20,6 +20,7 @@ interface DesktopViewExtendedProps extends ViewProps {
   firstChapterPage?: number | null;
   readChapters?: Set<string>;
   archivedRanges?: Range[];
+  hasProgress?: boolean;
 }
 
 /**
@@ -59,6 +60,7 @@ export const DesktopView = memo(function DesktopView({
   firstChapterPage = null,
   readChapters = new Set(),
   archivedRanges = [],
+  hasProgress = false,
 }: DesktopViewExtendedProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
@@ -128,7 +130,7 @@ export const DesktopView = memo(function DesktopView({
                 <svg viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                {firstChapterId && firstChapterId !== manhwa.chapters[0]?.id ? 'Продовжити' : 'Читати'}
+                {hasProgress ? 'Продовжити' : 'Читати'}
               </button>
           </Link>
 

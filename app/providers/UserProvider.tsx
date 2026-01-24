@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { supabase } from '@/lib/supabase-client';
-import { HistoryService } from '@/components/readinghistory/lib/services/HistoryService'; // ← ДОДАТИ
+import { syncLocalToSupabase } from '@/lib/reading-progress';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface UserContextType {
@@ -15,7 +15,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const syncedRef = useRef(false); // ← ДОДАТИ: щоб синхронізувати тільки раз
+  const syncedRef = useRef(false);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -27,7 +27,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (isSubscribed) {
           const currentUser = sessionData.session?.user ?? null;
           setUser(currentUser);
-          // Установка завантаження в false після початкового отримання сесії
           setLoading(false);
         }
 
@@ -37,13 +36,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
             
             const currentUser = session?.user ?? null;
             
-            // Sync reading history when user signs in
+            // Sync reading progress when user signs in (new system)
             if (event === 'SIGNED_IN' && currentUser && !syncedRef.current) {
               try {
-                await HistoryService.syncGuestToUser();
+                const result = await syncLocalToSupabase(currentUser.id);
                 syncedRef.current = true;
+                if (process.env.NODE_ENV !== 'production') {
+                  console.log('[UserProvider] Progress synced:', result);
+                }
               } catch (error) {
-                console.error('[UserProvider] Error syncing history:', error);
+                console.error('[UserProvider] Error syncing progress:', error);
               }
             }
 
