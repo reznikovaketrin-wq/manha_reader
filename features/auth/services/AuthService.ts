@@ -327,20 +327,6 @@ class AuthService {
   // ===== UPDATE USERNAME =====
   async updateUsername(username: string): Promise<{ user: User | null; error: AuthError | null }> {
     try {
-      // Check availability first
-      const { available, error: availError } = await this.checkUsernameAvailable(username);
-      
-      if (availError) {
-        return { user: null, error: availError };
-      }
-
-      if (!available) {
-        return { 
-          user: null, 
-          error: createAuthError('Це ім\'я користувача вже зайняте', 400) 
-        };
-      }
-
       // Get current user
       const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
       
@@ -360,15 +346,11 @@ class AuthService {
         return { user: null, error: createAuthError(authError.message, authError.status) };
       }
 
-      // Update profile table
-      const { error: profileError } = await supabase
-        .from('profiles')
+      // Update public.users table only (profiles has RLS issues)
+      await supabase
+        .from('users')
         .update({ username })
         .eq('id', currentUser.id);
-
-      if (profileError) {
-        return { user: null, error: createAuthError(profileError.message) };
-      }
 
       logAuthEvent(AuthEvents.PROFILE_UPDATE, { userId: currentUser.id, field: 'username' });
 
