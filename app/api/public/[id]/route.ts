@@ -8,7 +8,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAnon } from '@/lib/supabase-server';
 
-export const dynamic = "force-dynamic";
+// ISR: автоматическая ребалідація кешу каждые 60 секунд
+export const revalidate = 60;
 
 export async function GET(
   request: NextRequest,

@@ -2,6 +2,9 @@ import { fetchManhwas } from '@/lib/api';
 import ContinueReading from '@/components/home/ContinueReading';
 import ManhwaFilterDisplay from '@/components/ManhwaFilterDisplay';
 
+// ISR: автоматическая ребалідація кешу каждые 60 секунд
+export const revalidate = 60;
+
 interface ManhwaDisplay {
   id: string;
   title: string;
