@@ -24,6 +24,7 @@ export const ReaderContent = memo(function ReaderContent({
   hasPrev,
   onLoadPrev,
   onLoadNext,
+  nextChapterIsVip,
 }: ReaderContentProps) {
   // Calculate page offsets for each chapter
   const chapterOffsets = useMemo(() => {
@@ -71,6 +72,8 @@ export const ReaderContent = memo(function ReaderContent({
           hasPrev={hasPrev}
           onLoadPrev={onLoadPrev}
           onLoadNext={onLoadNext}
+          // Show VIP indicator only on last chapter
+          nextChapterIsVip={index === chapters.length - 1 ? nextChapterIsVip : false}
         />
       ))}
     </div>

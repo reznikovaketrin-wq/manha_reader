@@ -28,6 +28,7 @@ export const ReaderChapter = memo(function ReaderChapter({
   hasPrev,
   onLoadPrev,
   onLoadNext,
+  nextChapterIsVip,
 }: ReaderChapterProps) {
   return (
     <div className="w-full">
@@ -104,6 +105,7 @@ export const ReaderChapter = memo(function ReaderChapter({
           hasPrev={hasPrev ?? false}
           onLoadPrev={onLoadPrev}
           onLoadNext={onLoadNext}
+          nextChapterIsVip={nextChapterIsVip}
         />
       )}
     </div>

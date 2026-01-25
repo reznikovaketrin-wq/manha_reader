@@ -13,6 +13,7 @@ interface ChapterEndNavigationProps {
   hasPrev: boolean;
   onLoadPrev?: () => void;
   onLoadNext?: () => void;
+  nextChapterIsVip?: boolean;
 }
 
 /**
@@ -28,6 +29,7 @@ export const ChapterEndNavigation = memo(function ChapterEndNavigation({
   hasPrev,
   onLoadPrev,
   onLoadNext,
+  nextChapterIsVip = false,
 }: ChapterEndNavigationProps) {
   const router = useRouter();
 
@@ -67,8 +69,8 @@ export const ChapterEndNavigation = memo(function ChapterEndNavigation({
 
         {/* Navigation buttons */}
         <div className="space-y-3">
-            {/* Next chapter */}
-          {nextChapterId && (
+            {/* Next chapter or VIP message */}
+          {nextChapterId && !nextChapterIsVip && (
             <button
               onClick={handleNext}
               className={`${buttonStyles.readButtonGradient} w-full relative z-50 mb-2 flex items-center justify-center gap-2`}
@@ -83,6 +85,25 @@ export const ChapterEndNavigation = memo(function ChapterEndNavigation({
                 <path d="M9 5l7 7-7 7" />
               </svg>
             </button>
+          )}
+
+          {/* VIP message */}
+          {nextChapterIsVip && (
+            <div className="w-full py-4 px-6 bg-purple-900/20 border-2 border-purple-500/30 rounded-lg">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-2xl">🔒</span>
+                <span className="text-lg font-semibold text-purple-300">VIP розділ</span>
+              </div>
+              <p className="text-sm text-gray-400 text-center mb-3">
+                Наступний розділ доступний тільки для VIP користувачів
+              </p>
+              <button
+                onClick={() => window.location.href = '/profile'}
+                className="w-full py-2 px-4 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg transition-colors"
+              >
+                ⭐ Отримати VIP
+              </button>
+            </div>
           )}
 
           {/* Previous chapter */}

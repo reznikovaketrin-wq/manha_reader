@@ -1,10 +1,12 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import type { Manhwa, ChapterData, UseReaderDataReturn } from '../types';
 import { supabase } from '@/lib/supabase-client';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface UseReaderDataConfig {
   manhwaId: string;
   initialChapterId: string;
+  user?: SupabaseUser | null;
 }
 
 /**
@@ -16,10 +18,12 @@ interface UseReaderDataConfig {
  * - Maintain ordered chapter buffer
  * - Preload next chapter
  * - Deduplicate requests
+ * - Skip VIP chapters for non-VIP users during preload
  */
 export function useReaderData({
   manhwaId,
   initialChapterId,
+  user,
 }: UseReaderDataConfig): UseReaderDataReturn {
   const [manhwa, setManhwa] = useState<Manhwa | null>(null);
   const [chapters, setChapters] = useState<ChapterData[]>([]);
@@ -29,6 +33,56 @@ export function useReaderData({
   // Track loading states to prevent duplicate requests
   const loadingChapters = useRef(new Set<string>());
   const loadedChapters = useRef(new Set<string>());
+
+  // Get user role for VIP access check
+  const getUserRole = useCallback(async (): Promise<string> => {
+    if (!user?.id) return 'user';
+    
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      return userData?.role || 'user';
+    } catch (e) {
+      return 'user';
+    }
+  }, [user]);
+
+  // Check if chapter is accessible for current user
+  const canAccessChapter = useCallback(async (chapterMeta: any): Promise<boolean> => {
+    // If no VIP restrictions, always accessible
+    if (!chapterMeta.vipOnly && !chapterMeta.vipEarlyDays) {
+      return true;
+    }
+
+    const userRole = await getUserRole();
+    
+    // VIP and admin always have access
+    if (userRole === 'vip' || userRole === 'admin') {
+      return true;
+    }
+
+    // VIP-only chapters blocked for regular users
+    if (chapterMeta.vipOnly) {
+      return false;
+    }
+
+    // Early access check
+    if (chapterMeta.vipEarlyDays > 0 && chapterMeta.publicAvailableAt) {
+      const now = new Date();
+      const availableDate = new Date(chapterMeta.publicAvailableAt);
+      
+      // If still in early access period, blocked for regular users
+      if (now < availableDate) {
+        return false;
+      }
+    }
+
+    return true;
+  }, [getUserRole]);
   
   // Get auth headers
   const getAuthHeaders = useCallback(async () => {
@@ -177,12 +231,19 @@ export function useReaderData({
     };
   }, [manhwa, lastLoadedChapter]);
 
-  // Preload next chapter
-  const preloadNext = useCallback(() => {
-    if (navigationMeta.nextChapterMeta) {
+  // Preload next chapter (only if user has access)
+  const preloadNext = useCallback(async () => {
+    if (!navigationMeta.nextChapterMeta) return;
+    
+    // Check if user can access the next chapter
+    const hasAccess = await canAccessChapter(navigationMeta.nextChapterMeta);
+    
+    if (hasAccess) {
       loadChapter(navigationMeta.nextChapterMeta.id);
+    } else {
+      console.log(`[ReaderData] Skipping preload of VIP chapter: ${navigationMeta.nextChapterMeta.id}`);
     }
-  }, [navigationMeta.nextChapterMeta, loadChapter]);
+  }, [navigationMeta.nextChapterMeta, loadChapter, canAccessChapter]);
 
   // Clear all chapters and load a single one (for non-infinite scroll mode)
   const clearAndLoadChapter = useCallback(

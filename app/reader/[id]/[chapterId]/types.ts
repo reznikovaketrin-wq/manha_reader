@@ -6,6 +6,9 @@ export interface Chapter {
   title: string;
   pagesCount: number;
   publishedAt: string;
+  vipOnly?: boolean;
+  vipEarlyDays?: number;
+  publicAvailableAt?: string | null;
 }
 
 export interface Manhwa {
@@ -125,6 +128,7 @@ export interface ReaderChapterProps {
   hasPrev?: boolean;
   onLoadPrev?: () => void;
   onLoadNext?: () => void;
+  nextChapterIsVip?: boolean;
 }
 
 export interface ReaderContentProps {
@@ -138,6 +142,7 @@ export interface ReaderContentProps {
   hasPrev: boolean;
   onLoadPrev?: () => void;
   onLoadNext?: () => void;
+  nextChapterIsVip?: boolean;
 }
 
 export interface ReaderHeaderProps {

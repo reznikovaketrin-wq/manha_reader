@@ -57,7 +57,11 @@ export default function ReaderPage() {
   }, [user]);
 
   // === Data Layer ===
-  const readerData = useReaderData({ manhwaId, initialChapterId: chapterId });
+  const readerData = useReaderData({ 
+    manhwaId, 
+    initialChapterId: chapterId,
+    user 
+  });
   const { manhwa, chapters, isLoading, error, loadChapter, preloadNext } = readerData;
 
   // Keep a ref to the latest chapters array so async callbacks can read
@@ -86,6 +90,25 @@ export default function ReaderPage() {
     infiniteScroll: ui.infiniteScroll,
     onShouldPreloadNext: preloadNext,
   });
+
+  // === Check if next chapter is VIP-only ===
+  const nextChapterIsVip = useMemo(() => {
+    if (!readerData.nextChapterMeta) return false;
+    
+    const nextMeta = readerData.nextChapterMeta;
+    
+    // VIP-only chapters
+    if (nextMeta.vipOnly) return true;
+    
+    // Early access check
+    if (nextMeta.vipEarlyDays && nextMeta.vipEarlyDays > 0 && nextMeta.publicAvailableAt) {
+      const now = new Date();
+      const availableDate = new Date(nextMeta.publicAvailableAt);
+      return now < availableDate;
+    }
+    
+    return false;
+  }, [readerData.nextChapterMeta]);
 
   // === Footer Display: Show current chapter progress ===
   const footerData = useMemo(() => {
@@ -615,6 +638,7 @@ export default function ReaderPage() {
           hasPrev={readerData.hasPrev}
           onLoadPrev={handlePrevChapter}
           onLoadNext={handleNextChapter}
+          nextChapterIsVip={nextChapterIsVip}
         />
       </ReaderLayout>
 
