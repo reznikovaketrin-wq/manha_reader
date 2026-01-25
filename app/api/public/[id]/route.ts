@@ -120,7 +120,8 @@ export async function GET(
     return NextResponse.json(response, {
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        // Короткий кеш для швидкого оновлення контенту
+        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30',
       },
     });
   } catch (error) {

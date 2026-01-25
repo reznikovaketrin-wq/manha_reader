@@ -142,7 +142,6 @@ class AuthService {
           session: null,
           error: createAuthError(errorMessage, error.status)
         };
-        };
       }
 
       logAuthEvent(AuthEvents.SIGN_UP_SUCCESS, { userId: data.user?.id });

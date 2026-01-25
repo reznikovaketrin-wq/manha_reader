@@ -542,18 +542,43 @@ export default function ReaderPage() {
 
   // === Error State ===
   if (error || !manhwa) {
+    const isVipError = error?.message?.includes('VIP користувачів') || error?.message?.includes('ранній доступ');
+    
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center gap-4 text-white">
-        <div className="text-center">
-          <p className="text-red-500 text-lg mb-2">
-            ❌ {error?.message || 'Манхву не знайдено'}
+      <div className="fixed inset-0 bg-black flex flex-col items-center justify-center gap-4 text-white p-6">
+        <div className="text-center max-w-md">
+          {isVipError && (
+            <div className="text-6xl mb-4">🔒</div>
+          )}
+          <p className={`text-lg mb-4 ${isVipError ? 'text-yellow-400' : 'text-red-500'}`}>
+            {isVipError ? '⭐' : '❌'} {error?.message || 'Манхву не знайдено'}
           </p>
-          <Link 
-            href="/" 
-            className="text-blue-500 hover:text-blue-400 transition-colors"
-          >
-            ← На головну
-          </Link>
+          {isVipError && (
+            <div className="bg-purple-900/30 border border-purple-500/30 rounded-lg p-4 mb-4">
+              <p className="text-sm text-purple-300 mb-2">
+                ⭐ Переваги VIP підписки:
+              </p>
+              <ul className="text-xs text-gray-400 text-left list-disc list-inside">
+                <li>Ранній доступ до нових розділів</li>
+                <li>Ексклюзивний VIP контент</li>
+                <li>Підтримка розвитку сайту</li>
+              </ul>
+            </div>
+          )}
+          <div className="flex gap-3 justify-center">
+            <Link 
+              href={manhwa ? `/manhwa/${manhwa.id}` : '/'}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+            >
+              ← Назад до манхви
+            </Link>
+            <Link 
+              href="/" 
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors"
+            >
+              На головну
+            </Link>
+          </div>
         </div>
       </div>
     );

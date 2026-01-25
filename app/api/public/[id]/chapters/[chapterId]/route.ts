@@ -30,7 +30,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseAnon } from '@/lib/supabase-server';
+import { getSupabaseAnon, getSupabaseWithToken } from '@/lib/supabase-server';
 
 export async function GET(
   request: NextRequest,
@@ -57,6 +57,81 @@ export async function GET(
     }
 
     console.log(`✅ Розділ найдена: ${chapter.title}`);
+    
+    // 🔒 Проверка VIP доступа
+    let userRole = 'user'; // По умолчанию обычный пользователь
+    let userId = 'anonymous';
+    
+    // Попытка получить роль авторизованного пользователя
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const supabaseWithAuth = getSupabaseWithToken(token);
+        const { data: authData } = await supabaseWithAuth.auth.getUser();
+        
+        if (authData.user) {
+          userId = authData.user.id;
+          const { data: userData } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', authData.user.id)
+            .single();
+          
+          if (userData?.role) {
+            userRole = userData.role;
+          }
+        }
+      } catch (e) {
+        console.log('⚠️ Failed to get user role, treating as regular user');
+      }
+    }
+    
+    console.log(`👤 Access check for chapter ${chapterId}:`, {
+      userId,
+      userRole,
+      chapterVipOnly: chapter.vip_only,
+      chapterVipEarlyDays: chapter.vip_early_days,
+      chapterPublicAvailableAt: chapter.public_available_at,
+    });
+    
+    // Проверка VIP Only контента
+    if (chapter.vip_only && userRole !== 'vip' && userRole !== 'admin') {
+      console.log(`🔒 Access denied: VIP-only chapter for ${userRole} user`);
+      return NextResponse.json(
+        { 
+          error: 'VIP_ONLY',
+          message: 'Цей розділ доступний тільки для VIP користувачів'
+        }, 
+        { status: 403 }
+      );
+    }
+    
+    // Проверка раннего доступа для VIP
+    if (chapter.vip_early_days > 0 && chapter.public_available_at) {
+      const now = new Date();
+      const availableDate = new Date(chapter.public_available_at);
+      
+      console.log(`⏰ Early access check:`, {
+        now: now.toISOString(),
+        availableDate: availableDate.toISOString(),
+        userRole,
+        isBeforeAvailable: now < availableDate,
+      });
+      
+      // Обычные пользователи должны ждать до publicAvailableAt
+      if (userRole !== 'vip' && userRole !== 'admin' && now < availableDate) {
+        console.log(`🔒 Access denied: Early access chapter for ${userRole} user`);
+        return NextResponse.json(
+          { 
+            error: 'EARLY_ACCESS',
+            message: 'Цей розділ буде доступний для всіх користувачів пізніше',
+            availableAt: availableDate.toISOString()
+          }, 
+          { status: 403 }
+        );
+      }
+    }
 
     // Получить сторінки
     const { data: pages, error: pagesError } = await supabase

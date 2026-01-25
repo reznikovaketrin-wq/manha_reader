@@ -46,7 +46,7 @@ const ChaptersList = memo(function ChaptersList({
   // Проверка доступа к главе
   const checkChapterAccess = (chapter: Chapter): { hasAccess: boolean; reason?: string; availableDate?: Date } => {
     // DEBUG: Проверяем роль пользователя
-    const resolvedRole = profile?.role ?? (user as any)?.role;
+    const resolvedRole = profile?.role ?? (user as any)?.role ?? 'user';
     if (process.env.NODE_ENV !== 'production') {
       console.log('🔐 Access check:', {
         chapterNumber: chapter.chapterNumber,
@@ -55,6 +55,7 @@ const ChaptersList = memo(function ChaptersList({
         userEmail: user?.email,
         vipOnly: chapter.vipOnly,
         vipEarlyDays: chapter.vipEarlyDays,
+        publicAvailableAt: chapter.publicAvailableAt,
       });
     }
 
@@ -68,7 +69,7 @@ const ChaptersList = memo(function ChaptersList({
 
     // VIP Only - только для VIP и админов
     if (chapter.vipOnly) {
-      if (user?.role === 'vip' || user?.role === 'admin') {
+      if (resolvedRole === 'vip' || resolvedRole === 'admin') {
         return { hasAccess: true };
       }
       return { 
@@ -82,8 +83,19 @@ const ChaptersList = memo(function ChaptersList({
       const now = new Date();
       const availableDate = new Date(chapter.publicAvailableAt);
       
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('⏰ Early access check:', {
+          now: now.toISOString(),
+          availableDate: availableDate.toISOString(),
+          nowTime: now.getTime(),
+          availableTime: availableDate.getTime(),
+          isBeforeAvailable: now < availableDate,
+          userRole: resolvedRole,
+        });
+      }
+      
       // VIP имеет доступ всегда
-      if (user?.role === 'vip' || user?.role === 'admin') {
+      if (resolvedRole === 'vip' || resolvedRole === 'admin') {
         return { hasAccess: true };
       }
       
@@ -322,7 +334,7 @@ const ChaptersList = memo(function ChaptersList({
               <ul style={{ color: '#9A9A9A', fontSize: '13px', paddingLeft: '20px', margin: 0 }}>
                 <li>Ранній доступ до нових розділів</li>
                 <li>Ексклюзивний VIP контент</li>
-                <li>Без реклами</li>
+                <li>Підтримка розвитку сайту</li>
               </ul>
             </div>
 

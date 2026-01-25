@@ -8,7 +8,7 @@
 
 'use server';
 
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, revalidatePath } from 'next/cache';
 
 /**
  * Инвалидировать кеш после изменения манхвы
@@ -21,6 +21,11 @@ export async function invalidateManhwaCache(manhwaId: string) {
     revalidateTag('schedule-data');
     revalidateTag(`manhwa-${manhwaId}`);
     revalidateTag('chapters-' + manhwaId);
+    
+    // Инвалидировать пути
+    revalidatePath(`/api/public/${manhwaId}`);
+    revalidatePath(`/manhwa/${manhwaId}`);
+    revalidatePath('/');
     
     console.log(`✅ [Server Action] Cache invalidated for ${manhwaId}`);
     return { success: true };

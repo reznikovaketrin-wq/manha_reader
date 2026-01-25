@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import type { Manhwa, ChapterData, UseReaderDataReturn } from '../types';
+import { supabase } from '@/lib/supabase-client';
 
 interface UseReaderDataConfig {
   manhwaId: string;
@@ -28,6 +29,19 @@ export function useReaderData({
   // Track loading states to prevent duplicate requests
   const loadingChapters = useRef(new Set<string>());
   const loadedChapters = useRef(new Set<string>());
+  
+  // Get auth headers
+  const getAuthHeaders = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.access_token) {
+      return {
+        'Authorization': `Bearer ${session.access_token}`
+      };
+    }
+    
+    return {};
+  }, []);
 
   // Parse page URLs from API response
   const parsePages = useCallback((pages: unknown[]): string[] => {
@@ -39,7 +53,8 @@ export function useReaderData({
   // Load manhwa metadata
   const loadManhwa = useCallback(async (): Promise<Manhwa | null> => {
     try {
-      const response = await fetch(`/api/public/${manhwaId}`);
+      const headers = await getAuthHeaders();
+      const response = await fetch(`/api/public/${manhwaId}`, { headers });
       if (!response.ok) {
         throw new Error(`Failed to load manhwa: ${response.status}`);
       }
@@ -51,7 +66,7 @@ export function useReaderData({
       setError(error);
       return null;
     }
-  }, [manhwaId]);
+  }, [manhwaId, getAuthHeaders]);
 
   // Load single chapter (idempotent)
   const loadChapter = useCallback(
@@ -67,9 +82,22 @@ export function useReaderData({
       loadingChapters.current.add(chapterId);
 
       try {
-        const response = await fetch(`/api/public/${manhwaId}/chapters/${chapterId}`);
+        const headers = await getAuthHeaders();
+        const response = await fetch(`/api/public/${manhwaId}/chapters/${chapterId}`, { headers });
 
         if (!response.ok) {
+          // Обработка ошибок VIP доступа
+          if (response.status === 403) {
+            const errorData = await response.json();
+            if (errorData.error === 'VIP_ONLY') {
+              throw new Error('Цей розділ доступний тільки для VIP користувачів. Оновіть свою підписку для доступу до ексклюзивного контенту.');
+            } else if (errorData.error === 'EARLY_ACCESS') {
+              const availableDate = new Date(errorData.availableAt);
+              const dateStr = availableDate.toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' });
+              const timeStr = availableDate.toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' });
+              throw new Error(`Цей розділ буде доступний для всіх користувачів ${dateStr} о ${timeStr}. VIP користувачі мають ранній доступ.`);
+            }
+          }
           throw new Error(`Failed to load chapter: ${response.status}`);
         }
 
@@ -105,7 +133,7 @@ export function useReaderData({
         loadingChapters.current.delete(chapterId);
       }
     },
-    [manhwaId, parsePages]
+    [manhwaId, parsePages, getAuthHeaders]
   );
 
   // Get current chapter index in manhwa.chapters
