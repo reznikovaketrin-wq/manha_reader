@@ -127,8 +127,11 @@ export const useLogin = () => {
         isValid: false,
       });
     } catch (err: any) {
-      setError(err.message || 'Помилка входу');
+      const errorMessage = err.message || 'Помилка входу';
+      setError(errorMessage);
       setFormState(prev => ({ ...prev, isSubmitting: false }));
+      // Re-throw so LoginForm can handle/display the error locally
+      throw err;
     }
   }, [formState.values, validateField, signIn]);
 

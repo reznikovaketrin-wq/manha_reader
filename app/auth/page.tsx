@@ -31,12 +31,10 @@ function AuthPageContent() {
       <div className="flex items-center justify-center min-h-screen px-4 py-8">
         {mode === 'login' ? (
           <LoginForm 
-            key="login-form"
             onSwitchToRegister={handleSwitchToRegister} 
           />
         ) : (
           <RegisterForm 
-            key="register-form"
             onSwitchToLogin={handleSwitchToLogin} 
           />
         )}

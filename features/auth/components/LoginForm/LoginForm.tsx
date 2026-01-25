@@ -19,7 +19,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 }) => {
   const {
     formState,
-    error,
     showPassword,
     handleChange,
     handleBlur,
@@ -27,11 +26,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     togglePasswordVisibility,
   } = useLogin();
 
+  // Локальный state для ошибки - НЕ теряется при unmount/remount
+  const [localError, setLocalError] = React.useState<string | null>(null);
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleSubmit(e);
-    if (onSuccess) {
-      onSuccess();
+    setLocalError(null); // Очищаем предыдущую ошибку
+    
+    try {
+      await handleSubmit(e);
+      // Вызываем onSuccess только при успешном логине (без ошибок)
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (err: any) {
+      // Сохраняем ошибку локально
+      const errorMessage = err?.message || 'Помилка входу';
+      setLocalError(errorMessage);
     }
   };
 
@@ -49,7 +60,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             id="email"
             type="email"
             value={formState.values.email}
-            onChange={(e) => handleChange('email', e.target.value)}
+            onChange={(e) => {
+              handleChange('email', e.target.value);
+              if (localError) setLocalError(null); // Очищаем ошибку при вводе
+            }}
             onBlur={() => handleBlur('email')}
             className={`${styles.input} ${
               formState.touched.email && formState.errors.email ? styles.inputError : ''
@@ -72,7 +86,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={formState.values.password}
-              onChange={(e) => handleChange('password', e.target.value)}
+              onChange={(e) => {
+                handleChange('password', e.target.value);
+                if (localError) setLocalError(null); // Очищаем ошибку при вводе
+              }}
               onBlur={() => handleBlur('password')}
               className={`${styles.input} ${
                 formState.touched.password && formState.errors.password ? styles.inputError : ''
@@ -112,11 +129,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
 
         {/* Error Message */}
-        {error && (
+        {localError && (
           <div className={styles.errorBox}>
-            {error}
+            {localError}
           </div>
         )}
+        {/* debug info removed */}
 
         {/* Submit Button */}
         <button
