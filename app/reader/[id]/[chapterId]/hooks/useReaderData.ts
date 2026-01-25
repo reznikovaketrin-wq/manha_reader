@@ -54,7 +54,8 @@ export function useReaderData({
   const loadManhwa = useCallback(async (): Promise<Manhwa | null> => {
     try {
       const headers = await getAuthHeaders();
-      const response = await fetch(`/api/public/${manhwaId}`, { headers });
+      const formattedHeaders = Object.fromEntries(Object.entries(headers).filter(([key, value]) => value !== undefined));
+      const response = await fetch(`/api/public/${manhwaId}`, { headers: new Headers(formattedHeaders) });
       if (!response.ok) {
         throw new Error(`Failed to load manhwa: ${response.status}`);
       }
@@ -83,7 +84,8 @@ export function useReaderData({
 
       try {
         const headers = await getAuthHeaders();
-        const response = await fetch(`/api/public/${manhwaId}/chapters/${chapterId}`, { headers });
+        const formattedHeaders = Object.fromEntries(Object.entries(headers).filter(([key, value]) => value !== undefined));
+        const response = await fetch(`/api/public/${manhwaId}/chapters/${chapterId}`, { headers: new Headers(formattedHeaders) });
 
         if (!response.ok) {
           // Обработка ошибок VIP доступа
