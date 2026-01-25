@@ -292,6 +292,7 @@ function ProfileContent() {
                         onChange={(e) => setNewUsername(e.target.value)}
                         placeholder="Нове ім'я користувача"
                         className="px-4 bg-black/60 border-2 border-[rgba(255,255,255,0.1)] rounded-lg text-white focus:border-purple-500 focus:outline-none w-full md:max-w-md h-12"
+                        style={{ textTransform: 'none' }}
                         autoFocus
                       />
                       <div className="flex items-center gap-3">

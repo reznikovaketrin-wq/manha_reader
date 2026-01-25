@@ -49,10 +49,26 @@ class AuthService {
 
       if (error) {
         logAuthEvent(AuthEvents.SIGN_IN_ERROR, { error: error.message });
+        
+        // Обработка разных типов ошибок с понятными сообщениями
+        let errorMessage = error.message;
+        
+        if (error.message === 'Email not confirmed') {
+          errorMessage = 'Підтвердіть свою електронну пошту. Перевірте папку "Спам" якщо листа немає у вхідних.';
+        } else if (error.message === 'Invalid login credentials' || error.message.includes('credentials')) {
+          errorMessage = 'Невірна електронна пошта або пароль. Перевірте правильність введених даних.';
+        } else if (error.message.includes('Too many requests')) {
+          errorMessage = 'Забагато спроб входу. Спробуйте пізніше.';
+        } else if (error.message.includes('User not found')) {
+          errorMessage = 'Користувача з такою електронною поштою не знайдено. Перевірте правильність email або зареєструйтеся.';
+        } else if (error.message.includes('Email rate limit exceeded')) {
+          errorMessage = 'Перевищено ліміт надсилання листів. Спробуйте пізніше.';
+        }
+        
         return {
           user: null,
           session: null,
-          error: createAuthError(error.message, error.status)
+          error: createAuthError(errorMessage, error.status)
         };
       }
 
@@ -105,15 +121,27 @@ class AuthService {
           });
         }
         logAuthEvent(AuthEvents.SIGN_UP_ERROR, { error: error.message });
+        
+        // Обработка ошибок регистрации
+        let errorMessage = error.message;
+        
+        if (error.message.includes('Database error')) {
+          errorMessage = 'Помилка створення акаунта. Зверніться до служби підтримки.';
+        } else if (error.message.includes('User already registered')) {
+          errorMessage = 'Користувач з такою електронною поштою вже існує. Спробуйте увійти або відновити пароль.';
+        } else if (error.message.includes('Password should be at least')) {
+          errorMessage = 'Пароль повинен містити мінімум 6 символів.';
+        } else if (error.message.includes('Signup is disabled')) {
+          errorMessage = 'Реєстрація тимчасово відключена. Спробуйте пізніше.';
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = 'Невірний формат електронної пошти.';
+        }
+        
         return {
           user: null,
           session: null,
-          error: createAuthError(
-            error.message.includes('Database error') 
-              ? 'Unable to create account. Please contact support.' 
-              : error.message,
-            error.status
-          )
+          error: createAuthError(errorMessage, error.status)
+        };
         };
       }
 
@@ -162,7 +190,19 @@ class AuthService {
 
       if (error) {
         logAuthEvent(AuthEvents.PASSWORD_RESET_ERROR, { error: error.message });
-        return { error: createAuthError(error.message, error.status) };
+        
+        // Обработка ошибок восстановления пароля
+        let errorMessage = error.message;
+        
+        if (error.message.includes('For security purposes')) {
+          errorMessage = 'Для безпеки, лист відправляється тільки зареєстрованим користувачам.';
+        } else if (error.message.includes('Email rate limit exceeded')) {
+          errorMessage = 'Забагато запитів на відновлення. Спробуйте через декілька хвилин.';
+        } else if (error.message.includes('Invalid email')) {
+          errorMessage = 'Невірний формат електронної пошти.';
+        }
+        
+        return { error: createAuthError(errorMessage, error.status) };
       }
 
       logAuthEvent(AuthEvents.PASSWORD_RESET_REQUEST, { email });
@@ -346,11 +386,15 @@ class AuthService {
         return { user: null, error: createAuthError(authError.message, authError.status) };
       }
 
-      // Update public.users table only (profiles has RLS issues)
-      await supabase
-        .from('users')
-        .update({ username })
-        .eq('id', currentUser.id);
+      // Try to update users table (ignore errors if RLS blocks)
+      try {
+        await supabase
+          .from('users')
+          .update({ username })
+          .eq('id', currentUser.id);
+      } catch (dbError) {
+        console.warn('Failed to update users table:', dbError);
+      }
 
       logAuthEvent(AuthEvents.PROFILE_UPDATE, { userId: currentUser.id, field: 'username' });
 
