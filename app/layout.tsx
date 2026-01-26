@@ -5,6 +5,9 @@ import { QueryProvider } from '@/app/providers/QueryProvider';
 import { AuthProvider } from '@/features/auth';
 import './globals.css';
 
+// Force dynamic rendering for all pages (auth app with cookies)
+export const dynamic = 'force-dynamic';
+
 const manrope = Manrope({
   subsets: ['latin', 'cyrillic'],
   weight: ['400', '500', '800'],

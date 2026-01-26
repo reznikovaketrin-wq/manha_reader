@@ -1,14 +1,14 @@
 // app/auth/reset-password/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useResetPassword, useAuth } from '@/features/auth';
 import { supabase } from '@/lib/supabase-client';
 import Link from 'next/link';
 import styles from '../auth.module.css';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { signOut, user } = useAuth();
@@ -354,5 +354,13 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Завантаження...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
