@@ -1,10 +1,4 @@
 {
-  "functions": {
-    "api/admin/chapters/*/upload-pages/route.ts": {
-      "maxDuration": 300,
-      "memory": 3008
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
