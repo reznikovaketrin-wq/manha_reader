@@ -32,7 +32,7 @@ export function VipBadge({
   };
 
   // Админы и VIP видят особые бейджи
-  const showEarlyAccessBadge = isEarlyAccess() && userRole === 'vip';
+  const showEarlyAccessBadge = isEarlyAccess() && (userRole === 'vip' || userRole === 'admin');
   const showVipOnlyBadge = vipOnly;
   const showLockedBadge = vipOnly && userRole === 'user';
 
@@ -52,7 +52,7 @@ export function VipBadge({
         </span>
       )}
 
-      {/* Бейдж раннего доступа для VIP */}
+      {/* Бейдж раннего доступа для VIP и админов */}
       {showEarlyAccessBadge && (
         <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full text-xs font-semibold animate-pulse">
           ⏰ Ранній доступ

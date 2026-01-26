@@ -2,6 +2,15 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSupabaseAdmin, getSupabaseWithToken } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 
+// 📦 Конфигурация Route Segment для больших файлов
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 минут
+
+// В Next.js App Router конфигурация bodyParser НЕ работает
+// Вместо этого используем route segment config для увеличения лимита
+// Лимит настраивается в vercel.json или через переменные окружения
+
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '';
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '';
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '';
@@ -54,12 +63,13 @@ export async function POST(request: NextRequest, { params }: any) {
     const files = formData.getAll('pages') as File[];
     const manhwaId = formData.get('manhwaId') as string;
     const chapterNumber = formData.get('chapterNumber') as string;
+    const pageNumberStr = formData.get('pageNumber') as string | null;
 
     if (!files || files.length === 0) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    console.log(`📤 Uploading ${files.length} pages to R2...`);
+    console.log(`📤 Uploading ${files.length} page(s) to R2...`);
 
     const supabase = getSupabaseAdmin();
 
@@ -72,15 +82,19 @@ export async function POST(request: NextRequest, { params }: any) {
 
     if (chapterError || !chapter) throw new Error('Chapter not found');
 
-    // Удалить старые страницы
-    await supabase.from('chapter_pages').delete().eq('chapter_id', chapterId);
+    // Если это первый файл (pageNumber = 1) или не указан номер страницы, удаляем старые страницы
+    const isFirstBatch = !pageNumberStr || parseInt(pageNumberStr) === 1;
+    if (isFirstBatch) {
+      console.log('🗑️ Clearing old pages...');
+      await supabase.from('chapter_pages').delete().eq('chapter_id', chapterId);
+    }
 
     const uploadedPages: any[] = [];
 
     // Загрузить каждый файл на R2
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const pageNumber = i + 1;
+      const pageNumber = pageNumberStr ? parseInt(pageNumberStr) + i : i + 1;
       const ext = file.type.split('/')[1] || 'jpg';
       const fileName = `page_${pageNumber}.${ext}`;
       const filePath = `${manhwaId}/chapters/${chapterNumber}/${fileName}`;
@@ -116,17 +130,25 @@ export async function POST(request: NextRequest, { params }: any) {
       console.log(`✅ Page ${pageNumber} uploaded`);
     }
 
-    // Обновить количество страниц в главе
+    // Обновить количество страниц в главе (считаем все страницы в БД)
+    const { count } = await supabase
+      .from('chapter_pages')
+      .select('*', { count: 'exact', head: true })
+      .eq('chapter_id', chapterId);
+
+    const totalPages = count || files.length;
+    
     await supabase
       .from('chapters')
-      .update({ pages_count: files.length })
+      .update({ pages_count: totalPages })
       .eq('id', chapterId);
 
-    console.log(`✅ All pages uploaded: ${files.length}`);
+    console.log(`✅ Batch uploaded: ${files.length} file(s). Total pages: ${totalPages}`);
     return NextResponse.json({
       success: true,
       pages: uploadedPages,
-      totalPages: files.length,
+      uploadedCount: files.length,
+      totalPages,
     });
   } catch (error) {
     console.error('❌ [API] Upload error:', error);

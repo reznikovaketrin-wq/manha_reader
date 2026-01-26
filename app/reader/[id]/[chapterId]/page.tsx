@@ -18,6 +18,7 @@ import {
 import { trackManhwaView, upsertReadChapter } from '@/lib/supabase-client';
 import { getOrCreateClientId } from '@/lib/client-id';
 import { useUser } from '@/app/providers/UserProvider';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { ChapterCommentsComponent } from '@/components/chapter-comments';
 
 // Components
@@ -51,6 +52,7 @@ export default function ReaderPage() {
 
   // === User Context ===
   const { user } = useUser();
+  const { profile } = useUserProfile();
   const userRef = useRef(user);
   useEffect(() => {
     userRef.current = user;
@@ -96,6 +98,12 @@ export default function ReaderPage() {
     if (!readerData.nextChapterMeta) return false;
     
     const nextMeta = readerData.nextChapterMeta;
+    const userRole = profile?.role || 'user';
+    
+    // Админы и VIP всегда имеют доступ
+    if (userRole === 'admin' || userRole === 'vip') {
+      return false;
+    }
     
     // VIP-only chapters
     if (nextMeta.vipOnly) return true;
@@ -108,7 +116,7 @@ export default function ReaderPage() {
     }
     
     return false;
-  }, [readerData.nextChapterMeta]);
+  }, [readerData.nextChapterMeta, profile?.role]);
 
   // === Footer Display: Show current chapter progress ===
   const footerData = useMemo(() => {

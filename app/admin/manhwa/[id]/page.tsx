@@ -357,28 +357,59 @@ export default function AdminManhwaDetailPage() {
       return;
     }
 
+    // Проверка размера файлов
+    const totalSize = uploadFiles.reduce((sum, file) => sum + file.size, 0);
+    const totalSizeMB = totalSize / (1024 * 1024);
+    
+    if (totalSizeMB > 100) {
+      setError('Загальний розмір файлів перевищує 100 МБ. Будь ласка, завантажте файли частинами.');
+      return;
+    }
+
     try {
       setUploading(true);
       setError(null);
 
       if (!token) throw new Error('No token');
 
-      const formData = new FormData();
-      uploadFiles.forEach((file) => {
-        formData.append('pages', file);
-      });
-      formData.append('manhwaId', id);
-      formData.append('chapterNumber', activeChapter.chapter_id);
+      console.log(`📤 Початок завантаження ${uploadFiles.length} файлів...`);
 
-      const response = await fetch(`/api/admin/chapters/${activeChapter.id}/upload-pages`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      // 🔥 НОВИЙ ПІДХІД: Завантаження файлів по одному для уникнення ліміту 4.5MB
+      const uploadPromises = [];
+      const batchSize = 5; // Загружаем по 5 файлов параллельно
+      
+      for (let i = 0; i < uploadFiles.length; i += batchSize) {
+        const batch = uploadFiles.slice(i, i + batchSize);
+        
+        const batchPromises = batch.map(async (file, index) => {
+          const formData = new FormData();
+          formData.append('pages', file);
+          formData.append('manhwaId', id);
+          formData.append('chapterNumber', activeChapter.chapter_id);
+          formData.append('pageNumber', String(i + index + 1)); // Номер страницы
 
-      if (!response.ok) throw new Error('Upload failed');
+          const response = await fetch(`/api/admin/chapters/${activeChapter.id}/upload-pages`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            if (response.status === 413) {
+              throw new Error(`Файл "${file.name}" занадто великий (${(file.size / (1024 * 1024)).toFixed(2)} МБ). Максимум 5 МБ на файл.`);
+            }
+            throw new Error(errorData.error || `Failed to upload ${file.name}`);
+          }
+
+          return response.json();
+        });
+
+        await Promise.all(batchPromises);
+        console.log(`✅ Завантажено ${Math.min(i + batchSize, uploadFiles.length)} з ${uploadFiles.length} файлів`);
+      }
 
       setChapters((prev) =>
         prev.map((ch) =>
@@ -389,7 +420,7 @@ export default function AdminManhwaDetailPage() {
       setUploadFiles([]);
       setModal('none');
       await invalidateManhwaCache(id);
-      console.log('✅ Pages uploaded');
+      console.log('✅ Всі файли завантажено успішно');
     } catch (err) {
       console.error('❌ Error:', err);
       setError(err instanceof Error ? err.message : 'Помилка');
@@ -1101,6 +1132,11 @@ export default function AdminManhwaDetailPage() {
                   <div className="text-3xl mb-2">📁</div>
                   <p className="text-text-muted text-sm mb-1">Виберіть зображення</p>
                   <p className="text-text-muted text-xs">{uploadFiles.length} файлів обрано</p>
+                  {uploadFiles.length > 0 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Розмір: {(uploadFiles.reduce((sum, file) => sum + file.size, 0) / (1024 * 1024)).toFixed(2)} МБ
+                    </p>
+                  )}
                 </label>
               </div>
               <div className="flex gap-2">

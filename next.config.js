@@ -18,6 +18,13 @@ const nextConfig = {
     }
     return config;
   },
+
+  // 📦 Увеличиваем лимит размера body для загрузки файлов (100MB)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
 }
 
 module.exports = nextConfig

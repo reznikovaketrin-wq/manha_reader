@@ -79,6 +79,6 @@ export function useUserProfile() {
     profile, 
     loading, 
     isAdmin: profile?.role === 'admin',
-    isVip: profile?.role === 'vip'
+    isVip: profile?.role === 'vip' || profile?.role === 'admin'  // Админы также имеют VIP доступ
   };
 }

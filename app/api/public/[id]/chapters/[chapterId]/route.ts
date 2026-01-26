@@ -98,8 +98,11 @@ export async function GET(
       chapterPublicAvailableAt: chapter.public_available_at,
     });
     
+    // Админ и VIP имеют полный доступ ко всем главам
+    const hasFullAccess = userRole === 'vip' || userRole === 'admin';
+    
     // Проверка VIP Only контента
-    if (chapter.vip_only && userRole !== 'vip' && userRole !== 'admin') {
+    if (chapter.vip_only && !hasFullAccess) {
       console.log(`🔒 Access denied: VIP-only chapter for ${userRole} user`);
       return NextResponse.json(
         { 
@@ -123,7 +126,8 @@ export async function GET(
       });
       
       // Обычные пользователи должны ждать до publicAvailableAt
-      if (userRole !== 'vip' && userRole !== 'admin' && now < availableDate) {
+      // VIP и админ имеют ранний доступ
+      if (!hasFullAccess && now < availableDate) {
         console.log(`🔒 Access denied: Early access chapter for ${userRole} user`);
         return NextResponse.json(
           { 
