@@ -357,73 +357,112 @@ export default function AdminManhwaDetailPage() {
       return;
     }
 
-    // Проверка размера файлов
-    const totalSize = uploadFiles.reduce((sum, file) => sum + file.size, 0);
-    const totalSizeMB = totalSize / (1024 * 1024);
-    
-    if (totalSizeMB > 100) {
-      setError('Загальний розмір файлів перевищує 100 МБ. Будь ласка, завантажте файли частинами.');
-      return;
-    }
-
     try {
       setUploading(true);
       setError(null);
 
       if (!token) throw new Error('No token');
 
-      console.log(`📤 Початок завантаження ${uploadFiles.length} файлів...`);
+      console.log(`📤 Початок завантаження ${uploadFiles.length} файлів (presigned URLs)...`);
 
-      // 🔥 НОВИЙ ПІДХІД: Завантаження файлів по одному для уникнення ліміту 4.5MB
-      const uploadPromises = [];
-      const batchSize = 5; // Загружаем по 5 файлов параллельно
-      
+      // 1️⃣ Генерація presigned URLs для всіх файлів
+      const filesInfo = uploadFiles.map((file, index) => ({
+        pageNumber: index + 1,
+        fileName: file.name,
+        contentType: file.type || 'image/jpeg',
+      }));
+
+      const presignedResponse = await fetch(`/api/admin/chapters/${activeChapter.id}/generate-presigned-urls`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          manhwaId: id,
+          chapterNumber: activeChapter.chapter_id,
+          files: filesInfo,
+        }),
+      });
+
+      if (!presignedResponse.ok) {
+        const errorData = await presignedResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to generate presigned URLs');
+      }
+
+      const { presignedUrls } = await presignedResponse.json();
+      console.log(`✅ Отримано ${presignedUrls.length} presigned URLs`);
+
+      // 2️⃣ Прямо завантажити кожен файл в R2 через presigned URL
+      const uploadedPages: Array<{ pageNumber: number; filePath: string }> = [];
+      const batchSize = 5; // Завантажуємо по 5 файлів паралельно
+
       for (let i = 0; i < uploadFiles.length; i += batchSize) {
         const batch = uploadFiles.slice(i, i + batchSize);
-        
-        const batchPromises = batch.map(async (file, index) => {
-          const formData = new FormData();
-          formData.append('pages', file);
-          formData.append('manhwaId', id);
-          formData.append('chapterNumber', activeChapter.chapter_id);
-          formData.append('pageNumber', String(i + index + 1)); // Номер страницы
 
-          const response = await fetch(`/api/admin/chapters/${activeChapter.id}/upload-pages`, {
-            method: 'POST',
+        const batchPromises = batch.map(async (file, batchIndex) => {
+          const index = i + batchIndex;
+          const presignedData = presignedUrls[index];
+
+          // PUT файл напряму в R2
+          const uploadResponse = await fetch(presignedData.uploadUrl, {
+            method: 'PUT',
+            body: file,
             headers: {
-              Authorization: `Bearer ${token}`,
+              'Content-Type': file.type || 'image/jpeg',
             },
-            body: formData,
           });
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            if (response.status === 413) {
-              throw new Error(`Файл "${file.name}" занадто великий (${(file.size / (1024 * 1024)).toFixed(2)} МБ). Максимум 5 МБ на файл.`);
-            }
-            throw new Error(errorData.error || `Failed to upload ${file.name}`);
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${file.name} to R2 (status: ${uploadResponse.status})`);
           }
 
-          return response.json();
+          uploadedPages.push({
+            pageNumber: presignedData.pageNumber,
+            filePath: presignedData.filePath,
+          });
+
+          console.log(`✅ Файл ${index + 1}/${uploadFiles.length}: ${file.name}`);
         });
 
         await Promise.all(batchPromises);
         console.log(`✅ Завантажено ${Math.min(i + batchSize, uploadFiles.length)} з ${uploadFiles.length} файлів`);
       }
 
+      // 3️⃣ Зберегти метаданні в БД
+      const saveResponse = await fetch(`/api/admin/chapters/${activeChapter.id}/save-uploaded-pages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          uploadedPages,
+          isFirstBatch: true,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        const errorData = await saveResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to save page metadata');
+      }
+
+      const { totalPages } = await saveResponse.json();
+      console.log(`✅ Метаданні збережено. Всього сторінок: ${totalPages}`);
+
       setChapters((prev) =>
         prev.map((ch) =>
-          ch.id === activeChapter.id ? { ...ch, pages_count: uploadFiles.length } : ch
+          ch.id === activeChapter.id ? { ...ch, pages_count: totalPages } : ch
         )
       );
 
       setUploadFiles([]);
       setModal('none');
       await invalidateManhwaCache(id);
-      console.log('✅ Всі файли завантажено успішно');
+      console.log('✅ Всі файли завантажено успішно через presigned URLs!');
     } catch (err) {
       console.error('❌ Error:', err);
-      setError(err instanceof Error ? err.message : 'Помилка');
+      setError(err instanceof Error ? err.message : 'Помилка завантаження');
     } finally {
       setUploading(false);
     }
