@@ -5,8 +5,8 @@ import { QueryProvider } from '@/app/providers/QueryProvider';
 import { AuthProvider } from '@/features/auth';
 import './globals.css';
 
-// Force dynamic rendering for all pages (auth app with cookies)
-export const dynamic = 'force-dynamic';
+// Removed force-dynamic from root layout - causes conflicts with client pages
+// Dynamic routes will use their own segment config
 
 const manrope = Manrope({
   subsets: ['latin', 'cyrillic'],
