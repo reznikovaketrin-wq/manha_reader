@@ -7,12 +7,24 @@ import Link from 'next/link';
 import HeaderNav from './HeaderNav';
 
 export default async function Header() {
-  // ✅ Читаем user с server cookies (для логирования)
-  const supabase = await getSupabaseServerComponentClient();
-  const { data } = await supabase.auth.getUser();
+  // Safe: avoid calling Supabase during build when env vars are missing
+  let user = null;
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // ✅ Логируем статус (для отладки)
-  console.log('📍 [Header] Auth status:', data.user ? `logged in as ${data.user.email}` : 'guest');
+    if (supabaseUrl && anonKey) {
+      const supabase = await getSupabaseServerComponentClient();
+      const { data } = await supabase.auth.getUser();
+      user = data.user || null;
+      console.log('📍 [Header] Auth status:', user ? `logged in as ${user.email}` : 'guest');
+    } else {
+      console.log('📍 [Header] Skipping Supabase auth (missing env vars)');
+    }
+  } catch (err) {
+    console.warn('📍 [Header] Supabase auth failed, continuing as guest', err);
+    user = null;
+  }
 
   return (
     <header style={{ paddingTop: '14px', paddingBottom: '14px', marginBottom: '12px' }}>
