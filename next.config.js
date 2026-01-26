@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Ensure proper SSR/dynamic rendering
+  output: 'standalone',
+  
   images: {
     remotePatterns: [
       {
