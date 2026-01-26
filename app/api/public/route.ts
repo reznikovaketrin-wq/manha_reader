@@ -27,7 +27,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAnon } from '@/lib/supabase-server';
 
 export const revalidate = 60;       // кэшируем данные на 60 секунд
-export const dynamic = "force-static"; // заставляем Next.js кэшировать API
+export const dynamic = "force-dynamic"; // API должен быть динамическим
 
 export async function GET(request: NextRequest) {
   console.log('🚀🚀🚀 [API] GET /api/public CALLED! 🚀🚀🚀');
