@@ -21,19 +21,19 @@ export const ReaderHeader = memo(function ReaderHeader({
         fixed top-0 left-0 right-0 z-30
         bg-black/90 backdrop-blur-sm border-b border-gray-800
         transition-all duration-300 overflow-hidden
-        ${visible ? 'h-12 md:h-14' : 'h-0 -translate-y-full'}
+        ${visible ? 'h-14 md:h-17' : 'h-0 -translate-y-full'}
       `
       }
     >
-      <div className="flex items-center justify-between px-2 py-1 md:px-4 md:py-2 h-full w-full">
+      <div className="flex items-center justify-between px-3 py-1.5 md:px-5 md:py-2.5 h-full w-full">
         {/* Back button */}
         <Link
           href={`/manhwa/${manhwaId}`}
-          className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0"
+          className="p-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0"
           aria-label="Назад до манхви"
         >
           <svg
-            className="w-5 h-5"
+            className="w-6 h-6"
             fill="none"
             stroke="#D1D5DB"
             viewBox="0 0 24 24"
@@ -49,21 +49,21 @@ export const ReaderHeader = memo(function ReaderHeader({
 
         {/* Title */}
         <div className="flex-1 text-center min-w-0 px-2">
-          <h1 className="text-xs md:text-sm font-semibold truncate">{title}</h1>
+          <h1 className="text-sm md:text-base font-semibold truncate">{title}</h1>
           {chapterNumber !== undefined && (
-            <p className="text-xs text-gray-400">Розділ {chapterNumber}</p>
+            <p className="text-sm text-gray-400">Розділ {chapterNumber}</p>
           )}
         </div>
 
         {/* Settings button (matching Back appearance) */}
         <button
           onClick={onToggleSettings}
-          className="p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0 border border-transparent"
+          className="p-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex-shrink-0 border border-transparent"
           title="Налаштування"
           aria-label="Налаштування"
         >
           <svg
-            className="w-5 h-5"
+            className="w-6 h-6"
             fill="none"
             stroke="#D1D5DB"
             viewBox="0 0 24 24"

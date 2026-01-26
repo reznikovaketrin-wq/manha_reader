@@ -1,11 +1,12 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { MetaBlock } from './MetaBlock';
 import { TitleBlock } from './TitleBlock';
 import ChaptersList from './ChaptersList/ChaptersList';
 import { CommentsBlock } from './CommentsBlock';
+import { loadManhwaComments } from '@/lib/comments.utils';
 import { AddToListButton } from '@/components/AddToListButton/AddToListButton';
 import buttonStyles from './ReadButton.module.css';
 import styles from './MobileView.module.css';
@@ -69,6 +70,24 @@ export const MobileView = memo(function MobileView({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const [commentsCount, setCommentsCount] = useState(0);
+  // Prefetch comments count so tabs show correct number before comments tab mounts
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCount = async () => {
+      try {
+        const data = await loadManhwaComments(manhwaId);
+        if (!cancelled) setCommentsCount((data || []).filter((c: any) => !c.parent_comment_id).length);
+      } catch (err) {
+        // ignore
+      }
+    };
+
+    fetchCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [manhwaId]);
 
   // ============================================
   // ADAPTER: конвертируем domain главы
@@ -118,7 +137,7 @@ export const MobileView = memo(function MobileView({
       {/* Кнопка "Читати" */}
       <Link 
         href={`/reader/${manhwa.id}/${firstChapterId || manhwa.chapters[0]?.id}${firstChapterPage ? `?page=${firstChapterPage}` : ''}`}
-        style={{ textDecoration: 'none', display: 'block', marginBottom: '16px' }}
+        style={{ textDecoration: 'none', display: 'block', marginBottom: '0px' }}
       >
         <button
           className={buttonStyles.readButtonGradient}
@@ -128,7 +147,7 @@ export const MobileView = memo(function MobileView({
             console.log('[MobileView] Read button clicked', { target, firstChapterId, firstChapterPage });
           }}
         >
-          <svg viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
+          <svg viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
           {hasProgress ? 'Продовжити' : 'Читати'}
@@ -136,7 +155,7 @@ export const MobileView = memo(function MobileView({
       </Link>
 
       {/* Кнопка "Додати в список" */}
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: '11px' }}>
         <AddToListButton manhwaId={manhwaId} />
       </div>
 

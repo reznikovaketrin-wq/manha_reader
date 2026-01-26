@@ -265,8 +265,8 @@ function ProfileContent() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1 text-white">Бібліотека</h3>
-                    <p className="text-sm text-gray-400">Ваші манхви у бібліотеці</p>
+                    <h3 className="text-xl font-bold mb-1 text-white">Обрані</h3>
+                    <p className="text-sm text-gray-400">Ваші обрані манхви</p>
                   </div>
                 </div>
               </div>

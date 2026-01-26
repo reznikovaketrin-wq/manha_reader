@@ -14,8 +14,6 @@ interface ManhwaWithProgress {
   currentChapter: string;
   currentPage: number;
   totalPages: number;
-  lastRead: string;
-  progress: number;
 }
 
 export default function ReadingHistoryPage() {
@@ -26,7 +24,7 @@ export default function ReadingHistoryPage() {
   
   const [manhwas, setManhwas] = useState<Record<string, Manhwa>>({});
   const [manhwasLoading, setManhwasLoading] = useState(false);
-  const [sortBy, setSortBy] = useState<'recent' | 'alphabetical' | 'progress'>('recent');
+  const [sortBy, setSortBy] = useState<'recent' | 'alphabetical'>('recent');
   const [searchQuery, setSearchQuery] = useState('');
 
   // ✅ Завантажуємо дані манхв
@@ -77,8 +75,6 @@ export default function ReadingHistoryPage() {
         currentChapter: chapter?.number.toString() || '—',
         currentPage: item.currentPage,
         totalPages,
-        lastRead: new Date(item.lastReadAt).toLocaleDateString('uk-UA'),
-        progress: totalPages > 0 ? (item.currentPage / totalPages) * 100 : 0,
       };
     }).filter(Boolean) as ManhwaWithProgress[];
   }, [rawHistory, manhwas]);
@@ -95,10 +91,6 @@ export default function ReadingHistoryPage() {
 
     if (sortBy === 'alphabetical') {
       data.sort((a, b) => a.title.localeCompare(b.title, 'uk-UA'));
-    }
-
-    if (sortBy === 'progress') {
-      data.sort((a, b) => b.progress - a.progress);
     }
 
     return data;
@@ -155,12 +147,11 @@ export default function ReadingHistoryPage() {
 
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'recent' | 'alphabetical' | 'progress')}
+            onChange={(e) => setSortBy(e.target.value as 'recent' | 'alphabetical')}
             className="px-4 py-2 bg-card-bg border border-text-muted/20 rounded-lg text-text-main focus:outline-none focus:border-blue-500 transition-colors"
           >
             <option value="recent">Найновіші</option>
             <option value="alphabetical">За алфавітом</option>
-            <option value="progress">За прогресом</option>
           </select>
         </div>
 
@@ -197,23 +188,7 @@ export default function ReadingHistoryPage() {
                       Розділ {item.currentChapter}
                     </p>
 
-                    {/* Progress Bar */}
-                    <div className="mt-auto">
-                      <div className="h-1.5 bg-card-hover rounded-full overflow-hidden mb-1">
-                        <div
-                          className="h-full bg-blue-500 transition-all"
-                          style={{ width: `${item.progress}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-text-muted text-right">
-                        {Math.round(item.progress)}%
-                      </p>
-                    </div>
-
-                    {/* Last Read */}
-                    <p className="text-xs text-text-muted mt-2 pt-2 border-t border-text-muted/20">
-                      {item.lastRead}
-                    </p>
+                    {/* Removed progress percentage and last-read date as requested */}
                   </div>
                 </div>
               </Link>

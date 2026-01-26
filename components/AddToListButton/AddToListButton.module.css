@@ -13,7 +13,7 @@
   border: 1px solid #3a3a3a;
   border-radius: 12px;
   transition: all 0.2s;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
@@ -21,6 +21,7 @@
   justify-content: center;
   gap: 8px;
   font-family: Inter, sans-serif;
+  min-height: 46px;
 }
 
 .button:hover {
@@ -35,6 +36,24 @@
 .icon {
   width: 20px;
   height: 20px;
+}
+
+@media (max-width: 768px) {
+  .button {
+    padding: 12px 18px;
+    font-size: 19px;
+
+    min-height: 46px;
+  }
+
+  .icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .menu {
+    top: calc(100% + 6px);
+  }
 }
 
 /* Випадаюче меню */
