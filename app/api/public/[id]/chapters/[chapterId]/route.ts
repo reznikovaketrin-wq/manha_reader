@@ -32,10 +32,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAnon, getSupabaseWithToken } from '@/lib/supabase-server';
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
-
-// ISR: автоматическая ребалідація кешу каждые 60 секунд
 export const revalidate = 60;
 
 export async function GET(

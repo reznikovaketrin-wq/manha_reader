@@ -24,9 +24,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin, getSupabaseAnon } from '@/lib/supabase-server';
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
-
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
