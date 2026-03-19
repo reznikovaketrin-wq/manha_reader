@@ -51,6 +51,10 @@ export interface UserManhwaListItemExtended extends UserManhwaListItem {
   last_read_chapter_number?: number;
   last_read_at?: string;
   total_chapters?: number;
+  /** Chapters list for new-chapter detection (publishedAt + status) */
+  manhwa_chapters?: Array<{ publishedAt?: string | null; status?: string }>;
+  /** Pre-computed result of hasNewChapters() — computed once on data enrichment, not per-render */
+  has_new_chapters?: boolean;
 }
 
 // Дані для групування по статусам (для вкладок)

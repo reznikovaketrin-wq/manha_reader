@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useContinueReading } from '@/lib/reading-progress';
 import { getManhwaById } from '@/data/manhwa';
+import { hasNewChapters } from '@/lib/manhwa-visited';
 import type { Manhwa } from '@/types/manhwa';
 
 export default function ContinueReading() {
@@ -117,22 +118,50 @@ export default function ContinueReading() {
             }
           }
 
+          const showNew = hasNewChapters(item.manhwaId, manhwa.chapters, item.lastReadAt);
+
           return (
             <Link
               key={item.manhwaId}
               href={`/reader/${item.manhwaId}/${chapter.id}?page=${item.currentPage}`}
             >
               <div className="bg-card-bg rounded-lg overflow-hidden hover:border-text-muted/30 border border-transparent transition-colors w-max flex-shrink-0 snap-start">
-                  <div
-                    className="w-36 aspect-[2/3] bg-no-repeat"
-                    style={{
-                      backgroundImage: `url(${manhwa.coverImage})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'top center',
-                      backgroundColor: '#1a1a1a',
-                    }}
-                />
+                {/* Cover */}
+                <div
+                  className="relative w-36 aspect-[2/3] bg-no-repeat overflow-hidden"
+                  style={{
+                    backgroundImage: `url(${manhwa.coverImage})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'top center',
+                    backgroundColor: '#1a1a1a',
+                  }}
+                >
+                  {showNew && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '22px',
+                        right: '-32px',
+                        width: '130px',
+                        padding: '5px 0',
+                        background: 'linear-gradient(to right, #FF1B6D 0%, #A259FF 100%)',
+                        color: '#fff',
+                        fontSize: '9px',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        textAlign: 'center',
+                        transform: 'rotate(-45deg)',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                        pointerEvents: 'none',
+                      }}
+                    >
+                      Оновлено
+                    </div>
+                  )}
+                </div>
 
+                {/* Info */}
                 <div className="w-36 p-0">
                   <h3 className="font-bold text-xs line-clamp-1 mb-0">
                     {manhwa.title}

@@ -95,6 +95,7 @@ export async function getManhwaById(id: string) {
         title: ch.title,
         pagesCount: ch.pagesCount,
         status: ch.status,
+        publishedAt: ch.publishedAt || null,
       })),
     };
 

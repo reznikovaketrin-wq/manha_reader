@@ -211,41 +211,40 @@ export async function getUserLibrary(
       return { success: true, data: [] };
     }
 
-    // Отримати дані про останню прочитану главу для кожної манхви
+    // Отримати прогрес читання для кожної манхви.
+    // Використовуємо reading_progress (upsert-таблиця, один рядок на user+manhwa)
+    // замість reading_history (лог подій) — швидше, точніше, не потребує групування.
     const manhwaIds = libraryItems.map((item) => item.manhwa_id);
 
-    const { data: historyData, error: historyError } = await supabase
-      .from('reading_history')
-      .select('manhwa_id, chapter_id, page_number, timestamp')
+    const { data: progressData, error: progressError } = await supabase
+      .from('reading_progress')
+      .select('manhwa_id, chapter_id, last_read_at')
       .eq('user_id', user.id)
-      .in('manhwa_id', manhwaIds)
-      .order('timestamp', { ascending: false });
+      .in('manhwa_id', manhwaIds);
 
-    if (historyError) {
-      console.error('[getUserLibrary] History error:', historyError);
-      // Не критична помилка, продовжуємо без історії
+    if (progressError) {
+      console.error('[getUserLibrary] Progress error:', progressError);
+      // Не критична помилка, продовжуємо без прогресу
     }
 
-    // Згрупувати історію по manhwa_id (тільки остання запис)
-    const historyMap = new Map<string, { chapter_id: string; timestamp: string }>();
-    if (historyData) {
-      historyData.forEach((record) => {
-        if (!historyMap.has(record.manhwa_id)) {
-          historyMap.set(record.manhwa_id, {
-            chapter_id: record.chapter_id,
-            timestamp: record.timestamp,
-          });
-        }
+    // Один рядок на manhwa — просто перетворюємо в Map
+    const progressMap = new Map<string, { chapter_id: string; last_read_at: string }>();
+    if (progressData) {
+      progressData.forEach((record) => {
+        progressMap.set(record.manhwa_id, {
+          chapter_id: record.chapter_id,
+          last_read_at: record.last_read_at,
+        });
       });
     }
 
     // Об'єднати дані
     const extendedItems: UserManhwaListItemExtended[] = libraryItems.map((item) => {
-      const history = historyMap.get(item.manhwa_id);
+      const progress = progressMap.get(item.manhwa_id);
       return {
         ...item,
-        last_read_chapter: history?.chapter_id,
-        last_read_at: history?.timestamp,
+        last_read_chapter: progress?.chapter_id,
+        last_read_at: progress?.last_read_at,
       };
     });
 

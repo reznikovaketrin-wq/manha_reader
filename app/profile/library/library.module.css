@@ -1,4 +1,4 @@
-/* 📁 app/profile/library/library.module.css */
+/* app/profile/library/library.module.css */
 
 .container {
   max-width: 1400px;
@@ -55,8 +55,9 @@
 }
 
 .tabActive {
-  color: #a259ff;
-  border-bottom-color: #a259ff;
+  color: #ffffff;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(to right, #FF1B6D, #A259FF) 1;
 }
 
 .tabCount {
@@ -66,7 +67,7 @@
   min-width: 24px;
   height: 24px;
   padding: 0 8px;
-  background-color: #3a3a3a;
+  background: linear-gradient(to right, #FF1B6D, #A259FF);
   color: #ffffff;
   border-radius: 12px;
   font-size: 12px;
@@ -77,7 +78,7 @@
   background-color: #a259ff;
 }
 
-/* Завантаження */
+/* Загрузка */
 .loading {
   text-align: center;
   padding: 80px 20px;
@@ -85,7 +86,7 @@
   font-size: 16px;
 }
 
-/* Порожній стан */
+/* Пустой список */
 .empty {
   text-align: center;
   padding: 80px 20px;
@@ -104,7 +105,7 @@
   margin: 0;
 }
 
-/* Сітка карток */
+/* Сетка карточек */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -118,7 +119,7 @@
   }
 }
 
-/* Картка манхви */
+/* Карточка манхвы */
 .card {
   display: block;
   text-decoration: none;
@@ -143,31 +144,36 @@
   background-size: cover;
   background-position: center;
   background-color: #2a2a2a;
+  overflow: hidden;
 }
 
-/* Статус бейдж */
-.statusBadge {
+/* Плашка "Обновлено"  диагональная лента */
+.newBadge {
   position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 4px 10px;
-  background-color: rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(8px);
-  color: #a259ff;
-  border-radius: 6px;
-  font-size: 11px;
+  bottom: 22px;
+  right: -32px;
+  width: 130px;
+  padding: 5px 0;
+  background: linear-gradient(to right, #FF1B6D 0%, #A259FF 100%);
+  color: #ffffff;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  text-align: center;
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 2;
 }
 
-/* Плашка останньої прочитаної глави */
+/* Плашка последней прочитанной главы */
 .lastReadBadge {
   position: absolute;
   top: 8px;
   right: 8px;
   padding: 6px 10px;
-  background-color: rgba(162, 89, 255, 0.95);
+  background: linear-gradient(to right, #FF1B6D 0%, #A259FF 100%);
   backdrop-filter: blur(8px);
   color: #ffffff;
   border-radius: 8px;
@@ -184,7 +190,7 @@
   height: 14px;
 }
 
-/* Інформація під обкладинкою */
+/* Информация под обложкой */
 .info {
   padding: 12px;
 }
@@ -235,3 +241,4 @@
     font-size: 11px;
   }
 }
+

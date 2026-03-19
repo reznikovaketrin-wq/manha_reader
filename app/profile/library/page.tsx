@@ -16,6 +16,7 @@ import {
   MANHWA_STATUS_LABELS,
   UserManhwaListItemExtended,
 } from '@/lib/library-types';
+import { hasNewChapters } from '@/lib/manhwa-visited';
 import styles from './library.module.css';
 
 export default function LibraryPage() {
@@ -56,68 +57,53 @@ export default function LibraryPage() {
       const result = await getUserLibrary(activeTab);
 
       if (result.success && result.data) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[Library] Завантажено записів:', result.data.length);
-        }
-        
         // Збагатити даними з manhwa.json
         const enrichedData = await Promise.all(
           result.data.map(async (item) => {
             const manhwa = await getManhwaById(item.manhwa_id);
-            if (!manhwa) {
-              if (process.env.NODE_ENV !== 'production') {
-                console.log('[Library] Манхва не знайдена:', item.manhwa_id);
-              }
-              return item;
-            }
-
-            // Логування структури глав
-            if (process.env.NODE_ENV !== 'production') {
-              console.log('[Library] Перші 3 глави манхви:', manhwa.chapters.slice(0, 3).map((ch: any) => ({
-                id: ch.id,
-                number: ch.number,
-                title: ch.title
-              })));
-            }
+            if (!manhwa) return item;
 
             // Знайти останню прочитану главу
             let lastReadChapterNumber: number | undefined;
-            if (process.env.NODE_ENV !== 'production') {
-              console.log('[Library] Reading history для', item.manhwa_id, ':', {
-                last_read_chapter: item.last_read_chapter,
-                last_read_at: item.last_read_at
-              });
-            }
-            
+
             if (item.last_read_chapter) {
-              // Безопасно привести id к строке для сравнения
               const lastIdStr = String(item.last_read_chapter);
 
-              // Сначала ищем по ID (как строке)
+              // Спочатку шукаємо по ID, потім по номеру глави
               let chapter = manhwa.chapters.find((ch: any) => String(ch.id) === lastIdStr);
-
-              // Если не найдено по ID, пробуем по номеру главы
-                if (!chapter) {
+              if (!chapter) {
                 const chapterNum = parseInt(lastIdStr, 10);
                 if (!isNaN(chapterNum)) {
                   chapter = manhwa.chapters.find((ch: any) => ch.number === chapterNum);
-                  if (process.env.NODE_ENV !== 'production') {
-                    console.log('[Library] Шукаємо по номеру:', chapterNum, 'Знайдено:', !!chapter);
-                  }
                 }
               }
 
-                if (chapter) {
-                lastReadChapterNumber = chapter.number;
-                if (process.env.NODE_ENV !== 'production') {
-                  console.log('[Library] Знайдено главу:', chapter.number);
-                }
-              } else {
-                if (process.env.NODE_ENV !== 'production') {
-                  console.log('[Library] Глава не знайдена:', item.last_read_chapter);
-                }
-              }
+              if (chapter) lastReadChapterNumber = chapter.number;
             }
+
+            // Глави для плашки: publishedAt з fallback на createdAt
+            const chapterDates = manhwa.chapters.map((ch: any) => ({
+              publishedAt: ch.publishedAt ?? ch.createdAt ?? null,
+              status: ch.status ?? 'published',
+            }));
+
+            console.log(`[Library] 🔎 ${item.manhwa_id}:`, {
+              supabase_last_read_at: item.last_read_at ?? 'null',
+              supabase_last_read_chapter: item.last_read_chapter ?? 'null',
+              total_chapters: manhwa.chapters.length,
+              lastReadChapterNumber,
+              // Показати останню главу та чи має вона дату
+              last_chapter_raw: manhwa.chapters.length > 0 ? {
+                id: manhwa.chapters[manhwa.chapters.length - 1].id,
+                number: manhwa.chapters[manhwa.chapters.length - 1].number,
+                publishedAt: manhwa.chapters[manhwa.chapters.length - 1].publishedAt ?? 'undefined',
+                mapped_publishedAt: chapterDates[chapterDates.length - 1]?.publishedAt ?? 'null',
+              } : 'no chapters',
+            });
+
+            // Обчислюємо has_new_chapters ОДИН РАЗ при збагаченні даних,
+            // а не при кожному рендері — читаємо localStorage тут
+            const hasNew = hasNewChapters(item.manhwa_id, chapterDates, item.last_read_at);
 
             return {
               ...item,
@@ -125,13 +111,12 @@ export default function LibraryPage() {
               manhwa_cover: manhwa.coverImage,
               last_read_chapter_number: lastReadChapterNumber,
               total_chapters: manhwa.chapters.length,
+              manhwa_chapters: chapterDates,
+              has_new_chapters: hasNew,
             };
           })
         );
 
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[Library] Збагачені дані:', enrichedData);
-        }
         setLibraryData(enrichedData);
       }
 
@@ -200,16 +185,7 @@ export default function LibraryPage() {
         </div>
       ) : (
         <div className={styles.grid}>
-          {libraryData.map((item) => {
-            if (process.env.NODE_ENV !== 'production') {
-              console.log('[Library RENDER] Картка:', {
-                title: item.manhwa_title,
-                last_read_chapter_number: item.last_read_chapter_number,
-                hasChapter: !!item.last_read_chapter_number
-              });
-            }
-            
-            return (
+          {libraryData.map((item) => (
               <Link
                 key={item.id}
                 href={`/manhwa/${item.manhwa_id}`}
@@ -222,10 +198,10 @@ export default function LibraryPage() {
                     backgroundImage: `url(${item.manhwa_cover || '/placeholder.png'})`,
                   }}
                 >
-                  {/* Статус */}
-                  <div className={styles.statusBadge}>
-                    {MANHWA_STATUS_LABELS[item.status]}
-                  </div>
+                  {/* Плашка "Оновлено" — обчислена заздалегідь, без зайвих викликів при рендері */}
+                  {item.has_new_chapters && (
+                    <div className={styles.newBadge}>Оновлено</div>
+                  )}
 
                   {/* Плашка останньої прочитаної глави */}
                   {item.last_read_chapter_number && (
@@ -238,18 +214,17 @@ export default function LibraryPage() {
                   )}
                 </div>
 
-              {/* Інформація */}
-              <div className={styles.info}>
-                <h3 className={styles.cardTitle}>{item.manhwa_title || 'Без назви'}</h3>
-                {item.total_chapters && (
-                  <p className={styles.cardMeta}>
-                    {item.total_chapters} розділ{item.total_chapters > 1 ? 'ів' : ''}
-                  </p>
-                )}
-              </div>
-            </Link>
-            );
-          })}
+                {/* Інформація */}
+                <div className={styles.info}>
+                  <h3 className={styles.cardTitle}>{item.manhwa_title || 'Без назви'}</h3>
+                  {item.total_chapters && (
+                    <p className={styles.cardMeta}>
+                      {item.total_chapters} розділ{item.total_chapters > 1 ? 'ів' : ''}
+                    </p>
+                  )}
+                </div>
+              </Link>
+          ))}
         </div>
       )}
     </div>

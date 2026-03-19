@@ -1,6 +1,6 @@
  'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/app/providers/UserProvider';
 import { useParams } from 'next/navigation';
@@ -11,6 +11,7 @@ import { useChaptersFilter } from '../../hooks/useChaptersFilter';
 import { useAuthGuard } from '../../hooks/useAuthGuard';
 import { ErrorBoundary } from './errors/ErrorBoundary';
 import { AppError } from './errors/AppError';
+import { markManhwaVisited } from '@/lib/manhwa-visited';
 import ManhwaPage from './ManhwaPage';
 import { ManhwaPageSkeleton } from './Skeleton';
 
@@ -62,7 +63,6 @@ function ManhwaPageContent() {
   // ============================================
   // КОНВЕРТАЦИЯ ОШИБОК
   // ============================================
-
   // Конвертируем Error из API в AppError
   let manhwaError: AppError | null = null;
   if (manhwaApiError) {
@@ -97,6 +97,11 @@ function ManhwaPageContent() {
   // ============================================
 
   const router = useRouter();
+
+  // Зберегти час перегляду сторінки манхви (для плашки "Оновлено")
+  useEffect(() => {
+    if (manhwaId) markManhwaVisited(manhwaId);
+  }, [manhwaId]);
 
   const handleRatingSubmit = async (rating: number) => {
     try {

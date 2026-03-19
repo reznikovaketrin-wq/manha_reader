@@ -12,6 +12,7 @@ export interface Chapter {
   pages: number;
   status?: string;
   createdAt?: string;
+  publishedAt?: string | null;  // дата публікації (для плашки "Оновлено")
   vipOnly?: boolean;
   vipEarlyDays?: number;
   publicAvailableAt?: string | null;
