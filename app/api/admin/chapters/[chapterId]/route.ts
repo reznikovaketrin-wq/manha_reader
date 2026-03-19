@@ -191,10 +191,10 @@ export async function DELETE(request: NextRequest, { params }: any) {
 
     const supabase = getSupabaseAdmin();
 
-    // 1️⃣ Отримати дані глави (manhwa_id, number) та всі file_path сторінок ДО видалення
+    // 1️⃣ Отримати дані глави (manhwa_id, chapter_number) та всі file_path сторінок ДО видалення
     const { data: chapter, error: chapterFetchError } = await supabase
       .from('chapters')
-      .select('id, manhwa_id, number')
+      .select('id, manhwa_id, chapter_number')
       .eq('id', chapterId)
       .single();
 
@@ -237,8 +237,8 @@ export async function DELETE(request: NextRequest, { params }: any) {
       }
 
       // Варіант B: також прибираємо всю папку глави (на випадок залишків)
-      if (chapter.manhwa_id && chapter.number !== undefined) {
-        const prefix = `${chapter.manhwa_id}/chapters/${chapter.number}/`;
+      if (chapter.manhwa_id && chapter.chapter_number !== undefined) {
+        const prefix = `${chapter.manhwa_id}/chapters/${chapter.chapter_number}/`;
         console.log(`📦 [R2] Sweeping prefix: ${prefix}`);
         await deleteR2Prefix(prefix);
       }
