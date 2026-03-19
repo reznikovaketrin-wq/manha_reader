@@ -11,7 +11,7 @@ import { revalidatePath } from 'next/cache';
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 
 // R2 конфиг
-const R2_BUCKET = process.env.R2_BUCKET_NAME || 'manhwa-storage';
+const R2_BUCKET = process.env.R2_BUCKET_NAME || '';
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '';
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || '';
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || '';
@@ -25,6 +25,40 @@ const s3Client = new S3Client({
   },
   endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
 });
+
+/** Видалити всі файли у R2 за заданим префіксом (підтримує pagination) */
+async function deleteR2Prefix(prefix: string) {
+  let continuationToken: string | undefined;
+  let totalDeleted = 0;
+
+  do {
+    const listResp = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: R2_BUCKET,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    const objects = listResp.Contents || [];
+
+    for (let i = 0; i < objects.length; i += 1000) {
+      const batch = objects.slice(i, i + 1000).map((o) => ({ Key: o.Key! }));
+      await s3Client.send(
+        new DeleteObjectsCommand({
+          Bucket: R2_BUCKET,
+          Delete: { Objects: batch },
+        })
+      );
+      totalDeleted += batch.length;
+      console.log(`📦 [R2] Deleted batch: ${batch.length} files (prefix: ${prefix})`);
+    }
+
+    continuationToken = listResp.IsTruncated ? listResp.NextContinuationToken : undefined;
+  } while (continuationToken);
+
+  return totalDeleted;
+}
 
 async function verifyAdmin(token: string) {
   // ✅ Используем getSupabaseWithToken вместо createClient
@@ -144,7 +178,7 @@ export async function PUT(request: NextRequest, { params }: any) {
   }
 }
 
-// DELETE - удалить манхву И её файлы из R2
+// DELETE - видалити манхву І всі її файли з R2
 export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const id = params.id;
@@ -160,7 +194,13 @@ export async function DELETE(request: NextRequest, { params }: any) {
 
     const supabase = getSupabaseAdmin();
 
-    // 1️⃣ Удаляем манхву из БД
+    // 1️⃣ Отримати всі file_path сторінок усіх глав ДО видалення з БД
+    const { data: chapterPages } = await supabase
+      .from('chapter_pages')
+      .select('file_path, chapters!inner(manhwa_id)')
+      .eq('chapters.manhwa_id', id);
+
+    // 2️⃣ Видалити манхву з БД (cascade видаляє chapters та chapter_pages)
     console.log(`📋 [API] Deleting manhwa from database: ${id}`);
     const { error: dbError } = await supabase
       .from('admin_manhwa')
@@ -170,59 +210,47 @@ export async function DELETE(request: NextRequest, { params }: any) {
     if (dbError) throw dbError;
     console.log('✅ [API] Deleted from database');
 
-    // 2️⃣ Удаляем все файлы с этим ID из R2
-    console.log(`📦 [R2] Listing files for: ${id}`);
-    
+    // 3️⃣ Видалити всі файли з R2
     try {
-      // Ищем все файлы с префиксом {id}/
-      const listCommand = new ListObjectsV2Command({
-        Bucket: R2_BUCKET,
-        Prefix: `${id}/`, // Все файлы в папке {id}/
-      });
+      // A) Видаляємо конкретні file_path сторінок (з БД)
+      if (chapterPages && chapterPages.length > 0) {
+        const filePaths = chapterPages
+          .map((p: any) => p.file_path)
+          .filter(Boolean) as string[];
 
-      const listResponse = await s3Client.send(listCommand);
-      const objects = listResponse.Contents || [];
-
-      if (objects.length > 0) {
-        console.log(`📦 [R2] Found ${objects.length} files to delete`);
-
-        // Удаляем по 1000 объектов за раз (лимит S3)
-        for (let i = 0; i < objects.length; i += 1000) {
-          const batch = objects.slice(i, i + 1000).map(obj => ({
-            Key: obj.Key!,
-          }));
-
-          const deleteCommand = new DeleteObjectsCommand({
-            Bucket: R2_BUCKET,
-            Delete: {
-              Objects: batch,
-            },
-          });
-
-          await s3Client.send(deleteCommand);
-          console.log(`📦 [R2] Deleted batch: ${batch.length} files`);
+        for (let i = 0; i < filePaths.length; i += 1000) {
+          const batch = filePaths.slice(i, i + 1000).map((key) => ({ Key: key }));
+          await s3Client.send(
+            new DeleteObjectsCommand({
+              Bucket: R2_BUCKET,
+              Delete: { Objects: batch },
+            })
+          );
+          console.log(`📦 [R2] Deleted ${batch.length} page files`);
         }
-
-        console.log(`✅ [R2] All files deleted for: ${id}`);
-      } else {
-        console.log('📦 [R2] No files found for this ID');
       }
+
+      // B) Sweep всієї папки {id}/ — прибирає cover/bg/char + будь-які залишки
+      const prefix = `${id}/`;
+      console.log(`📦 [R2] Sweeping prefix: ${prefix}`);
+      const totalDeleted = await deleteR2Prefix(prefix);
+      console.log(`✅ [R2] Swept ${totalDeleted} remaining files for: ${id}`);
     } catch (r2Error) {
+      // Логуємо, але не блокуємо — з БД вже видалено
       console.error('⚠️ [R2] Error deleting files:', r2Error);
-      // Не прерываем процесс если ошибка с R2, манга уже удалена из БД
     }
 
-    // 3️⃣ Очищаем кеш
+    // 4️⃣ Очищаємо кеш
     console.log(`🔄 [Cache] Invalidating paths after deletion of ${id}`);
     revalidatePath('/schedule');
     revalidatePath('/');
     revalidatePath('/api/public');
 
-    console.log('✅ [API] Deleted: ' + id);
-    return NextResponse.json({ 
-      success: true, 
+    console.log('✅ [API] Fully deleted: ' + id);
+    return NextResponse.json({
+      success: true,
       message: 'Manhwa and all associated files deleted successfully',
-      cacheRevalidated: true 
+      cacheRevalidated: true,
     });
   } catch (error) {
     console.error('❌ [API] Delete error:', error);

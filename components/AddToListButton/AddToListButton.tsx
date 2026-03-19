@@ -7,7 +7,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useUser } from '@/app/providers/UserProvider';
-import { upsertManhwaToLibrary, removeManhwaFromLibrary } from '@/lib/library-actions';
+import { upsertManhwaToLibrary, removeManhwaFromLibrary, getManhwaStatus } from '@/lib/library-actions';
 import {
   ManhwaLibraryStatus,
   MANHWA_STATUS_LABELS,
@@ -28,9 +28,19 @@ export function AddToListButton({
   const { user } = useUser();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ManhwaLibraryStatus | null>(
-    currentStatus || null
+    currentStatus ?? null
   );
   const [isLoading, setIsLoading] = useState(false);
+
+  // Завантажуємо реальний статус з БД при монтуванні
+  useEffect(() => {
+    if (!user) return;
+    // якщо статус вже передано з пропсів — не перезавантажуємо
+    if (currentStatus !== undefined) return;
+    getManhwaStatus(manhwaId).then((status) => {
+      setSelectedStatus(status);
+    });
+  }, [manhwaId, user, currentStatus]);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);

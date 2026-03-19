@@ -20,11 +20,9 @@ interface ManhwaCardProps {
 const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  const bgImgRef = useRef<HTMLImageElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
-  const [bgSize, setBgSize] = useState({ width: 0, height: 0 });
   const [maxHeightForTitle, setMaxHeightForTitle] = useState<number>(50);
 
   const [titleHeight, setTitleHeight] = useState<number>(0);
@@ -51,14 +49,14 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
   }, []);
 
   const statusText = manhwa.status === 'ongoing'
-    ? 'ОНГОЇНГ'
+    ? 'ОНГОЇНҐ'
     : manhwa.status === 'completed'
     ? 'ЗАВЕРШЕНО'
     : 'ВАНШОТ';
 
   const typeLabels: Record<string, string> = {
     'manhwa': 'МАНХВА',
-    'manga': 'МАНГА',
+    'manga': 'МАНА',
     'manhua': 'МАНХУА',
   };
 
@@ -101,19 +99,6 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
     setImgSize({ width, height });
   }, [isMobile]);
 
-  const calculateBgSize = useCallback(() => {
-    if (!sectionRef.current || !bgImgRef.current?.naturalWidth) return;
-
-    const sectionHeight = sectionRef.current.offsetHeight;
-    const sectionWidth = sectionRef.current.offsetWidth;
-    const multiplier = isMobile ? 1.05 : 1.0;
-
-    setBgSize({
-      width: sectionWidth,
-      height: sectionHeight * multiplier,
-    });
-  }, [isMobile]);
-
   const calculateContentHeight = useCallback(() => {
     if (!sectionRef.current) return;
 
@@ -141,20 +126,17 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
 
   const recalculateAll = useCallback(() => {
     calculateImageSize();
-    calculateBgSize();
     calculateContentHeight();
-  }, [calculateImageSize, calculateBgSize, calculateContentHeight]);
+  }, [calculateImageSize, calculateContentHeight]);
 
   useEffect(() => {
     const img = imgRef.current;
-    const bgImg = bgImgRef.current;
 
     const rafId = requestAnimationFrame(() => {
       recalculateAll();
     });
 
     if (img) img.addEventListener('load', calculateImageSize);
-    if (bgImg) bgImg.addEventListener('load', calculateBgSize);
 
     const observer = new ResizeObserver(() => {
       recalculateAll();
@@ -166,9 +148,8 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
       cancelAnimationFrame(rafId);
       observer.disconnect();
       if (img) img.removeEventListener('load', calculateImageSize);
-      if (bgImg) bgImg.removeEventListener('load', calculateBgSize);
     };
-  }, [recalculateAll, calculateImageSize, calculateBgSize]);
+  }, [recalculateAll, calculateImageSize]);
 
   const handleTitleHeightChange = useCallback((data: { height: number; lineCount: number }) => {
     setTitleHeight(data.height);
@@ -206,24 +187,14 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
           md:flex-row
           md:h-[clamp(320px,_60vw,_440px)]
           md:p-[var(--spacing-xl)]
-          md:rounded-[var(--radius-xl)]
         "
         style={{
           backgroundImage: `url(${backgroundImageUrl})`,
           backgroundPosition: 'right center',
           backgroundRepeat: 'no-repeat',
-          backgroundSize: bgSize.width
-            ? `${bgSize.width}px ${bgSize.height}px`
-            : 'contain',
+          backgroundSize: 'cover',
         }}
       >
-        <img
-          ref={bgImgRef}
-          src={backgroundImageUrl}
-          alt=""
-          style={{ display: 'none' }}
-        />
-
         {/* 🏷️ ТЕГИ: publicationType и type с использованием AutoFitStatusGroup */}
         {(() => {
           const statusItems = [

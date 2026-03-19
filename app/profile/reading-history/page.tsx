@@ -146,13 +146,24 @@ export default function ReadingHistoryPage() {
           />
 
           <select
+            id="sort-select-history"
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'recent' | 'alphabetical')}
-            className="px-4 py-2 bg-card-bg border border-text-muted/20 rounded-lg text-text-main focus:outline-none focus:border-blue-500 transition-colors"
+            className="px-4 py-2 rounded-xl text-white font-semibold focus:outline-none transition-all cursor-pointer flex items-center justify-center"
+            style={{
+              background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+              border: '2px solid transparent',
+            }}
           >
             <option value="recent">Найновіші</option>
             <option value="alphabetical">За алфавітом</option>
           </select>
+          <style>
+            {`#sort-select-history { text-align-last: center; -moz-text-align-last: center; }
+              #sort-select-history option { background: #0b0b0b; color: #ffffff; text-align: center; }
+              #sort-select-history::-ms-expand { display: none; }
+            `}
+          </style>
         </div>
 
         {/* History Grid */}

@@ -34,7 +34,7 @@ const statusLabels: Record<StatusType, string> = {
 
 const typeLabels: Record<TypeValue, string> = {
   'manhwa': 'Манхва',
-  'manga': 'Манга',
+  'manga': 'Манґа',
   'manhua': 'Манхуа',
 };
 

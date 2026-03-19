@@ -15,7 +15,7 @@ export type ManhwaLibraryStatus =
 // Локалізація статусів (українською)
 export const MANHWA_STATUS_LABELS: Record<ManhwaLibraryStatus, string> = {
   reading: 'Читаю',
-  planned: 'В планах',
+  planned: 'Заплановано',
   completed: 'Прочитано',
   rereading: 'Перечитую',
   postponed: 'Відкладено',

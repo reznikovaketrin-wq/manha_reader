@@ -8,6 +8,55 @@
 import { getSupabaseAdmin, getSupabaseWithToken } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
+import {
+  S3Client,
+  ListObjectsV2Command,
+  DeleteObjectsCommand,
+} from '@aws-sdk/client-s3';
+
+const s3Client = new S3Client({
+  region: 'auto',
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+  },
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+});
+
+const R2_BUCKET = process.env.R2_BUCKET_NAME || '';
+
+/** Видалити всі файли у R2 за заданим префіксом (підтримує pagination) */
+async function deleteR2Prefix(prefix: string) {
+  let continuationToken: string | undefined;
+
+  do {
+    const listResp = await s3Client.send(
+      new ListObjectsV2Command({
+        Bucket: R2_BUCKET,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      })
+    );
+
+    const objects = listResp.Contents || [];
+
+    if (objects.length > 0) {
+      // Видаляємо порціями по 1000 (ліміт S3/R2)
+      for (let i = 0; i < objects.length; i += 1000) {
+        const batch = objects.slice(i, i + 1000).map((o) => ({ Key: o.Key! }));
+        await s3Client.send(
+          new DeleteObjectsCommand({
+            Bucket: R2_BUCKET,
+            Delete: { Objects: batch },
+          })
+        );
+        console.log(`📦 [R2] Deleted ${batch.length} files (prefix: ${prefix})`);
+      }
+    }
+
+    continuationToken = listResp.IsTruncated ? listResp.NextContinuationToken : undefined;
+  } while (continuationToken);
+}
 
 async function verifyAdmin(token: string) {
   // ✅ Используем getSupabaseWithToken вместо createClient
@@ -90,15 +139,16 @@ export async function PUT(request: NextRequest, { params }: any) {
     const body = await request.json();
     const supabase = getSupabaseAdmin();
 
+    const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.scheduled_at !== undefined) updateData.scheduled_at = body.scheduled_at;
+    if (body.chapter_number !== undefined) updateData.chapter_number = body.chapter_number;
+
     const { data, error } = await supabase
       .from('chapters')
-      .update({
-        title: body.title,
-        description: body.description,
-        status: body.status,
-        scheduled_at: body.scheduled_at,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updateData)
       .eq('id', chapterId)
       .select()
       .single();
@@ -125,7 +175,7 @@ export async function PUT(request: NextRequest, { params }: any) {
   }
 }
 
-// DELETE - удалить главу
+// DELETE - видалити главу + файли з R2
 export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const chapterId = params.chapterId;
@@ -141,16 +191,71 @@ export async function DELETE(request: NextRequest, { params }: any) {
 
     const supabase = getSupabaseAdmin();
 
-    // Удалить (каскадное удаление страниц)
-    const { error } = await supabase.from('chapters').delete().eq('id', chapterId);
+    // 1️⃣ Отримати дані глави (manhwa_id, number) та всі file_path сторінок ДО видалення
+    const { data: chapter, error: chapterFetchError } = await supabase
+      .from('chapters')
+      .select('id, manhwa_id, number')
+      .eq('id', chapterId)
+      .single();
 
-    if (error) throw error;
+    if (chapterFetchError || !chapter) {
+      throw new Error('Chapter not found');
+    }
 
-    // ✅ Очищаем кеш при удалении
-    console.log(`🔄 [Cache] Revalidating cache after chapter deletion`);
+    const { data: pages } = await supabase
+      .from('chapter_pages')
+      .select('file_path')
+      .eq('chapter_id', chapterId);
+
+    // 2️⃣ Видалити з БД (каскадно видаляє chapter_pages)
+    const { error: dbError } = await supabase
+      .from('chapters')
+      .delete()
+      .eq('id', chapterId);
+
+    if (dbError) throw dbError;
+    console.log('✅ [API] Chapter deleted from DB');
+
+    // 3️⃣ Видалити файли з R2
+    try {
+      // Варіант A: видаляємо конкретні file_path зі збережених у БД
+      if (pages && pages.length > 0) {
+        const filePaths = pages
+          .map((p: { file_path: string }) => p.file_path)
+          .filter(Boolean) as string[];
+
+        for (let i = 0; i < filePaths.length; i += 1000) {
+          const batch = filePaths.slice(i, i + 1000).map((key) => ({ Key: key }));
+          await s3Client.send(
+            new DeleteObjectsCommand({
+              Bucket: R2_BUCKET,
+              Delete: { Objects: batch },
+            })
+          );
+          console.log(`📦 [R2] Deleted ${batch.length} page files`);
+        }
+      }
+
+      // Варіант B: також прибираємо всю папку глави (на випадок залишків)
+      if (chapter.manhwa_id && chapter.number !== undefined) {
+        const prefix = `${chapter.manhwa_id}/chapters/${chapter.number}/`;
+        console.log(`📦 [R2] Sweeping prefix: ${prefix}`);
+        await deleteR2Prefix(prefix);
+      }
+
+      console.log('✅ [R2] Chapter files deleted');
+    } catch (r2Error) {
+      // Логуємо, але не блокуємо відповідь — з БД вже видалено
+      console.error('⚠️ [R2] Error deleting chapter files:', r2Error);
+    }
+
+    // 4️⃣ Інвалідуємо кеш
     revalidateTag('schedule-data');
+    if (chapter.manhwa_id) {
+      revalidateTag(`manhwa-${chapter.manhwa_id}`);
+    }
 
-    console.log('✅ [API] Chapter deleted');
+    console.log('✅ [API] Chapter fully deleted');
     return NextResponse.json({ success: true, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);

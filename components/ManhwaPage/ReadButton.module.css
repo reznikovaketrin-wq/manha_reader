@@ -8,8 +8,9 @@
   border: 2px solid transparent;
   color: #FFFFFF;
   border-radius: 12px;
-  font-size: 21px;
+  font-size: 17px;
   font-weight: 600;
+  font-family: Inter, sans-serif;
   cursor: pointer;
   display: flex;
   align-items: center;

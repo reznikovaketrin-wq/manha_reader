@@ -48,7 +48,7 @@ interface Manhwa {
   schedule_note?: string | null;
 }
 
-type ModalType = 'none' | 'create' | 'upload' | 'publish';
+type ModalType = 'none' | 'create' | 'upload' | 'publish' | 'preview';
 
 export default function AdminManhwaDetailPage() {
   const router = useRouter();
@@ -79,6 +79,15 @@ export default function AdminManhwaDetailPage() {
   const [publishVipEarlyDays, setPublishVipEarlyDays] = useState(0);
 
   const [uploading, setUploading] = useState(false);
+
+  // Передперегляд сторінок
+  const [previewPages, setPreviewPages] = useState<{ page_number: number; image_url: string }[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+
+  // Редагування нумерації глави
+  const [editingChapterId, setEditingChapterId] = useState<number | null>(null);
+  const [editChapterNumber, setEditChapterNumber] = useState<string>('');
 
   // ✅ Загружаем токен и данные
   useEffect(() => {
@@ -602,6 +611,61 @@ export default function AdminManhwaDetailPage() {
     }
   };
 
+  // ── Передперегляд сторінок ────────────────────────────────────────────────
+  const fetchChapterPages = async (chapter: Chapter) => {
+    if (!token) return;
+    setActiveChapter(chapter);
+    setPreviewPages([]);
+    setPreviewLoading(true);
+    setModal('preview');
+    try {
+      const res = await fetch(`/api/admin/chapters/${chapter.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to load pages');
+      const data = await res.json();
+      const sorted = (data.data.pages || []).sort(
+        (a: any, b: any) => a.page_number - b.page_number
+      );
+      setPreviewPages(sorted);
+    } catch (err) {
+      console.error('❌ Error loading pages:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  // ── Редагування нумерації глави ───────────────────────────────────────────
+  const handleSaveChapterNumber = async (chapterId: number) => {
+    const newNum = parseInt(editChapterNumber, 10);
+    if (isNaN(newNum) || newNum < 1) {
+      alert('Введіть коректний номер розділу (≥ 1)');
+      return;
+    }
+    try {
+      if (!token) throw new Error('No token');
+      const res = await fetch(`/api/admin/chapters/${chapterId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ chapter_number: newNum }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setChapters((prev) =>
+        prev
+          .map((ch) => (ch.id === chapterId ? { ...ch, chapter_number: newNum } : ch))
+          .sort((a, b) => a.chapter_number - b.chapter_number)
+      );
+      setEditingChapterId(null);
+      await invalidateManhwaCache(id);
+    } catch (err) {
+      console.error('❌ Error saving chapter number:', err);
+      alert('Помилка при збереженні номера');
+    }
+  };
+
   const handleDeleteManhwa = async () => {
     if (!confirm('⚠️ ВИДАЛИТИ ЦЮ МАНГУ ПОВНІСТЮ? Це незворотна дія!')) return;
     if (!confirm('🔴 ВИ ВПЕВНЕНІ? ВСІ РОЗДІЛИ ТА ДАНІ БУДУТЬ ВИДАЛЕНІ!')) return;
@@ -917,7 +981,7 @@ export default function AdminManhwaDetailPage() {
                       className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded text-sm focus:outline-none focus:border-accent-gradient"
                     >
                       <option value="manhwa">🇰🇷 Манхва</option>
-                      <option value="manga">🇯🇵 Манга</option>
+                      <option value="manga">🇯🇵 Манґа</option>
                       <option value="manhua">🇨🇳 Маньхуа</option>
                     </select>
                   </div>
@@ -989,9 +1053,45 @@ export default function AdminManhwaDetailPage() {
                       <div className="flex items-center justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="text-lg font-bold text-text-main">
-                              Розділ {chapter.chapter_number}
-                            </h3>
+                            {editingChapterId === chapter.id ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-text-muted text-sm font-semibold">Розділ</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={editChapterNumber}
+                                  onChange={(e) => setEditChapterNumber(e.target.value)}
+                                  className="w-20 px-2 py-1 bg-white text-black rounded text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  autoFocus
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleSaveChapterNumber(chapter.id);
+                                    if (e.key === 'Escape') setEditingChapterId(null);
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleSaveChapterNumber(chapter.id)}
+                                  className="text-green-400 hover:text-green-300 text-lg leading-none"
+                                  title="Зберегти"
+                                >✅</button>
+                                <button
+                                  onClick={() => setEditingChapterId(null)}
+                                  className="text-red-400 hover:text-red-300 text-sm font-bold"
+                                  title="Скасувати"
+                                >✕</button>
+                              </div>
+                            ) : (
+                              <h3
+                                className="text-lg font-bold text-text-main cursor-pointer hover:text-blue-400 transition-colors group/num flex items-center gap-1"
+                                onClick={() => {
+                                  setEditingChapterId(chapter.id);
+                                  setEditChapterNumber(String(chapter.chapter_number));
+                                }}
+                                title="Клікніть для редагування номера"
+                              >
+                                Розділ {chapter.chapter_number}
+                                <span className="opacity-0 group-hover/num:opacity-100 text-xs text-blue-400 transition-opacity">✏️</span>
+                              </h3>
+                            )}
                             {getStatusBadge(chapter.status)}
                             {chapter.vip_only && (
                               <span className="px-2 py-1 bg-purple-600/20 text-purple-400 text-xs rounded border border-purple-500/30">
@@ -1019,6 +1119,15 @@ export default function AdminManhwaDetailPage() {
                         </div>
 
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => fetchChapterPages(chapter)}
+                            disabled={chapter.pages_count === 0}
+                            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            title={chapter.pages_count === 0 ? 'Немає сторінок' : `Перегляд ${chapter.pages_count} сторінок`}
+                          >
+                            👁 Перегляд
+                          </button>
+
                           <button
                             onClick={() => {
                               setActiveChapter(chapter);
@@ -1077,7 +1186,7 @@ export default function AdminManhwaDetailPage() {
                   type="text"
                   value={createFormData.title}
                   onChange={(e) => setCreateFormData({...createFormData, title: e.target.value})}
-                  className="w-full px-3 py-2 bg-bg-main text-text-main border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+                  className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
                   placeholder="Назва розділу"
                 />
               </div>
@@ -1086,7 +1195,7 @@ export default function AdminManhwaDetailPage() {
                 <textarea
                   value={createFormData.description}
                   onChange={(e) => setCreateFormData({...createFormData, description: e.target.value})}
-                  className="w-full px-3 py-2 bg-bg-main text-text-main border border-text-muted/20 rounded focus:outline-none focus:border-blue-500 resize-none"
+                  className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500 resize-none"
                   rows={4}
                   placeholder="Опис розділу"
                 />
@@ -1237,7 +1346,7 @@ export default function AdminManhwaDetailPage() {
               {publishMode === 'schedule' && (
                 <>
                   <div>
-                    <label className="block text-sm text-text-muted mb-2">Дата:</label>
+                    <label className="block text-sm text-text-muted mb-2">🌍 Дата публікації для всіх:</label>
                     <input
                       type="date"
                       value={publishDate}
@@ -1282,7 +1391,7 @@ export default function AdminManhwaDetailPage() {
                 {!publishVipOnly && (
                   <div>
                     <label className="block text-sm font-medium text-text-main mb-2">
-                      ⏰ Ранній доступ для VIP (днів)
+                      ⏰ Ранній доступ для VIP (днів до публікації)
                     </label>
                     <input
                       type="number"
@@ -1299,9 +1408,9 @@ export default function AdminManhwaDetailPage() {
                           '✅ Доступно всім одразу'
                         ) : (
                           <>
-                            VIP отримають доступ <span className="text-green-400">зараз</span>, звичайні користувачі — через{' '}
-                            <span className="text-yellow-400">{publishVipEarlyDays} {publishVipEarlyDays === 1 ? 'день' : publishVipEarlyDays < 5 ? 'дні' : 'днів'}</span>
-                            {' '}({new Date(Date.now() + publishVipEarlyDays * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA')})
+                            🌍 Всі отримають доступ <span className="text-green-400">зараз</span>,{' '}
+                            ⭐ VIP вже мають доступ на{' '}
+                            <span className="text-yellow-400">{publishVipEarlyDays} {publishVipEarlyDays === 1 ? 'день' : publishVipEarlyDays < 5 ? 'дні' : 'днів'}</span>{' '}раніше
                           </>
                         )}
                       </p>
@@ -1311,13 +1420,13 @@ export default function AdminManhwaDetailPage() {
                           '✅ Доступно всім в запланований час'
                         ) : publishDate ? (
                           <>
-                            VIP отримають доступ{' '}
-                            <span className="text-green-400">{new Date(`${publishDate}T${publishTime}`).toLocaleDateString('uk-UA')}</span>, 
-                            звичайні — через {publishVipEarlyDays} {publishVipEarlyDays === 1 ? 'день' : 'днів'}{' '}
-                            ({new Date(new Date(`${publishDate}T${publishTime}`).getTime() + publishVipEarlyDays * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA')})
+                            🌍 Всі отримають доступ{' '}
+                            <span className="text-green-400">{new Date(`${publishDate}T${publishTime}`).toLocaleDateString('uk-UA')}</span>{'  '}⭐ VIP — на{' '}
+                            <span className="text-yellow-400">{publishVipEarlyDays} {publishVipEarlyDays === 1 ? 'день' : 'днів'}</span>{' '}раніше{' '}
+                            ({new Date(new Date(`${publishDate}T${publishTime}`).getTime() - publishVipEarlyDays * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA')})
                           </>
                         ) : (
-                          `VIP отримають доступ на ${publishVipEarlyDays} ${publishVipEarlyDays === 1 ? 'день' : 'днів'} раніше`
+                          `⭐ VIP отримають доступ на ${publishVipEarlyDays} ${publishVipEarlyDays === 1 ? 'день' : 'днів'} раніше за публічну дату`
                         )}
                       </p>
                     )}
@@ -1343,6 +1452,90 @@ export default function AdminManhwaDetailPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* MODAL - PREVIEW PAGES */}
+      {modal === 'preview' && (
+        <div className="fixed inset-0 bg-black/90 flex flex-col z-50">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 bg-card-bg border-b border-text-muted/20 shrink-0">
+            <div>
+              <h2 className="text-xl font-bold text-text-main">
+                👁 Перегляд — Розділ {activeChapter?.chapter_number}
+              </h2>
+              <p className="text-sm text-text-muted mt-0.5">
+                {previewLoading ? 'Завантаження...' : `${previewPages.length} сторінок`}
+              </p>
+            </div>
+            <button
+              onClick={() => { setModal('none'); setPreviewPages([]); setLightboxSrc(null); }}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors text-sm"
+            >
+              ✕ Закрити
+            </button>
+          </div>
+
+          {/* Body */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {previewLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-3"></div>
+                  <p className="text-text-muted">Завантаження сторінок...</p>
+                </div>
+              </div>
+            ) : previewPages.length === 0 ? (
+              <div className="flex items-center justify-center h-64">
+                <p className="text-text-muted text-lg">Сторінки не знайдено</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {previewPages.map((page) => (
+                  <div
+                    key={page.page_number}
+                    className="group relative cursor-pointer rounded-lg overflow-hidden border border-text-muted/20 hover:border-blue-500 transition-all bg-gray-900 aspect-[3/4]"
+                    onClick={() => setLightboxSrc(page.image_url)}
+                    title={`Сторінка ${page.page_number}`}
+                  >
+                    <img
+                      src={page.image_url}
+                      alt={`Сторінка ${page.page_number}`}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                      <span className="opacity-0 group-hover:opacity-100 text-white text-2xl transition-opacity">🔍</span>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs text-center py-1 font-semibold">
+                      {page.page_number}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* LIGHTBOX */}
+      {lightboxSrc && (
+        <div
+          className="fixed inset-0 bg-black/95 flex items-center justify-center z-[60] p-4"
+          onClick={() => setLightboxSrc(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white text-2xl bg-gray-800 hover:bg-gray-700 rounded-full w-10 h-10 flex items-center justify-center z-10 transition-colors"
+            onClick={() => setLightboxSrc(null)}
+          >
+            ✕
+          </button>
+          <img
+            src={lightboxSrc}
+            alt="Повний перегляд"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </>

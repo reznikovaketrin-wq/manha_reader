@@ -39,7 +39,7 @@ const getStatusText = (status: string): string => {
 const getTypeText = (type?: string): string => {
   const typeMap: Record<string, string> = {
     'manhwa': 'МАНХВА',
-    'manga': 'МАНГА',
+    'manga': 'МАНҐА',
     'manhua': 'МАНЬХУА',
     'novel': 'НОВЕЛ',
   };

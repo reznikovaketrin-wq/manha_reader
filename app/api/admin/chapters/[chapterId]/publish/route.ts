@@ -50,16 +50,16 @@ export async function PUT(request: NextRequest, { params }: any) {
     let updateData: any = {};
 
     if (action === 'publish') {
-      // Опубликовать сейчас
+      // Опублікувати зараз
+      // "Publish now" + vip_early_days: VIP отримує зараз, публіка — через N днів
       console.log('📤 Publishing now');
       
       const publishedAt = new Date();
       let publicAvailableAt = null;
       
-      // Если не VIP-only и есть ранний доступ, рассчитываем дату для обычных пользователей
       if (!vip_only && vip_early_days && vip_early_days > 0) {
         publicAvailableAt = new Date(publishedAt.getTime() + vip_early_days * 24 * 60 * 60 * 1000);
-        console.log(`⏰ VIP early access: ${vip_early_days} days. Public available at: ${publicAvailableAt.toISOString()}`);
+        console.log(`⏰ VIP gets access now. Public available at: ${publicAvailableAt.toISOString()}`);
       }
       
       updateData = {
@@ -71,30 +71,39 @@ export async function PUT(request: NextRequest, { params }: any) {
         public_available_at: publicAvailableAt ? publicAvailableAt.toISOString() : null,
       };
     } else if (action === 'schedule') {
-      // Отложенная публикация
+      // Відкладена публікація
+      // scheduledAt = ПУБЛІЧНА дата (коли отримають доступ ВСІ)
+      // VIP отримують доступ на vip_early_days днів РАНІШЕ
       if (!scheduledAt) {
         return NextResponse.json(
           { error: 'scheduledAt is required for schedule action' },
           { status: 400 }
         );
       }
-      console.log('⏰ Scheduling for:', scheduledAt);
-      
-      let publicAvailableAt = null;
-      
-      // Если не VIP-only и есть ранний доступ, рассчитываем дату для обычных пользователей
+
+      const publicDate = new Date(scheduledAt);
+      let vipAccessAt: Date;
+
       if (!vip_only && vip_early_days && vip_early_days > 0) {
-        const scheduledDate = new Date(scheduledAt);
-        publicAvailableAt = new Date(scheduledDate.getTime() + vip_early_days * 24 * 60 * 60 * 1000);
-        console.log(`⏰ VIP early access: ${vip_early_days} days. Public available at: ${publicAvailableAt.toISOString()}`);
+        // VIP бачить на N днів раніше за публічну дату
+        vipAccessAt = new Date(publicDate.getTime() - vip_early_days * 24 * 60 * 60 * 1000);
+        console.log(`⏰ Public date: ${publicDate.toISOString()}, VIP access: ${vipAccessAt.toISOString()} (${vip_early_days}d early)`);
+      } else {
+        // Без раннього доступу — VIP і всі отримують одночасно
+        vipAccessAt = publicDate;
+        console.log('📅 Scheduling (no VIP early access):', publicDate.toISOString());
       }
-      
+
       updateData = {
         status: 'scheduled',
-        scheduled_at: scheduledAt,
+        // scheduled_at = дата доступу для VIP (або для всіх якщо early_days=0)
+        scheduled_at: vipAccessAt.toISOString(),
         vip_only: vip_only || false,
         vip_early_days: vip_early_days || 0,
-        public_available_at: publicAvailableAt ? publicAvailableAt.toISOString() : null,
+        // public_available_at = публічна дата (null якщо early_days=0, бо вони рівні)
+        public_available_at: (!vip_only && vip_early_days && vip_early_days > 0)
+          ? publicDate.toISOString()
+          : null,
       };
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
