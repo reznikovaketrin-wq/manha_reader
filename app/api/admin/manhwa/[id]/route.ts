@@ -1,7 +1,7 @@
 /**
  * 🗑️ /app/api/admin/manhwa/[id]/route.ts
  * 
- * ✅ Включает удаление файлов из R2 при удалении манги
+ * ✅ Включает удаление файлов из R2 при удалении манґи
  * ✅ Исправлено - использует getSupabaseAdmin, getSupabaseWithToken
  */
 

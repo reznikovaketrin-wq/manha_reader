@@ -667,7 +667,7 @@ export default function AdminManhwaDetailPage() {
   };
 
   const handleDeleteManhwa = async () => {
-    if (!confirm('⚠️ ВИДАЛИТИ ЦЮ МАНГУ ПОВНІСТЮ? Це незворотна дія!')) return;
+    if (!confirm('⚠️ ВИДАЛИТИ ЦЮ МАНҐУ ПОВНІСТЮ? Це незворотна дія!')) return;
     if (!confirm('🔴 ВИ ВПЕВНЕНІ? ВСІ РОЗДІЛИ ТА ДАНІ БУДУТЬ ВИДАЛЕНІ!')) return;
 
     try {
@@ -688,7 +688,7 @@ export default function AdminManhwaDetailPage() {
       router.push('/admin/manhwa');
     } catch (err) {
       console.error('❌ Error deleting manhwa:', err);
-      alert('Помилка при видаленні манги');
+      alert('Помилка при видаленні манґи');
     }
   };
 
@@ -760,7 +760,7 @@ export default function AdminManhwaDetailPage() {
               onClick={handleDeleteManhwa}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold transition-colors"
             >
-              🗑️ Видалити мангу
+              🗑️ Видалити манґу
             </button>
           </div>
         </div>

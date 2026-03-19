@@ -166,7 +166,7 @@ export default function LibraryPage() {
     <div className={styles.container}>
       {/* Заголовок */}
       <div className={styles.header}>
-        <h1 className={styles.title}>Бібліотека манги</h1>
+        <h1 className={styles.title}>Обрані</h1>
         <p className={styles.subtitle}>
           Всього {stats ? Object.values(stats).reduce((a, b) => a + b, 0) : 0} тайтлів
         </p>

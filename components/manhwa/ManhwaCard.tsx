@@ -49,14 +49,14 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
   }, []);
 
   const statusText = manhwa.status === 'ongoing'
-    ? 'ОНГОЇНҐ'
+    ? 'ОНҐОЇНҐ'
     : manhwa.status === 'completed'
     ? 'ЗАВЕРШЕНО'
     : 'ВАНШОТ';
 
   const typeLabels: Record<string, string> = {
     'manhwa': 'МАНХВА',
-    'manga': 'МАНА',
+    'manga': 'МАНҐА',
     'manhua': 'МАНХУА',
   };
 
