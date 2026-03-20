@@ -68,6 +68,17 @@ export async function GET(request: NextRequest) {
 
     console.log(`📦 Processing ${manhwas.length} manhwas...`);
 
+    // Получаем количество опубликованных глав для каждой манхвы
+    const { data: chaptersData } = await supabase
+      .from('chapters')
+      .select('manhwa_id')
+      .eq('status', 'published');
+
+    const chaptersCountMap = new Map<string, number>();
+    (chaptersData || []).forEach((ch: any) => {
+      chaptersCountMap.set(ch.manhwa_id, (chaptersCountMap.get(ch.manhwa_id) || 0) + 1);
+    });
+
     // Трансформируем данные из БД в API формат (camelCase)
     const enrichedManhwas = (manhwas || []).map((manhwa: any) => {
       console.log(`🔄 Processing: ${manhwa.id} - ${manhwa.title}`);
@@ -108,7 +119,7 @@ export async function GET(request: NextRequest) {
         publicationType: manhwa.publication_type,
         scheduleDay: scheduleDay,
         lastChapterDate: manhwa.last_chapter_date,
-        chaptersCount: 0,
+        chaptersCount: chaptersCountMap.get(manhwa.id) || 0,
       };
       
       console.log(`  scheduleDay for ${manhwa.id}:`, {
