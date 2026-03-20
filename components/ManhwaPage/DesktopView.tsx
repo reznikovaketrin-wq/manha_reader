@@ -28,7 +28,7 @@ interface DesktopViewExtendedProps extends ViewProps {
  */
 const getStatusText = (status: string): string => {
   const statusMap: Record<string, string> = {
-    'ongoing': 'ОНГОІНГ',
+    'ongoing': 'ОНҐОЇНҐ',
     'completed': 'ЗАВЕРШЕНО',
     'hiatus': 'НА ПАУЗІ',
     'paused': 'НА ПАУЗІ',
@@ -39,7 +39,7 @@ const getStatusText = (status: string): string => {
 const getTypeText = (type?: string): string => {
   const typeMap: Record<string, string> = {
     'manhwa': 'МАНХВА',
-    'manga': 'МАНҐА',
+    'manga': 'МАНҐіА',
     'manhua': 'МАНЬХУА',
     'novel': 'НОВЕЛ',
   };

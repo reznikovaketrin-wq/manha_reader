@@ -31,7 +31,7 @@ interface MobileViewExtendedProps extends MobileViewProps {
  */
 const getStatusText = (status: string): string => {
   const statusMap: Record<string, string> = {
-    'ongoing': 'ОНГОІНГ',
+    'ongoing': 'ОНҐОЇНҐ',
     'completed': 'ЗАВЕРШЕНО',
     'hiatus': 'НА ПАУЗІ',
     'paused': 'НА ПАУЗІ',

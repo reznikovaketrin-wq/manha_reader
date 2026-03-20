@@ -216,7 +216,7 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
           }
 
           return (
-            <div className="md:absolute md:top-0 md:left-[var(--spacing-xl)] md:pt-[var(--spacing-xl)] z-[20] text-white uppercase">
+            <div className="-mt-[8px] md:absolute md:top-0 md:left-[var(--spacing-xl)] md:pt-[var(--spacing-xl)] z-[20] text-white uppercase">
               <AutoFitStatusGroup
                 statuses={statusItems}
                 isMobile={isMobile}
@@ -228,7 +228,7 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
                 desktopMaxWidth={800}
                 desktopMinFontSize={14}
                 desktopMaxFontSize={30}
-                gap={isMobile ? '8px' : '24px'}
+                gap={isMobile ? '20px' : '50px'}
               />
             </div>
           );
