@@ -18,7 +18,7 @@ export interface Manhwa {
   title: string;
   description: string;
   coverImage: string; // URL to cover image in R2
-  status: 'ongoing' | 'completed' | 'hiatus';
+  status: 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'ваншот';
   rating: number;
   totalViews: number;
   chapters: Chapter[];

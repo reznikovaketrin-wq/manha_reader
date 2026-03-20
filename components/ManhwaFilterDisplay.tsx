@@ -10,7 +10,7 @@ interface Manhwa {
   title: string;
   shortDescription: string;
   coverImage: string;
-  status: 'ongoing' | 'completed' | 'hiatus';
+  status: 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'ваншот';
   rating: number;
   publicationType?: 'censored' | 'uncensored';
   type?: 'manhwa' | 'manga' | 'manhua';
@@ -22,14 +22,16 @@ interface ManhwaFilterDisplayProps {
   initialData: Manhwa[];
 }
 
-type StatusType = 'ongoing' | 'completed' | 'hiatus';
+type StatusType = 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'ваншот';
 type TypeValue = 'manhwa' | 'manga' | 'manhua';
 type PublicationType = 'censored' | 'uncensored';
 
 const statusLabels: Record<StatusType, string> = {
-  'ongoing': 'В розкладі',
-  'completed': 'Завершено',
-  'hiatus': 'На паузі',
+  'ongoing': 'ОНҐОЇНҐ',
+  'completed': 'ЗАВЕРШЕНО',
+  'hiatus': 'ПРИЗУПИНЕНО',
+  'paused': 'НА ПАУЗІ',
+  'ваншот': 'ВАНШОТ',
 };
 
 const typeLabels: Record<TypeValue, string> = {

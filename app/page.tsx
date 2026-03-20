@@ -10,7 +10,7 @@ interface ManhwaDisplay {
   title: string;
   shortDescription: string;
   coverImage: string;
-  status: 'ongoing' | 'completed' | 'hiatus';
+  status: 'ongoing' | 'completed' | 'hiatus' | 'ваншот';
   rating: number;
   publicationType?: 'censored' | 'uncensored';
   type?: 'manhwa' | 'manga' | 'manhua';
@@ -58,6 +58,13 @@ export default async function HomePage() {
           tags: m.tags || [],
           scheduleDay: m.scheduleDay,
         } as ManhwaDisplay;
+      }).filter((m: ManhwaDisplay) => {
+        // Фильтруем: показываем только манхвы с главами
+        const hasChapters = (m as any).chaptersCount > 0;
+        if (!hasChapters && process.env.NODE_ENV !== 'production') {
+          console.log('⏭️ [HomePage] Skipping', m.id, '- no chapters');
+        }
+        return hasChapters;
       });
 
       transformedManhwa.push(...transformed);

@@ -11,7 +11,7 @@ interface ManhwaCardProps {
     title: string;
     shortDescription: string;
     coverImage: string;
-    status: 'ongoing' | 'completed' | 'hiatus';
+    status: 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'ваншот';
     publicationType?: 'censored' | 'uncensored';
     type?: 'manhwa' | 'manga' | 'manhua';
   };
@@ -48,11 +48,14 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  const statusText = manhwa.status === 'ongoing'
-    ? 'ОНҐОЇНҐ'
-    : manhwa.status === 'completed'
-    ? 'ЗАВЕРШЕНО'
-    : 'ВАНШОТ';
+  const statusMap: Record<string, string> = {
+    'ongoing': 'ОНҐОЇНҐ',
+    'completed': 'ЗАВЕРШЕНО',
+    'hiatus': 'ПРИЗУПИНЕНО',
+    'paused': 'НА ПАУЗІ',
+    'ваншот': 'ВАНШОТ',
+  };
+  const statusText = statusMap[manhwa.status] || 'НЕВІДОМО';
 
   const typeLabels: Record<string, string> = {
     'manhwa': 'МАНХВА',
