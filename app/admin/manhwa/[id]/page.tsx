@@ -638,8 +638,8 @@ export default function AdminManhwaDetailPage() {
   // ── Редагування нумерації глави ───────────────────────────────────────────
   const handleSaveChapterNumber = async (chapterId: number) => {
     const newNum = parseInt(editChapterNumber, 10);
-    if (isNaN(newNum) || newNum < 1) {
-      alert('Введіть коректний номер розділу (≥ 1)');
+    if (isNaN(newNum)) {
+      alert('Введіть числовий номер розділу');
       return;
     }
     try {
