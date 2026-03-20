@@ -15,6 +15,8 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
     description: '',
     short_description: '',
     status: 'ongoing',
+    type: 'manhwa',
+    publication_type: 'uncensored',
     tags: '',
     vip_only: false,
     vip_early_days: 0,
@@ -111,6 +113,8 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
           description: formData.description,
           short_description: formData.short_description,
           status: formData.status,
+          type: formData.type,
+          publication_type: formData.publication_type,
           rating: 0,
           tags: formData.tags.split(',').map((tag) => tag.trim()),
           vip_only: formData.vip_only,
@@ -227,6 +231,36 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               <option value="hiatus">Призупинено</option>
               <option value="paused">На паузі</option>
               <option value="ваншот">Ваншот</option>
+            </select>
+          </div>
+
+          {/* Тип */}
+          <div>
+            <label className="block text-sm font-medium text-text-main mb-2">Тип</label>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d]"
+            >
+              <option value="manhwa">🇰🇷 Манхва</option>
+              <option value="manga">🇯🇵 Манґа</option>
+              <option value="manhua">🇨🇳 Маньхуа</option>
+              <option value="novel">📖 Новел</option>
+            </select>
+          </div>
+
+          {/* Цензура */}
+          <div>
+            <label className="block text-sm font-medium text-text-main mb-2">Тип публікації</label>
+            <select
+              name="publication_type"
+              value={formData.publication_type}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d]"
+            >
+              <option value="uncensored">🔞 Без цензури (ВІДСУТНЯ)</option>
+              <option value="censored">🔒 Цензурована (ПРИСУТНЯ)</option>
             </select>
           </div>
 

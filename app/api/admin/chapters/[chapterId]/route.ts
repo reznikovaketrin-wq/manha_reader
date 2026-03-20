@@ -139,6 +139,14 @@ export async function PUT(request: NextRequest, { params }: any) {
     const body = await request.json();
     const supabase = getSupabaseAdmin();
 
+    // Validate chapter_number if provided
+    if (body.chapter_number !== undefined && body.chapter_number < 1) {
+      return NextResponse.json(
+        { error: 'Номер розділу повинен бути >= 1' },
+        { status: 400 }
+      );
+    }
+
     const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
     if (body.title !== undefined) updateData.title = body.title;
     if (body.description !== undefined) updateData.description = body.description;

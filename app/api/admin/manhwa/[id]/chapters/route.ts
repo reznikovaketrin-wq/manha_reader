@@ -72,6 +72,14 @@ export async function POST(request: NextRequest, { params }: any) {
     const body = await request.json();
     const supabase = getSupabaseAdmin();
 
+    // Validate custom chapter_number if provided
+    if (body.chapter_number !== undefined && (typeof body.chapter_number !== 'number' || body.chapter_number < 1)) {
+      return NextResponse.json(
+        { error: 'Номер розділу повинен бути числом >= 1' },
+        { status: 400 }
+      );
+    }
+
     // Получить максимальный номер главы
     const { data: maxData } = await supabase
       .from('chapters')
