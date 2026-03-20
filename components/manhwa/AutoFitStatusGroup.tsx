@@ -128,7 +128,7 @@ export default function AutoFitStatusGroup({
       style={{
         maxHeight: maxHeight,
         maxWidth: maxWidth,
-        overflow: 'hidden',
+        overflow: 'visible',
         display: 'inline-flex',
         height: 'auto',
         whiteSpace: 'nowrap',
