@@ -35,7 +35,7 @@ const getStatusText = (status: string): string => {
     'completed': 'ЗАВЕРШЕНО',
     'hiatus': 'ПРИЗУПИНЕНО',
     'paused': 'НА ПАУЗІ',
-    'ваншот': 'ВАНШОТ',
+    'one-shot': 'ВАНШОТ',
   };
   return statusMap[status] || 'НЕВІДОМО';
 };

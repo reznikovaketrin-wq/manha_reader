@@ -8,7 +8,7 @@
 
 import type { Chapter } from './chapter';
 
-export type ManhwaStatus = 'ongoing' | 'completed' | 'hiatus' | 'paused';
+export type ManhwaStatus = 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'one-shot';
 export type ManhwaType = 'manhwa' | 'manga' | 'manhua' | 'novel';
 export type PublicationType = 'official' | 'fan' | 'uncensored' | 'censored';
 

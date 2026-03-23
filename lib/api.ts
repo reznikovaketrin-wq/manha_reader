@@ -46,7 +46,7 @@ export interface Manhwa {
   coverImage?: string;
   bgImage?: string;
   charImage?: string;
-  status: 'ongoing' | 'completed' | 'hiatus';
+  status: 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'one-shot';
   rating: number;
   tags: string[];
   type?: 'manhwa' | 'manga' | 'manhua';

@@ -10,7 +10,7 @@ interface ManhwaDisplay {
   title: string;
   shortDescription: string;
   coverImage: string;
-  status: 'ongoing' | 'completed' | 'hiatus' | 'ваншот';
+  status: 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'one-shot';
   rating: number;
   publicationType?: 'censored' | 'uncensored';
   type?: 'manhwa' | 'manga' | 'manhua';

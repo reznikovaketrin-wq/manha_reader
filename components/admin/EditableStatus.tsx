@@ -58,11 +58,11 @@ export function EditableStatus({ value, manhwaId, token, onUpdate }: EditableSta
           className="w-full px-4 py-3 bg-black border-2 border-white/10 text-text-main rounded-xl focus:outline-none focus:border-[#ff1b6d]"
           autoFocus
         >
-          <option value="ongoing">🔄 ОНҐОЇНҐ</option>
-          <option value="completed">✅ ЗАВЕРШЕНО</option>
-          <option value="hiatus">⏸️ ПРИЗУПИНЕНО</option>
-          <option value="paused">⏹️ НА ПАУЗІ</option>
-          <option value="one-shot">📖 ВАНШОТ</option>
+          <option value="ongoing">ОНҐОЇНҐ</option>
+          <option value="completed">ЗАВЕРШЕНО</option>
+          <option value="hiatus">ПРИЗУПИНЕНО</option>
+          <option value="paused">НА ПАУЗІ</option>
+          <option value="one-shot">ВАНШОТ</option>
         </select>
       ) : (
         <button
@@ -70,7 +70,7 @@ export function EditableStatus({ value, manhwaId, token, onUpdate }: EditableSta
           className={`px-4 py-3 rounded-xl font-semibold text-sm transition-all ${currentStatus.color}`}
           style={{ border: '2px solid rgba(255,255,255,0.06)' }}
         >
-          {currentStatus.emoji} {currentStatus.label}
+          {currentStatus.label}
         </button>
       )}
     </div>

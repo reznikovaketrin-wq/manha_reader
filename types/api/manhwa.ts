@@ -14,7 +14,7 @@ export interface ManhwaAPI {
 
   // Опциональные поля с default значениями
   description?: string;
-  status?: 'ongoing' | 'completed' | 'hiatus' | 'paused';
+  status?: 'ongoing' | 'completed' | 'hiatus' | 'paused' | 'one-shot';
   type?: 'manhwa' | 'manga' | 'manhua' | 'novel';
   publication_type?: 'censored' | 'uncensored';
   cover_image?: string;
