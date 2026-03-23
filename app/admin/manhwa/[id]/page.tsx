@@ -529,20 +529,10 @@ export default function AdminManhwaDetailPage() {
         await invalidateManhwaCache(id);
         console.log('✅ Chapter published now');
       } else {
-        const [year, month, day] = publishDate.split('-');
-        const [hours, minutes] = publishTime.split(':');
-        
-        const utcDate = new Date(Date.UTC(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-          parseInt(hours),
-          parseInt(minutes),
-          0,
-          0
-        ));
-        
-        const scheduledAtISO = utcDate.toISOString();
+        // Використовуємо локальний час (браузер в UTC+3), щоб 12:00 → 09:00 UTC,
+        // а при відображенні toLocaleString('uk-UA') покаже назад 12:00
+        const localDate = new Date(`${publishDate}T${publishTime}:00`);
+        const scheduledAtISO = localDate.toISOString();
         
         console.log('📅 Publish scheduled:', {
           userInput: { date: publishDate, time: publishTime },
@@ -1103,7 +1093,7 @@ export default function AdminManhwaDetailPage() {
                             )}
                             {!chapter.vip_only && chapter.vip_early_days && chapter.vip_early_days > 0 && chapter.scheduled_at && (
                               <span className="px-2 py-1 bg-indigo-600/20 text-indigo-400 text-xs rounded border border-indigo-500/30">
-                                🔐 VIP: {new Date(chapter.scheduled_at).toLocaleDateString('uk-UA')}
+                                🔐 VIP: {new Date(chapter.scheduled_at).toLocaleDateString('uk-UA', { timeZone: 'Europe/Kiev' })}
                               </span>
                             )}
                           </div>
@@ -1115,7 +1105,7 @@ export default function AdminManhwaDetailPage() {
                             <span>📅 {new Date(chapter.created_at).toLocaleDateString('uk-UA')}</span>
                             {chapter.status === 'scheduled' && (chapter.public_available_at || chapter.scheduled_at) && (
                               <span className="text-yellow-400">
-                                🌍 {new Date(chapter.public_available_at || chapter.scheduled_at!).toLocaleString('uk-UA')}
+                                🌍 {new Date(chapter.public_available_at || chapter.scheduled_at!).toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' })}
                               </span>
                             )}
                           </div>
