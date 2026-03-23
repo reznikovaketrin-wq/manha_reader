@@ -9,7 +9,10 @@ const NEXT_PUBLIC_R2_BASE_URL = process.env.NEXT_PUBLIC_R2_BASE_URL || '';
 async function verifyAdmin(token: string) {
   const supabaseUser = getSupabaseWithToken(token);
   const { data: authData, error: authError } = await supabaseUser.auth.getUser();
-  if (authError || !authData.user) throw new Error('Unauthorized');
+  if (authError || !authData.user) {
+    console.error('❌ Auth error:', authError);
+    throw new Error('Unauthorized');
+  }
 
   const supabaseAdmin = getSupabaseAdmin();
   const { data: userData, error: userError } = await supabaseAdmin
@@ -18,7 +21,12 @@ async function verifyAdmin(token: string) {
     .eq('id', authData.user.id)
     .single();
 
-  if (userError || userData?.role !== 'admin') throw new Error('Not an admin');
+  console.log('🔐 Verify result:', { userId: authData.user.id, userError, userData });
+
+  if (userError || userData?.role !== 'admin') {
+    console.error('❌ Not admin:', { userError, role: userData?.role });
+    throw new Error('Not an admin');
+  }
   return { user: authData.user };
 }
 
@@ -85,8 +93,10 @@ export async function POST(request: NextRequest, { params }: any) {
     });
   } catch (error) {
     console.error('❌ Error saving page metadata:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Full error:', errorMsg);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to save page metadata' },
+      { error: `Failed to save page metadata: ${errorMsg}` },
       { status: 500 }
     );
   }

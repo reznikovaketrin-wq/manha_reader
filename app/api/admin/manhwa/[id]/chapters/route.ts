@@ -121,9 +121,11 @@ export async function POST(request: NextRequest, { params }: any) {
 
     return NextResponse.json({ data });
   } catch (error) {
-    console.error('❌ [API] Error:', error);
+    console.error('❌ [API] Error creating chapter:', error);
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Full error stack:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Create failed' },
+      { error: `Create failed: ${errorMsg}` },
       { status: 500 }
     );
   }
