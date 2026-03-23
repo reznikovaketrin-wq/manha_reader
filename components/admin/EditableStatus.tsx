@@ -16,7 +16,7 @@ export function EditableStatus({ value, manhwaId, token, onUpdate }: EditableSta
   const statusesMap: Record<string, { label: string; emoji: string; color: string }> = {
     ongoing: { label: 'ОНҐОЇНҐ', emoji: '🔄', color: 'bg-blue-500/20 text-blue-400' },
     completed: { label: 'ЗАВЕРШЕНО', emoji: '✅', color: 'bg-green-500/20 text-green-400' },
-    hiatus: { label: 'ПРИЗУПИНЕНО', emoji: '⏸️', color: 'bg-orange-500/20 text-orange-400' },
+    hiatus: { label: 'ПОКИНУТО', emoji: '⏸️', color: 'bg-orange-500/20 text-orange-400' },
     paused: { label: 'НА ПАУЗІ', emoji: '⏹️', color: 'bg-yellow-500/20 text-yellow-400' },
     'one-shot': { label: 'ВАНШОТ', emoji: '📖', color: 'bg-purple-500/20 text-purple-400' },
   };
@@ -60,7 +60,7 @@ export function EditableStatus({ value, manhwaId, token, onUpdate }: EditableSta
         >
           <option value="ongoing">ОНҐОЇНҐ</option>
           <option value="completed">ЗАВЕРШЕНО</option>
-          <option value="hiatus">ПРИЗУПИНЕНО</option>
+          <option value="hiatus">ПОКИНУТО</option>
           <option value="paused">НА ПАУЗІ</option>
           <option value="one-shot">ВАНШОТ</option>
         </select>

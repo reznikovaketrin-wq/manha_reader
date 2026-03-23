@@ -228,7 +228,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
             >
               <option value="ongoing">ОНҐОЇНҐ</option>
               <option value="completed">ЗАВЕРШЕНО</option>
-              <option value="hiatus">ПРИЗУПИНЕНО</option>
+              <option value="hiatus">ПОКИНУТО</option>
               <option value="paused">НА ПАУЗІ</option>
               <option value="one-shot">ВАНШОТ</option>
             </select>

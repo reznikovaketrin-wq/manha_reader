@@ -29,7 +29,7 @@ type PublicationType = 'censored' | 'uncensored';
 const statusLabels: Record<StatusType, string> = {
   'ongoing': 'ОНҐОЇНҐ',
   'completed': 'ЗАВЕРШЕНО',
-  'hiatus': 'ПРИЗУПИНЕНО',
+  'hiatus': 'ПОКИНУТО',
   'paused': 'НА ПАУЗІ',
   'one-shot': 'ВАНШОТ',
 };

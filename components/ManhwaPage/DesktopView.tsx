@@ -30,7 +30,7 @@ const getStatusText = (status: string): string => {
   const statusMap: Record<string, string> = {
     'ongoing': 'ОНҐОЇНҐ',
     'completed': 'ЗАВЕРШЕНО',
-    'hiatus': 'ПРИЗУПИНЕНО',
+    'hiatus': 'ПОКИНУТО',
     'paused': 'НА ПАУЗІ',
     'one-shot': 'ВАНШОТ',
   };

@@ -51,7 +51,7 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
   const statusMap: Record<string, string> = {
     'ongoing': 'ОНҐОЇНҐ',
     'completed': 'ЗАВЕРШЕНО',
-    'hiatus': 'ПРИЗУПИНЕНО',
+    'hiatus': 'ПОКИНУТО',
     'paused': 'НА ПАУЗІ',
     'one-shot': 'ВАНШОТ',
   };
