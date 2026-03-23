@@ -80,7 +80,26 @@ export async function POST(request: NextRequest, { params }: any) {
       .order('chapter_number', { ascending: false })
       .limit(1);
 
-    const nextChapterNumber = (maxData?.[0]?.chapter_number || 0) + 1;
+    let nextChapterNumber = (maxData?.[0]?.chapter_number || 0) + 1;
+    
+    // Проверить, существует ли уже глава с таким номером
+    // Если существует, найти следующий доступный номер
+    let chapterExists = true;
+    while (chapterExists) {
+      const { data: existingChapter } = await supabase
+        .from('chapters')
+        .select('id')
+        .eq('manhwa_id', manhwaId)
+        .eq('chapter_number', nextChapterNumber)
+        .single();
+      
+      if (!existingChapter) {
+        chapterExists = false;
+      } else {
+        nextChapterNumber++;
+      }
+    }
+
     const chapterId = String(nextChapterNumber).padStart(2, '0');
 
     const { data, error } = await supabase
