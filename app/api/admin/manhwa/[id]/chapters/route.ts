@@ -77,16 +77,16 @@ export async function POST(request: NextRequest, { params }: any) {
     // Если номер главы указан в теле запроса, использовать его
     if (body.chapter_number !== undefined && body.chapter_number !== null) {
       nextChapterNumber = Number(body.chapter_number);
+      console.log(`📝 [API] Custom chapter number: ${nextChapterNumber}`);
       
       // Проверить, не существует ли уже глава с таким номером
-      const { data: existingChapter } = await supabase
+      const { data: existingChapter, error: checkError } = await supabase
         .from('chapters')
         .select('id')
         .eq('manhwa_id', manhwaId)
-        .eq('chapter_number', nextChapterNumber)
-        .single();
+        .eq('chapter_number', nextChapterNumber);
       
-      if (existingChapter) {
+      if (existingChapter && existingChapter.length > 0) {
         throw new Error(`Chapter ${nextChapterNumber} already exists for this manhwa`);
       }
     } else {
@@ -98,11 +98,20 @@ export async function POST(request: NextRequest, { params }: any) {
         .order('chapter_number', { ascending: false })
         .limit(1);
 
-      nextChapterNumber = (maxData?.[0]?.chapter_number || -1) + 1;
+      // Если нет глав, начинаем с 0; иначе берем max + 1
+      if (maxData && maxData.length > 0) {
+        nextChapterNumber = maxData[0].chapter_number + 1;
+        console.log(`📊 [API] Found max chapter ${maxData[0].chapter_number}, next will be ${nextChapterNumber}`);
+      } else {
+        nextChapterNumber = 0;
+        console.log(`📊 [API] No chapters found, starting with 0`);
+      }
     }
 
     // Создать ID главы из номера (без padStart для поддержки дробных чисел)
     const chapterId = String(nextChapterNumber).replace('.', '-');
+
+    console.log(`🎯 [API] Creating chapter: ID=${chapterId}, Number=${nextChapterNumber}, Manhwa=${manhwaId}`);
 
     const { data, error } = await supabase
       .from('chapters')
