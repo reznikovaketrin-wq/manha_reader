@@ -226,11 +226,11 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
               onChange={handleInputChange}
               className="w-full px-4 py-3 bg-black border-2 border-white/10 rounded-xl text-text-main focus:outline-none focus:border-[#ff1b6d]"
             >
-              <option value="ongoing">Онґоїнґ</option>
-              <option value="completed">Завершена</option>
-              <option value="hiatus">Призупинено</option>
-              <option value="paused">На паузі</option>
-              <option value="ваншот">Ваншот</option>
+              <option value="ongoing">🔄 ОНҐОЇНҐ</option>
+              <option value="completed">✅ ЗАВЕРШЕНО</option>
+              <option value="hiatus">⏸️ ПРИЗУПИНЕНО</option>
+              <option value="paused">⏹️ НА ПАУЗІ</option>
+              <option value="one-shot">📖 ВАНШОТ</option>
             </select>
           </div>
 
