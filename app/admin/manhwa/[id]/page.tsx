@@ -68,6 +68,7 @@ export default function AdminManhwaDetailPage() {
   const [createFormData, setCreateFormData] = useState({ 
     title: '', 
     description: '',
+    chapter_number: undefined as number | undefined,
     vip_only: false,
     vip_early_days: 0,
   });
@@ -337,6 +338,7 @@ export default function AdminManhwaDetailPage() {
         body: JSON.stringify({
           title: createFormData.title,
           description: createFormData.description,
+          chapter_number: createFormData.chapter_number,
           vip_only: createFormData.vip_only,
           vip_early_days: createFormData.vip_early_days,
         }),
@@ -346,7 +348,7 @@ export default function AdminManhwaDetailPage() {
 
       const data = await response.json();
       setChapters((prev) => [...prev, data.data]);
-      setCreateFormData({ title: '', description: '', vip_only: false, vip_early_days: 0 });
+      setCreateFormData({ title: '', description: '', chapter_number: undefined, vip_only: false, vip_early_days: 0 });
       setModal('none');
       await invalidateManhwaCache(id);
       console.log('✅ Chapter created');
@@ -1014,7 +1016,7 @@ export default function AdminManhwaDetailPage() {
                 <button
                   onClick={() => {
                     setModal('create');
-                    setCreateFormData({ title: '', description: '', vip_only: false, vip_early_days: 0 });
+                    setCreateFormData({ title: '', description: '', chapter_number: undefined, vip_only: false, vip_early_days: 0 });
                   }}
                   className="px-4 py-2 relative bg-black text-white rounded-lg font-semibold overflow-hidden"
                   style={{
@@ -1032,7 +1034,7 @@ export default function AdminManhwaDetailPage() {
                   <button
                     onClick={() => {
                       setModal('create');
-                      setCreateFormData({ title: '', description: '', vip_only: false, vip_early_days: 0 });
+                      setCreateFormData({ title: '', description: '', chapter_number: undefined, vip_only: false, vip_early_days: 0 });
                     }}
                     className="px-4 py-2 relative bg-black text-white rounded-lg font-semibold overflow-hidden"
                     style={{
@@ -1180,6 +1182,22 @@ export default function AdminManhwaDetailPage() {
           <div className="bg-card-bg rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold text-text-main mb-4">Створити розділ</h2>
             <form onSubmit={handleCreateChapter} className="space-y-4">
+              <div>
+                <label className="block text-sm text-text-muted mb-2">Номер розділу (опціонально):</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={createFormData.chapter_number ?? ''}
+                  onChange={(e) => setCreateFormData({...createFormData, chapter_number: e.target.value ? Number(e.target.value) : undefined})}
+                  className="w-full px-3 py-2 bg-white text-black border border-text-muted/20 rounded focus:outline-none focus:border-blue-500"
+                  placeholder="Автоматичний (залишити порожнім)"
+                />
+                <p className="text-xs text-text-muted mt-1">
+                  {createFormData.chapter_number !== undefined 
+                    ? `📌 Будет создан розділ ${createFormData.chapter_number}`
+                    : '⚡ Автоматически увеличится на 1 от максимального'}
+                </p>
+              </div>
               <div>
                 <label className="block text-sm text-text-muted mb-2">Назва:</label>
                 <input

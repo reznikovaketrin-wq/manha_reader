@@ -72,20 +72,13 @@ export async function POST(request: NextRequest, { params }: any) {
     const body = await request.json();
     const supabase = getSupabaseAdmin();
 
-    // Получить максимальный номер главы
-    const { data: maxData } = await supabase
-      .from('chapters')
-      .select('chapter_number')
-      .eq('manhwa_id', manhwaId)
-      .order('chapter_number', { ascending: false })
-      .limit(1);
+    let nextChapterNumber: number;
 
-    let nextChapterNumber = (maxData?.[0]?.chapter_number || 0) + 1;
-    
-    // Проверить, существует ли уже глава с таким номером
-    // Если существует, найти следующий доступный номер
-    let chapterExists = true;
-    while (chapterExists) {
+    // Если номер главы указан в теле запроса, использовать его
+    if (body.chapter_number !== undefined && body.chapter_number !== null) {
+      nextChapterNumber = Number(body.chapter_number);
+      
+      // Проверить, не существует ли уже глава с таким номером
       const { data: existingChapter } = await supabase
         .from('chapters')
         .select('id')
@@ -93,14 +86,23 @@ export async function POST(request: NextRequest, { params }: any) {
         .eq('chapter_number', nextChapterNumber)
         .single();
       
-      if (!existingChapter) {
-        chapterExists = false;
-      } else {
-        nextChapterNumber++;
+      if (existingChapter) {
+        throw new Error(`Chapter ${nextChapterNumber} already exists for this manhwa`);
       }
+    } else {
+      // Автоматическое увеличение: найти максимальный номер и добавить 1
+      const { data: maxData } = await supabase
+        .from('chapters')
+        .select('chapter_number')
+        .eq('manhwa_id', manhwaId)
+        .order('chapter_number', { ascending: false })
+        .limit(1);
+
+      nextChapterNumber = (maxData?.[0]?.chapter_number || -1) + 1;
     }
 
-    const chapterId = String(nextChapterNumber).padStart(2, '0');
+    // Создать ID главы из номера (без padStart для поддержки дробных чисел)
+    const chapterId = String(nextChapterNumber).replace('.', '-');
 
     const { data, error } = await supabase
       .from('chapters')
