@@ -1100,9 +1100,9 @@ export default function AdminManhwaDetailPage() {
                                 🔒 VIP Only
                               </span>
                             )}
-                            {!chapter.vip_only && chapter.vip_early_days && chapter.vip_early_days > 0 && (
+                            {!chapter.vip_only && chapter.vip_early_days && chapter.vip_early_days > 0 && chapter.scheduled_at && (
                               <span className="px-2 py-1 bg-indigo-600/20 text-indigo-400 text-xs rounded border border-indigo-500/30">
-                                ⏰ VIP +{chapter.vip_early_days}д
+                                🔐 VIP: {new Date(new Date(chapter.scheduled_at).getTime() - chapter.vip_early_days * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA')}
                               </span>
                             )}
                           </div>
@@ -1112,9 +1112,9 @@ export default function AdminManhwaDetailPage() {
                           <div className="flex gap-4 text-sm text-text-muted">
                             <span>📄 {chapter.pages_count} сторінок</span>
                             <span>📅 {new Date(chapter.created_at).toLocaleDateString('uk-UA')}</span>
-                            {chapter.status === 'scheduled' && (
+                            {chapter.status === 'scheduled' && chapter.scheduled_at && (
                               <span className="text-yellow-400">
-                                ⏰ {new Date(chapter.scheduled_at!).toLocaleString('uk-UA')}
+                                🌍 {new Date(chapter.scheduled_at).toLocaleString('uk-UA')}
                               </span>
                             )}
                           </div>
