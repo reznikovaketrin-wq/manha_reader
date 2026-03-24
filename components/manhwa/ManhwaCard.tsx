@@ -182,14 +182,17 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
         ref={sectionRef}
         className="
           relative w-full bg-[#111]
-          hover:bg-[#141414]
-          transition-all duration-150 ease-linear
+          hover:bg-[#1a1a1a]
+          hover:scale-105
+          hover:shadow-[0_0_30px_rgba(162,89,255,0.4),_0_0_60px_rgba(255,27,109,0.2)]
+          transition-all duration-200 ease-out
           p-[var(--spacing-lg)]
           flex flex-col
           h-[clamp(100px,_40vw,_150px)]
           md:flex-row
           md:h-[clamp(320px,_60vw,_440px)]
           md:p-[var(--spacing-xl)]
+          origin-center
         "
         style={{
           backgroundImage: `url(${backgroundImageUrl})`,
