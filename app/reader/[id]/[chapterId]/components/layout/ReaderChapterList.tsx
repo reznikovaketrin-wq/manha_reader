@@ -42,7 +42,7 @@ export const ReaderChapterList = memo(function ReaderChapterList({
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-medium text-sm truncate text-white">
-                      {chapter.title ? chapter.title : 'Розділ'}
+                      {`Розділ ${chapter.chapterNumber}`}
                     </p>
                     {isLoaded && (
                       <span
