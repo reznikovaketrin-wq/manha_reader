@@ -630,11 +630,12 @@ export default function AdminManhwaDetailPage() {
 
   // ── Редагування нумерації глави ───────────────────────────────────────────
   const handleSaveChapterNumber = async (chapterId: number) => {
-    const newNum = parseInt(editChapterNumber, 10);
+    const newNum = parseFloat(editChapterNumber);
     if (isNaN(newNum)) {
       alert('Введіть числовий номер розділу');
       return;
     }
+    const newChapterId = String(newNum).replace('.', '-');
     try {
       if (!token) throw new Error('No token');
       const res = await fetch(`/api/admin/chapters/${chapterId}`, {
@@ -648,7 +649,7 @@ export default function AdminManhwaDetailPage() {
       if (!res.ok) throw new Error('Save failed');
       setChapters((prev) =>
         prev
-          .map((ch) => (ch.id === chapterId ? { ...ch, chapter_number: newNum } : ch))
+          .map((ch) => (ch.id === chapterId ? { ...ch, chapter_number: newNum, chapter_id: newChapterId } : ch))
           .sort((a, b) => a.chapter_number - b.chapter_number)
       );
       setEditingChapterId(null);

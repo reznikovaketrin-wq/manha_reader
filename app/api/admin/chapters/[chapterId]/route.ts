@@ -144,7 +144,11 @@ export async function PUT(request: NextRequest, { params }: any) {
     if (body.description !== undefined) updateData.description = body.description;
     if (body.status !== undefined) updateData.status = body.status;
     if (body.scheduled_at !== undefined) updateData.scheduled_at = body.scheduled_at;
-    if (body.chapter_number !== undefined) updateData.chapter_number = body.chapter_number;
+    if (body.chapter_number !== undefined) {
+      updateData.chapter_number = body.chapter_number;
+      // also sync chapter_id so R2 folder name stays consistent with chapter_number
+      updateData.chapter_id = String(body.chapter_number).replace('.', '-');
+    }
 
     const { data, error } = await supabase
       .from('chapters')
@@ -194,7 +198,7 @@ export async function DELETE(request: NextRequest, { params }: any) {
     // 1️⃣ Отримати дані глави (manhwa_id, chapter_number) та всі file_path сторінок ДО видалення
     const { data: chapter, error: chapterFetchError } = await supabase
       .from('chapters')
-      .select('id, manhwa_id, chapter_number')
+      .select('id, manhwa_id, chapter_number, chapter_id')
       .eq('id', chapterId)
       .single();
 
@@ -236,9 +240,11 @@ export async function DELETE(request: NextRequest, { params }: any) {
         }
       }
 
-      // Варіант B: також прибираємо всю папку глави (на випадок залишків)
-      if (chapter.manhwa_id && chapter.chapter_number !== undefined) {
-        const prefix = `${chapter.manhwa_id}/chapters/${chapter.chapter_number}/`;
+      // Use chapter_id (the actual R2 folder name) — it may differ from chapter_number
+      // if the chapter was renamed after initial creation
+      const r2FolderKey = chapter.chapter_id || String(chapter.chapter_number);
+      if (chapter.manhwa_id && r2FolderKey) {
+        const prefix = `${chapter.manhwa_id}/chapters/${r2FolderKey}/`;
         console.log(`📦 [R2] Sweeping prefix: ${prefix}`);
         await deleteR2Prefix(prefix);
       }
