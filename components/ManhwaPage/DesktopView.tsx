@@ -41,7 +41,7 @@ const getTypeText = (type?: string): string => {
   const typeMap: Record<string, string> = {
     'manhwa': 'МАНХВА',
     'manga': 'МАНҐіА',
-    'manhua': 'МАНЬХУА',
+    'manhua': 'МАНЬХВА',
     'novel': 'НОВЕЛ',
   };
   return typeMap[type || 'manhwa'] || 'МАНХВА';

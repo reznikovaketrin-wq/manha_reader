@@ -245,7 +245,7 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
             >
               <option value="manhwa">🇰🇷 Манхва</option>
               <option value="manga">🇯🇵 Манґа</option>
-              <option value="manhua">🇨🇳 Маньхуа</option>
+              <option value="manhua">🇨🇳 Маньхва</option>
               <option value="novel">📖 Новел</option>
             </select>
           </div>

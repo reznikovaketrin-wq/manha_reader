@@ -265,7 +265,7 @@ const ChaptersList = memo(function ChaptersList({
                 )}
                 <div className={styles.chapterInfo}>
                   <p className={styles.chapterTitle}>
-                    Том {Math.ceil(chapter.chapterNumber / 20)} Розділ {chapter.chapterNumber}
+                    Розділ {chapter.chapterNumber}
                   </p>
                 </div>
               </div>

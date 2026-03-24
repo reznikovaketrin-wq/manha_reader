@@ -208,8 +208,8 @@ function ProfileContent() {
               <div className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-3">
                 {stats.totalManhwa}
               </div>
-              <div className="text-white font-semibold mb-1">Прочитано манхви</div>
-              <div className="text-gray-400 text-sm">Унікальних творів</div>
+              <div className="text-white font-semibold mb-1">Прочитано тайтлів</div>
+          
             </div>
 
             {/* Total Chapters */}
@@ -217,8 +217,7 @@ function ProfileContent() {
               <div className="text-5xl font-bold bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent mb-3">
                 {stats.totalChapters}
               </div>
-              <div className="text-white font-semibold mb-1">Прочитано розділів</div>
-              <div className="text-gray-400 text-sm">Всього глав</div>
+              <div className="text-white font-semibold">Прочитано розділів</div>
             </div>
 
             {/* Time Spent */}

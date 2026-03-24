@@ -976,7 +976,7 @@ export default function AdminManhwaDetailPage() {
                     >
                       <option value="manhwa">🇰🇷 Манхва</option>
                       <option value="manga">🇯🇵 Манґа</option>
-                      <option value="manhua">🇨🇳 Маньхуа</option>
+                      <option value="manhua">🇨🇳 Маньхва</option>
                     </select>
                   </div>
                 </div>
