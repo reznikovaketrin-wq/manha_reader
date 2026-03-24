@@ -154,9 +154,18 @@ export function useReaderUI(): UseReaderUIReturn {
         } else if ((elem as any).msRequestFullscreen) {
           await (elem as any).msRequestFullscreen();
         }
-        return; // Success — state will be updated by fullscreenchange event
+
+        // Wait a tick and check if fullscreen actually activated.
+        // Telegram Android silently ignores requestFullscreen() — no error thrown,
+        // no fullscreenchange event fired, fullscreenElement stays null.
+        await new Promise<void>((resolve) => setTimeout(resolve, 150));
+        const activated = !!(
+          document.fullscreenElement ||
+          (document as any).webkitFullscreenElement
+        );
+        if (activated) return; // Real fullscreen worked — fall through to pseudo-fullscreen otherwise
       } catch (err) {
-        // Native API exists but was blocked (e.g. Telegram Android) — fall through to pseudo-fullscreen
+        // Native API exists but was blocked — fall through to pseudo-fullscreen
       }
     }
 
