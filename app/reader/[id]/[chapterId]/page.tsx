@@ -76,6 +76,16 @@ export default function ReaderPage() {
   // === UI State ===
   const ui = useReaderUI();
 
+  // === Mobile detection ===
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    setIsMobile(mediaQuery.matches);
+    const handleChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
   // === Calculate total pages ===
   const totalPages = useMemo(
     () => chapters.reduce((sum, ch) => sum + ch.pages.length, 0),
@@ -673,6 +683,7 @@ export default function ReaderPage() {
 
       <ReaderSettingsPanel
         visible={ui.showUI && ui.showSettings}
+        isMobile={isMobile}
         brightness={ui.brightness}
         widthMode={ui.widthMode}
         isFullscreen={ui.isFullscreen}

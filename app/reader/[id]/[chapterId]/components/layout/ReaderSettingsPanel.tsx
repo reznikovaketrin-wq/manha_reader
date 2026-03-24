@@ -5,6 +5,7 @@ import type { WidthMode } from '../../hooks/useReaderUI';
 
 interface ReaderSettingsPanelProps {
   visible: boolean;
+  isMobile?: boolean;
   brightness: number;
   widthMode: WidthMode;
   isFullscreen: boolean;
@@ -30,6 +31,7 @@ const WIDTH_MODE_OPTIONS: { value: WidthMode; label: string; icon: string }[] = 
  */
 export const ReaderSettingsPanel = memo(function ReaderSettingsPanel({
   visible,
+  isMobile = false,
   brightness,
   widthMode,
   isFullscreen,
@@ -179,38 +181,42 @@ export const ReaderSettingsPanel = memo(function ReaderSettingsPanel({
         {/* === Divider === */}
         <hr className="border-gray-700" />
 
-        {/* === Width Mode === */}
-        <div className="space-y-3">
-          <label className="text-sm font-medium text-gray-200 flex items-center gap-2">
-            <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
-            Ширина сторінки
-          </label>
+        {/* === Width Mode - only show on desktop === */}
+        {!isMobile && (
+          <>
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-200 flex items-center gap-2">
+                <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                </svg>
+                Ширина сторінки
+              </label>
 
-          <div className="space-y-2">
-            {WIDTH_MODE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => onWidthModeChange(option.value)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left text-sm ${widthMode === option.value ? 'text-white' : 'bg-gray-700 border border-transparent hover:bg-gray-600 text-white/80'}`}
-                  style={widthMode === option.value ? { background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box', border: '2px solid transparent' } : undefined}
-                >
-                <span className="text-base">{option.icon}</span>
-                <span>{option.label}</span>
-                  {widthMode === option.value && (
-                  <svg className="w-4 h-4 ml-auto text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
+              <div className="space-y-2">
+                {WIDTH_MODE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => onWidthModeChange(option.value)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left text-sm ${widthMode === option.value ? 'text-white' : 'bg-gray-700 border border-transparent hover:bg-gray-600 text-white/80'}`}
+                      style={widthMode === option.value ? { background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box', border: '2px solid transparent' } : undefined}
+                    >
+                    <span className="text-base">{option.icon}</span>
+                    <span>{option.label}</span>
+                      {widthMode === option.value && (
+                      <svg className="w-4 h-4 ml-auto text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* === Divider === */}
-        <hr className="border-gray-700" />
+            {/* === Divider === */}
+            <hr className="border-gray-700" />
+          </>
+        )}
 
         {/* === Infinite Scroll === */}
         <div className="space-y-3">
@@ -280,28 +286,30 @@ export const ReaderSettingsPanel = memo(function ReaderSettingsPanel({
         {/* === Divider === */}
         <hr className="border-gray-700" />
 
-        {/* === Hotkeys === */}
-        <div className="space-y-2">
-          <p className="text-xs text-gray-500 font-medium mb-2">Гарячі клавіші</p>
-          <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
-            <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">Esc</kbd>
-              <span>Інтерфейс</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">F</kbd>
-              <span>Fullscreen</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">←→</kbd>
-              <span>Навігація</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">Space</kbd>
-              <span>Далі</span>
+        {/* === Hotkeys - only show on desktop === */}
+        {!isMobile && (
+          <div className="space-y-2">
+            <p className="text-xs text-gray-500 font-medium mb-2">Гарячі клавіші</p>
+            <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+              <div className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">Esc</kbd>
+                <span>Інтерфейс</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">F</kbd>
+                <span>Fullscreen</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">←→</kbd>
+                <span>Навігація</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <kbd className="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">Space</kbd>
+                <span>Далі</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
  'use client';
 
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/app/providers/UserProvider';
 import { useParams } from 'next/navigation';
@@ -98,6 +98,16 @@ function ManhwaPageContent() {
 
   const router = useRouter();
 
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleRatingModalOpen = () => {
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+    } else {
+      ui.onRatingModalOpen();
+    }
+  }; 
+
   // Зберегти час перегляду сторінки манхви (для плашки "Оновлено")
   useEffect(() => {
     if (manhwaId) markManhwaVisited(manhwaId);
@@ -182,7 +192,8 @@ function ManhwaPageContent() {
   // ============================================
 
   return (
-    <ManhwaPage
+    <>
+      <ManhwaPage
       // ID
       manhwaId={manhwaId}
 
@@ -197,7 +208,7 @@ function ManhwaPageContent() {
 
       // Коллбеки
       onTabChange={ui.onTabChange}
-      onRatingModalOpen={ui.onRatingModalOpen}
+      onRatingModalOpen={handleRatingModalOpen}
       onRatingModalClose={ui.onRatingModalClose}
       onRatingSubmit={handleRatingSubmit}
 
@@ -211,6 +222,56 @@ function ManhwaPageContent() {
       // Ошибки
       error={manhwaError}
     />
+
+    {/* Модалка авторизации при попытке оценить без логина */}
+    {showAuthModal && (
+      <div
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '20px',
+        }}
+        onClick={() => setShowAuthModal(false)}
+      >
+        <div
+          style={{
+            background: '#0a0a0a', border: '1px solid #3a3a3a',
+            borderRadius: '12px', padding: '28px', maxWidth: '360px', width: '100%',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: '700', marginBottom: '12px' }}>
+            ⭐ Залиште оцінку
+          </h2>
+          <p style={{ color: '#9a9a9a', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
+            Щоб оцінити мангу, необхідно увійти в акаунт.
+          </p>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => { setShowAuthModal(false); router.push('/auth'); }}
+              style={{
+                flex: 1, padding: '10px', borderRadius: '8px', border: 'none',
+                background: 'linear-gradient(135deg, #FF1B6D, #A259FF)',
+                color: '#fff', fontWeight: '600', fontSize: '14px', cursor: 'pointer',
+              }}
+            >
+              Увійти
+            </button>
+            <button
+              onClick={() => setShowAuthModal(false)}
+              style={{
+                flex: 1, padding: '10px', borderRadius: '8px',
+                border: '1px solid #3a3a3a', background: 'transparent',
+                color: '#9a9a9a', fontSize: '14px', cursor: 'pointer',
+              }}
+            >
+              Скасувати
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
