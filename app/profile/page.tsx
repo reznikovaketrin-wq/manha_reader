@@ -197,8 +197,6 @@ function ProfileContent() {
           </div>
           
           <h2 className="text-4xl font-bold mb-2">{fullName}</h2>
-          <p className="text-gray-400 text-lg mb-2">{profile?.username || user.email?.split('@')[0]}</p>
-          <p className="text-sm text-gray-500">ID: {user.id.slice(0, 8)}...</p>
         </div>
 
         {/* Statistics Section */}
