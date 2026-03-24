@@ -116,28 +116,61 @@ export function useReaderUI(): UseReaderUIReturn {
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+      // Clean up pseudo-fullscreen on unmount
+      delete document.documentElement.dataset.pseudoFullscreen;
     };
   }, []);
 
   // === Fullscreen API ===
-  const enterFullscreen = useCallback(async () => {
-    try {
-      const elem = document.documentElement;
-      if (elem.requestFullscreen) {
-        await elem.requestFullscreen();
-      } else if ((elem as any).webkitRequestFullscreen) {
-        await (elem as any).webkitRequestFullscreen();
-      } else if ((elem as any).mozRequestFullScreen) {
-        await (elem as any).mozRequestFullScreen();
-      } else if ((elem as any).msRequestFullscreen) {
-        await (elem as any).msRequestFullscreen();
-      }
-    } catch (err) {
-      // Fullscreen not supported or denied
-    }
+
+  // Activate pseudo-fullscreen for browsers that don't support the Fullscreen API (iOS Safari, Telegram iOS)
+  const enterPseudoFullscreen = useCallback(() => {
+    document.documentElement.dataset.pseudoFullscreen = 'true';
+    setIsFullscreen(true);
+    // Attempt to hide the iOS address bar by scrolling 1px
+    try { window.scrollTo(0, 1); } catch (_) {}
   }, []);
 
+  const exitPseudoFullscreen = useCallback(() => {
+    delete document.documentElement.dataset.pseudoFullscreen;
+    setIsFullscreen(false);
+  }, []);
+
+  const enterFullscreen = useCallback(async () => {
+    const elem = document.documentElement;
+
+    // Check if native Fullscreen API is actually allowed by the browser
+    // iOS Safari and Telegram iOS always return false/undefined here
+    const nativeEnabled = !!(document.fullscreenEnabled || (document as any).webkitFullscreenEnabled);
+
+    if (nativeEnabled) {
+      try {
+        if (elem.requestFullscreen) {
+          await elem.requestFullscreen();
+        } else if ((elem as any).webkitRequestFullscreen) {
+          await (elem as any).webkitRequestFullscreen();
+        } else if ((elem as any).mozRequestFullScreen) {
+          await (elem as any).mozRequestFullScreen();
+        } else if ((elem as any).msRequestFullscreen) {
+          await (elem as any).msRequestFullscreen();
+        }
+        return; // Success — state will be updated by fullscreenchange event
+      } catch (err) {
+        // Native API exists but was blocked (e.g. Telegram Android) — fall through to pseudo-fullscreen
+      }
+    }
+
+    // Pseudo-fullscreen fallback: iOS Safari, Telegram iOS, or blocked API
+    enterPseudoFullscreen();
+  }, [enterPseudoFullscreen]);
+
   const exitFullscreen = useCallback(async () => {
+    // If we're in pseudo-fullscreen mode, just clear it
+    if (document.documentElement.dataset.pseudoFullscreen) {
+      exitPseudoFullscreen();
+      return;
+    }
+
     try {
       if (document.exitFullscreen) {
         await document.exitFullscreen();
@@ -150,8 +183,9 @@ export function useReaderUI(): UseReaderUIReturn {
       }
     } catch (err) {
       // Already not in fullscreen
+      setIsFullscreen(false);
     }
-  }, []);
+  }, [exitPseudoFullscreen]);
 
   const toggleFullscreen = useCallback(() => {
     if (isFullscreen) {
