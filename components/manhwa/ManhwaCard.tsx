@@ -182,7 +182,7 @@ const ManhwaCard = memo(function ManhwaCard({ manhwa }: ManhwaCardProps) {
         ref={sectionRef}
         className="
           relative w-full bg-[#111]
-          hover:scale-102
+          hover:scale-[1.02]
           transition-transform duration-200 ease-out
           p-[var(--spacing-lg)]
           flex flex-col
