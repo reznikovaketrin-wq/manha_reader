@@ -32,7 +32,6 @@ async function verifyAdmin(token: string) {
 export async function PUT(request: NextRequest, { params }: any) {
   try {
     const chapterId = params.chapterId;
-    console.log('📤 [API] Publishing chapter:', chapterId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -52,14 +51,12 @@ export async function PUT(request: NextRequest, { params }: any) {
     if (action === 'publish') {
       // Опублікувати зараз
       // "Publish now" + vip_early_days: VIP отримує зараз, публіка — через N днів
-      console.log('📤 Publishing now');
       
       const publishedAt = new Date();
       let publicAvailableAt = null;
       
       if (!vip_only && vip_early_days && vip_early_days > 0) {
         publicAvailableAt = new Date(publishedAt.getTime() + vip_early_days * 24 * 60 * 60 * 1000);
-        console.log(`⏰ VIP gets access now. Public available at: ${publicAvailableAt.toISOString()}`);
       }
       
       updateData = {
@@ -87,11 +84,9 @@ export async function PUT(request: NextRequest, { params }: any) {
       if (!vip_only && vip_early_days && vip_early_days > 0) {
         // VIP бачить на N днів раніше за публічну дату
         vipAccessAt = new Date(publicDate.getTime() - vip_early_days * 24 * 60 * 60 * 1000);
-        console.log(`⏰ Public date: ${publicDate.toISOString()}, VIP access: ${vipAccessAt.toISOString()} (${vip_early_days}d early)`);
       } else {
         // Без раннього доступу — VIP і всі отримують одночасно
         vipAccessAt = publicDate;
-        console.log('📅 Scheduling (no VIP early access):', publicDate.toISOString());
       }
 
       updateData = {
@@ -131,23 +126,18 @@ export async function PUT(request: NextRequest, { params }: any) {
           .update({ last_chapter_date: effectiveDate })
           .eq('id', data.manhwa_id);
         if (dateError) {
-          console.warn('⚠️ [API] Could not update last_chapter_date:', dateError.message);
         } else {
-          console.log(`✅ [API] Updated last_chapter_date to ${effectiveDate} for manhwa ${data.manhwa_id}`);
         }
       }
     }
 
     // ✅ Очищаем кеш при публикации
-    console.log(`🔄 [Cache] Revalidating schedule cache after publish`);
     revalidateTag('schedule-data');
     
     if (data?.manhwa_id) {
       revalidateTag(`manhwa-${data.manhwa_id}`);
       revalidateTag(`chapters-${data.manhwa_id}`);
     }
-
-    console.log('✅ [API] Chapter status updated:', data.status);
     return NextResponse.json({ data, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);
@@ -162,7 +152,6 @@ export async function PUT(request: NextRequest, { params }: any) {
 export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const chapterId = params.chapterId;
-    console.log('❌ [API] Canceling scheduled publish for:', chapterId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -187,14 +176,11 @@ export async function DELETE(request: NextRequest, { params }: any) {
     if (error) throw error;
 
     // ✅ Очищаем кеш при отмене
-    console.log(`🔄 [Cache] Revalidating schedule cache after cancel`);
     revalidateTag('schedule-data');
     
     if (data?.manhwa_id) {
       revalidateTag(`manhwa-${data.manhwa_id}`);
     }
-
-    console.log('✅ [API] Scheduled publish cancelled');
     return NextResponse.json({ data, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);

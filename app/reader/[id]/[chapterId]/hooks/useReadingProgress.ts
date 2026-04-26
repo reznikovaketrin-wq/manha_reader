@@ -70,25 +70,18 @@ export function useReaderProgress({
   useEffect(() => {
     if (!manhwaId || chapters.length === 0 || currentPage < 1) {
       if (debug) {
-        console.log('[useReadingProgress] Skip - not ready:', {
-          manhwaId: !!manhwaId,
-          chaptersCount: chapters.length,
-          currentPage,
-        });
       }
       return;
     }
 
     const chapterInfo = getCurrentChapterInfo();
     if (!chapterInfo) {
-      if (debug) console.log('[useReadingProgress] Skip - no chapter info');
       return;
     }
 
     const saveKey = `${manhwaId}-${chapterInfo.chapterId}-${chapterInfo.pageInChapter}`;
     
     if (lastSavedRef.current === saveKey) {
-      if (debug) console.log('[useReadingProgress] Skip - already saved:', saveKey);
       return;
     }
 
@@ -97,13 +90,6 @@ export function useReaderProgress({
     }
 
     if (debug) {
-      console.log('[useReadingProgress] Scheduling save:', {
-        manhwaId,
-        chapterId: chapterInfo.chapterId,
-        chapterNumber: chapterInfo.chapterNumber,
-        pageInChapter: chapterInfo.pageInChapter,
-        debounceMs,
-      });
     }
 
     // Debounced save
@@ -119,11 +105,6 @@ export function useReaderProgress({
         lastSavedRef.current = saveKey;
         
         if (debug) {
-          console.log('[useReaderProgress] ✅ Saved:', {
-            manhwaId,
-            chapterId: chapterInfo.chapterId,
-            page: chapterInfo.pageInChapter,
-          });
         }
       } catch (error) {
         console.error('[useReaderProgress] ❌ Error saving:', error);
@@ -162,7 +143,6 @@ export function useReaderProgress({
           
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(map));
           
-          if (debug) console.log('[useReaderProgress] Saved on unload');
         }
       } catch (e) {
         // Ignore errors on unload

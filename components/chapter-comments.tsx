@@ -107,10 +107,8 @@ export function ChapterCommentsComponent({
         );
         // Debug log to help verify usernames are present at runtime
         if (process.env.NODE_ENV !== 'production') {
-          console.log('📥 [Comments] Enriched comments loaded:', enrichedData);
         } else {
           // also log in production for a short time to Vercel logs
-          console.log('[Comments] Enriched comments count:', enrichedData.length);
         }
         setComments(enrichedData);
       } catch (err) {
@@ -232,11 +230,9 @@ export function ChapterCommentsComponent({
   const handleDeleteComment = useCallback(
     async (commentId: string) => {
       try {
-        console.log('🗑️ [Delete] Deleting comment:', commentId);
         const result = await deleteChapterComment(commentId);
 
         if (result.success) {
-          console.log('✅ [Delete] Comment deleted successfully');
           // Удалить из списка и все replies к этому комментарию
           setComments(comments.filter(c => c.id !== commentId && c.parent_comment_id !== commentId));
         } else {
@@ -254,11 +250,9 @@ export function ChapterCommentsComponent({
   const handleDeleteReply = useCallback(
     async (replyId: string) => {
       try {
-        console.log('🗑️ [Delete] Deleting reply:', replyId);
         const result = await deleteChapterReply(replyId);
 
         if (result.success) {
-          console.log('✅ [Delete] Reply deleted successfully');
           setComments(comments.filter(c => c.id !== replyId));
         } else {
           alert('Помилка при видаленні: ' + result.error);

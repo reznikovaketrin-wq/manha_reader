@@ -48,21 +48,11 @@ const ChaptersList = memo(function ChaptersList({
     // DEBUG: Проверяем роль пользователя
     const resolvedRole = profile?.role ?? (user as any)?.role ?? 'user';
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔐 Access check:', {
-        chapterNumber: chapter.chapterNumber,
-        userId: user?.id,
-        userRole: resolvedRole,
-        userEmail: user?.email,
-        vipOnly: chapter.vipOnly,
-        vipEarlyDays: chapter.vipEarlyDays,
-        publicAvailableAt: chapter.publicAvailableAt,
-      });
     }
 
     // Админы имеют доступ ко всему
     if (resolvedRole === 'admin') {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ Admin access granted');
       }
       return { hasAccess: true };
     }
@@ -84,14 +74,6 @@ const ChaptersList = memo(function ChaptersList({
       const availableDate = new Date(chapter.publicAvailableAt);
       
       if (process.env.NODE_ENV !== 'production') {
-        console.log('⏰ Early access check:', {
-          now: now.toISOString(),
-          availableDate: availableDate.toISOString(),
-          nowTime: now.getTime(),
-          availableTime: availableDate.getTime(),
-          isBeforeAvailable: now < availableDate,
-          userRole: resolvedRole,
-        });
       }
       
       // VIP имеет доступ всегда
@@ -134,14 +116,6 @@ const ChaptersList = memo(function ChaptersList({
           // Debug: Enhanced logging for read status
           if (chapter.chapterNumber <= 5 && process.env.NODE_ENV !== 'production') {
             const idStr = String(chapter.id);
-            console.log(`[ChaptersList] Chapter ${chapter.chapterNumber} read status:`, {
-              chapterId: chapter.id,
-              chapterIdString: idStr,
-              isRead,
-              readChaptersSize: readChapters.size,
-              readChaptersHasId: readChapters.has(idStr),
-              readChaptersValues: Array.from(readChapters),
-            });
           }
 
           const access = checkChapterAccess(chapter);
@@ -149,13 +123,6 @@ const ChaptersList = memo(function ChaptersList({
           
           // DEBUG: Лог для перевірки VIP полів
           if (chapter.chapterNumber === 1 && process.env.NODE_ENV !== 'production') {
-            console.log('🔍 Chapter 1 VIP data:', {
-              vipOnly: chapter.vipOnly,
-              vipEarlyDays: chapter.vipEarlyDays,
-              publicAvailableAt: chapter.publicAvailableAt,
-              hasAccess: access.hasAccess,
-              userRole: resolvedRoleGlobal || 'guest',
-            });
           }
 
           const handleClick = (e: React.MouseEvent) => {

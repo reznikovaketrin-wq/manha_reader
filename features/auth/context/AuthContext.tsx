@@ -102,8 +102,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // ===== SIGN UP =====
   const signUp = useCallback(async (email: string, password: string, username?: string) => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-    console.log('🔄 [AuthContext] Calling authService.signUp...');
     const result = await authService.signUp(email, password, { username });
 
     if (result.error) {
@@ -117,7 +115,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     if (result.user && result.session) {
-      console.log('✅ [AuthContext] User & session received, migrating data...');
       // Migrate guest data
       if (dataMigrationService.hasGuestData()) {
         await dataMigrationService.migrateAllData(result.user.id);
@@ -132,7 +129,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
     } else {
       // Email confirmation required
-      console.log('📧 [AuthContext] Email confirmation required (no session)');
       setState(prev => ({
         ...prev,
         isLoading: false,

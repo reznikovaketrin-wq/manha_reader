@@ -81,8 +81,6 @@ export function UserManagement({ token }: UserManagementProps) {
           user.id === userId ? { ...user, role: newRole } : user
         )
       );
-
-      console.log(`✅ Role updated for user ${userId}: ${newRole}`);
     } catch (err) {
       console.error('❌ Error updating role:', err);
       setError(err instanceof Error ? err.message : 'Failed to update role');

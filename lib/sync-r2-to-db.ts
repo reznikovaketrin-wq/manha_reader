@@ -55,7 +55,6 @@ async function listR2Files(prefix: string = '') {
  */
 async function getManhwaFoldersFromR2() {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('📂 Сканирую R2 на предмет папок манхв...\n');
   }
 
   const { folders } = await listR2Files();
@@ -68,13 +67,11 @@ async function getManhwaFoldersFromR2() {
     if (manhwaId && !manhwaId.startsWith('.')) {
       manhwaFolders.push(manhwaId);
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`   📁 ${manhwaId}`);
       }
     }
   }
 
   if (process.env.NODE_ENV !== 'production') {
-    console.log(`\n✅ Найдено папок: ${manhwaFolders.length}\n`);
   }
   return manhwaFolders;
 }
@@ -152,7 +149,6 @@ async function updateManhwaImages(manhwaId: string, images: { cover: string; bg:
 
     if (Object.keys(updates).length === 0) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`   ⚠️ Нет изображений для ${manhwaId}`);
       }
       return;
     }
@@ -165,10 +161,6 @@ async function updateManhwaImages(manhwaId: string, images: { cover: string; bg:
     if (error) throw error;
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`   ✅ Обновлены изображения:`);
-      if (images.cover) console.log(`      📖 cover_image`);
-      if (images.bg) console.log(`      🖼️ bg_image`);
-      if (images.char) console.log(`      👤 char_image`);
     }
   } catch (error) {
     console.error(`   ❌ Ошибка обновления ${manhwaId}:`, error);
@@ -180,7 +172,6 @@ async function updateManhwaImages(manhwaId: string, images: { cover: string; bg:
  */
 async function createChaptersInDB(manhwaId: string, chapters: { number: string; pages: string[] }[]) {
   if (process.env.NODE_ENV !== 'production') {
-    console.log(`   📖 Создание розділов...`);
   }
 
   for (const chapter of chapters) {
@@ -195,7 +186,6 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
 
       if (existing) {
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`      ✅ Розділ ${chapter.number} уже есть`);
         }
         continue;
       }
@@ -219,7 +209,6 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
       if (chapterError) throw chapterError;
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`      ✅ Розділ ${chapter.number} создан (${chapter.pages.length} сторінок)`);
       }
 
       // Создать сторінки
@@ -234,7 +223,6 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
       if (pagesError) throw pagesError;
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`      ✅ Сторінки загружены`);
       }
     } catch (error) {
       console.error(`      ❌ Ошибка создания розділа ${chapter.number}:`, error);
@@ -247,9 +235,6 @@ async function createChaptersInDB(manhwaId: string, chapters: { number: string; 
  */
 export async function syncR2ToDatabase() {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('\n========================================');
-    console.log('🔄 СИНХРОНИЗАЦИЯ R2 → БД');
-    console.log('========================================\n');
   }
 
   try {
@@ -258,7 +243,6 @@ export async function syncR2ToDatabase() {
 
     if (manhwaFolders.length === 0) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('⚠️ Папок манхв не найдено на R2');
       }
       return;
     }
@@ -266,7 +250,6 @@ export async function syncR2ToDatabase() {
     // 2. Для каждой папки манхвы
     for (const manhwaId of manhwaFolders) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`\n📁 Обработка: ${manhwaId}`);
       }
 
       // Проверить существует ли манхва в БД
@@ -278,7 +261,6 @@ export async function syncR2ToDatabase() {
 
       if (!manhwa) {
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`   ⚠️ Манхва НЕ НАЙДЕНА в БД (создай вручную)`);
         }
         continue;
       }
@@ -295,15 +277,11 @@ export async function syncR2ToDatabase() {
         await createChaptersInDB(manhwaId, chapters);
       } else {
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`   ⚠️ Розділов не найдено`);
         }
       }
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('\n========================================');
-      console.log('✅ СИНХРОНИЗАЦИЯ ЗАВЕРШЕНА');
-      console.log('========================================\n');
     }
   } catch (error) {
     console.error('❌ Критическая ошибка:', error);

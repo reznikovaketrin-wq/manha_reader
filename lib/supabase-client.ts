@@ -87,7 +87,6 @@ export async function trackManhwaView(
       }
     } catch (err) {
       // localStorage may fail in some environments, continue without dedupe
-      console.warn('localStorage dedupe failed', err);
     }
 
     // Call API route instead of direct DB access (which is blocked by RLS)
@@ -277,7 +276,6 @@ export async function upsertReadChapter(
 ) {
   try {
     // Try to use RPC function for atomic operation (chapterId must be TEXT, not array)
-    console.log('[upsertReadChapter] RPC call params', { userId, manhwaId, chapterId, chapterNumber, cap });
     const { data, error } = await supabase.rpc('add_read_chapter', {
       uid: userId,
       mid: manhwaId,
@@ -287,11 +285,8 @@ export async function upsertReadChapter(
     });
 
     if (error) {
-      console.warn('RPC add_read_chapter failed, using client-side fallback:', error);
       return await upsertReadChapterFallback(userId, manhwaId, chapterId, chapterNumber, cap);
     }
-
-    console.log('[upsertReadChapter] RPC success', { userId, manhwaId, chapterId, chapterNumber });
     return { success: true, data };
   } catch (error) {
     console.error('Error in upsertReadChapter:', error);
@@ -318,8 +313,6 @@ async function upsertReadChapterFallback(
       .eq('user_id', userId)
       .eq('manhwa_id', manhwaId)
       .maybeSingle();
-    
-    console.log('[upsertReadChapterFallback] existing progress', { userId, manhwaId, existing });
 
     // ИСПРАВЛЕНО: Нормализуем все ID к строкам для консистентности
     const rawChapters = (existing?.read_chapters as any[]) ?? [];
@@ -328,15 +321,6 @@ async function upsertReadChapterFallback(
     
     // Убедимся что chapterId тоже строка
     const chapterIdStr = String(chapterId);
-    
-    console.log('[upsertReadChapterFallback] normalization debug', {
-      rawChapters,
-      rawTypes: rawChapters.map(id => typeof id),
-      recent,
-      recentTypes: recent.map(id => typeof id),
-      chapterIdStr,
-      chapterIdStrType: typeof chapterIdStr
-    });
     
     // Remove if already present (for recency)
     recent = recent.filter(id => id !== chapterIdStr);
@@ -365,17 +349,6 @@ async function upsertReadChapterFallback(
     // Calculate count
     const archivedCount = archived.reduce((sum, r) => sum + (r.e - r.s + 1), 0);
     const totalCount = recent.length + archivedCount;
-    
-    console.log('[upsertReadChapterFallback] writing progress', {
-      userId,
-      manhwaId,
-      chapterId: chapterIdStr,
-      chapterNumber,
-      recentLength: recent.length,
-      recentValues: recent, // ДОБАВЛЕНО: Показать актуальные значения
-      archivedLength: archived.length,
-      totalCount,
-    });
 
     // Upsert
     const { error } = await supabase
@@ -440,7 +413,6 @@ export async function syncGuestReadingHistory(userId: string) {
     
     // Clear localStorage after successful sync
     localStorage.removeItem(localKey);
-    console.log(`[syncGuestReadingHistory] Synced ${synced} chapters from localStorage`);
     
     return { success: true, synced };
   } catch (error) {

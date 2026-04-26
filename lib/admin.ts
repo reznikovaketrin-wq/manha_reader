@@ -42,14 +42,12 @@ export async function verifyAdminAccess(): Promise<
 > {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔍 [verifyAdminAccess] Starting verification...');
     }
 
     // ✅ Получаем cookies - это async в Next.js 14+
     const cookieStore = await cookies();
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📦 [verifyAdminAccess] Cookies obtained');
     }
 
     // ✅ Создаем Supabase client с правильной конфигурацией cookies
@@ -75,7 +73,6 @@ export async function verifyAdminAccess(): Promise<
     );
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔐 [verifyAdminAccess] Supabase client created');
     }
 
     // ✅ Получаем пользователя из Supabase
@@ -85,36 +82,27 @@ export async function verifyAdminAccess(): Promise<
     } = await supabase.auth.getUser();
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('👤 [verifyAdminAccess] Auth getUser result:', {
-        hasUser: !!user,
-        error: userError?.message,
-        email: user?.email,
-      });
     }
 
     if (userError || !user) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔴 [verifyAdminAccess] Not authenticated', userError?.message);
       }
       return null;
     }
 
     const userId = user.id;
     if (process.env.NODE_ENV !== 'production') {
-      console.log('✅ [verifyAdminAccess] User authenticated:', user.email);
     }
 
     // ✅ Проверка кэша
     const cachedAdmin = getCachedAdmin(userId);
     if (cachedAdmin) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('💾 [verifyAdminAccess] Using cached admin data');
       }
       return { admin: cachedAdmin };
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🌐 [verifyAdminAccess] Cache miss, fetching from DB...');
     }
 
     // ✅ Получаем роль из БД
@@ -125,11 +113,6 @@ export async function verifyAdminAccess(): Promise<
       .single();
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📊 [verifyAdminAccess] Profile fetch result:', {
-        hasProfile: !!profile,
-        error: profileError?.message,
-        role: profile?.role,
-      });
     }
 
     if (profileError || !profile) {
@@ -140,7 +123,6 @@ export async function verifyAdminAccess(): Promise<
     // ✅ Проверяем роль
     if (profile.role !== 'admin') {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔴 [verifyAdminAccess] User is not admin, role:', profile.role);
       }
       return { error: 'Not an admin' };
     }
@@ -155,7 +137,6 @@ export async function verifyAdminAccess(): Promise<
 
     setCachedAdmin(userId, adminUser);
     if (process.env.NODE_ENV !== 'production') {
-      console.log('✅ [verifyAdminAccess] Admin verified:', user.email);
     }
 
     return { admin: adminUser };
@@ -174,7 +155,6 @@ export async function verifyAdminWithToken(
 ): Promise<AdminUser | null> {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🔑 [verifyAdminWithToken] Starting verification...');
     }
 
     const supabase = createServerClient(
@@ -214,7 +194,6 @@ export async function verifyAdminWithToken(
 
     if (!userDB || userDB.role !== 'admin') {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔴 [verifyAdminWithToken] User is not admin');
       }
       return null;
     }
@@ -228,7 +207,6 @@ export async function verifyAdminWithToken(
 
     setCachedAdmin(userId, adminUser);
     if (process.env.NODE_ENV !== 'production') {
-      console.log('✅ [verifyAdminWithToken] Admin verified');
     }
     return adminUser;
   } catch (error) {

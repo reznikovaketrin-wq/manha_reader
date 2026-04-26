@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
     if (path) {
       // Ребалідація конкретного шляху
       revalidatePath(path);
-      console.log(`✅ [Revalidate API] Revalidated path: ${path}`);
       
       return NextResponse.json({
         success: true,
@@ -45,8 +44,6 @@ export async function POST(request: NextRequest) {
       revalidatePath(`/api/public/${manhwaId}`);
       revalidatePath(`/manhwa/${manhwaId}`);
       revalidatePath('/');
-      
-      console.log(`✅ [Revalidate API] Revalidated manhwa: ${manhwaId}`);
       
       return NextResponse.json({
         success: true,

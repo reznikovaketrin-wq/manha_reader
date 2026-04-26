@@ -29,8 +29,6 @@ export const useChangePassword = () => {
       e.preventDefault();
     }
 
-    console.log('[useChangePassword] handleSubmit start');
-
     setError(null);
     setSuccess(false);
 
@@ -63,30 +61,23 @@ export const useChangePassword = () => {
     setIsSubmitting(true);
 
     try {
-      console.log('[useChangePassword] validating session...');
       // First verify current password by attempting sign in
       const session = await authService.getSession();
-      console.log('[useChangePassword] got session', session);
       if (!session || !session.user.email) {
         setError('Не вдалося перевірити поточний пароль');
-        console.log('[useChangePassword] no session, aborting');
         setIsSubmitting(false);
         return;
       }
 
       const signInResult = await authService.signIn(session.user.email, currentPassword);
-      console.log('[useChangePassword] signInResult', signInResult);
       if (signInResult.error) {
         setError('Невірний поточний пароль');
-        console.log('[useChangePassword] sign in failed');
         setIsSubmitting(false);
         return;
       }
 
       // Update password
-      console.log('[useChangePassword] updating password...');
       await updatePassword(newPassword);
-      console.log('[useChangePassword] updatePassword resolved');
       setSuccess(true);
       
       // Reset form
@@ -97,7 +88,6 @@ export const useChangePassword = () => {
       console.error('[useChangePassword] error in handleSubmit', err);
       setError(err.message || 'Помилка зміни пароля');
     } finally {
-      console.log('[useChangePassword] finally - clearing isSubmitting');
       setIsSubmitting(false);
     }
   }, [currentPassword, newPassword, confirmPassword, updatePassword]);

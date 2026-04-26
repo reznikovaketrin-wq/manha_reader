@@ -36,7 +36,6 @@ async function verifyAdmin(token: string) {
 
 async function listR2Files(prefix: string = '') {
   try {
-    console.log(`📂 [Sync] Listing R2 files with prefix: ${prefix}`);
 
     // Проверить переменные окружения
     if (!process.env.R2_ACCESS_KEY_ID) throw new Error('Missing R2_ACCESS_KEY_ID');
@@ -60,11 +59,6 @@ async function listR2Files(prefix: string = '') {
     });
 
     const response = await s3Client.send(command);
-    
-    console.log(`✅ [Sync] Listed files:`, {
-      filesCount: response.Contents?.length || 0,
-      foldersCount: response.CommonPrefixes?.length || 0,
-    });
 
     return {
       files: response.Contents || [],
@@ -78,9 +72,6 @@ async function listR2Files(prefix: string = '') {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('\n========================================');
-    console.log('🔄 [Sync] Starting R2 to DB sync...');
-    console.log('========================================\n');
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -108,7 +99,6 @@ export async function POST(request: NextRequest) {
     };
 
     // 1. Получить папки манхв
-    console.log('📂 Scanning R2 for manhwa folders...');
     let folders;
     try {
       const data = await listR2Files();
@@ -118,18 +108,13 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    console.log(`✅ Found ${folders.length} folders\n`);
-
     for (const folder of folders) {
       const prefix = folder.Prefix || '';
       const manhwaId = prefix.split('/')[0];
 
       if (!manhwaId || manhwaId.startsWith('.')) {
-        console.log(`⊘ Skipping: ${prefix}`);
         continue;
       }
-
-      console.log(`\n📁 Processing: ${manhwaId}`);
 
       try {
         // Проверить манхва в БД
@@ -140,7 +125,6 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (manhwaError || !manhwa) {
-          console.log(`   ⚠️ Manhwa not found in DB`);
           results.errors.push(`${manhwaId}: Manhwa not found in DB`);
           continue;
         }
@@ -179,13 +163,10 @@ export async function POST(request: NextRequest) {
           if (updateError) throw updateError;
 
           results.imagesUpdated++;
-          console.log(`   ✅ Images updated`);
         }
 
         // Получить розділы
         const { folders: chapterFolders } = await listR2Files(`${manhwaId}/chapters/`);
-
-        console.log(`   📖 Found ${chapterFolders.length} chapter folders`);
 
         for (const chapterFolder of chapterFolders) {
           const chapterPath = chapterFolder.Prefix || '';
@@ -202,7 +183,6 @@ export async function POST(request: NextRequest) {
             .single();
 
           if (existing) {
-            console.log(`      ℹ️ Chapter ${chapterNumber} already exists`);
             continue;
           }
 
@@ -235,7 +215,6 @@ export async function POST(request: NextRequest) {
           if (chapterError) throw chapterError;
 
           results.chaptersCreated++;
-          console.log(`      ✅ Chapter ${chapterNumber} created (${pages.length} pages)`);
 
           // Создать сторінки
           const pageRecords = pages.map((url, index) => {
@@ -264,11 +243,6 @@ export async function POST(request: NextRequest) {
         results.errors.push(`${manhwaId}: ${errorMsg}`);
       }
     }
-
-    console.log('\n========================================');
-    console.log('✅ SYNC COMPLETED');
-    console.log('========================================');
-    console.log('\nResults:', results);
 
     return NextResponse.json({
       success: true,

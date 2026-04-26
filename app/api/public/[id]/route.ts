@@ -18,8 +18,6 @@ export async function GET(
     const supabase = getSupabaseAnon();
     const id = params.id;
 
-    console.log(`📖 [API] GET /api/public/${id}`);
-
     // Получить манхву
     const { data: manhwa, error: manhwaError } = await supabase
       .from('admin_manhwa')
@@ -28,14 +26,11 @@ export async function GET(
       .single();
 
     if (manhwaError || !manhwa) {
-      console.log(`⚠️ Манхва не найдена: ${id}`);
       return NextResponse.json(
         { error: 'Manhwa not found' },
         { status: 404 }
       );
     }
-
-    console.log(`✅ Манхва найдена: ${manhwa.title}`);
 
     // Получить розділы
     const { data: chapters, error: chaptersError } = await supabase
@@ -49,8 +44,6 @@ export async function GET(
       throw chaptersError;
     }
 
-    console.log(`📚 Получено розділов: ${chapters?.length || 0}`);
-
     // Получить количество оценок
     const { data: ratings, error: ratingsError } = await supabase
       .from('manhwa_ratings')
@@ -58,7 +51,6 @@ export async function GET(
       .eq('manhwa_id', id);
 
     const ratingCount = ratings?.length || 0;
-    console.log(`⭐ Оценок найдено: ${ratingCount}`);
 
     // Получить количество просмотров из таблицы `views` (если есть)
     const { data: viewsData, error: viewsError } = await supabase
@@ -68,7 +60,6 @@ export async function GET(
       .single();
 
     if (viewsError && viewsError.code !== 'PGRST116') {
-      console.warn('Warning fetching views count:', viewsError.message);
     }
 
     const totalViews = viewsData?.view_count || 0;
@@ -114,8 +105,6 @@ export async function GET(
         publicAvailableAt: ch.public_available_at || null,
       })),
     };
-
-    console.log(`✅ Возвращаю ответ:`, JSON.stringify(response).substring(0, 100));
     
     return NextResponse.json(response, {
       headers: {

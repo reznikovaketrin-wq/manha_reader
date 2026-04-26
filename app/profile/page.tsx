@@ -88,15 +88,12 @@ function ProfileContent() {
   const handleLogout = async () => {
     try {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🔐 [Profile] Signing out...');
       }
 
       const result: any = await signOut();
 
       if (result?.success) {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('✅ [Profile] Sign out successful');
-          console.log('🔔 [Profile] UserProvider will sync automatically via onAuthStateChange');
         }
         
         // ❌ УБРАЛИ: setUser(null);

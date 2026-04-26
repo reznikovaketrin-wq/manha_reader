@@ -62,12 +62,6 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
             
             // Debug log
             if (process.env.NODE_ENV !== 'production') {
-              console.log('[manhwa-comments] Enriched comment:', {
-                id: c.id,
-                display_name: enriched.display_name,
-                users: (c as any).users,
-                user_email: enriched.user_email,
-              });
             }
             
             return enriched;
@@ -154,7 +148,6 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
 
       setComments([newEnrichedComment, ...comments]);
       setNewComment('');
-      console.log('✅ [Comments] Comment added successfully');
     } catch (err) {
       console.error('Error submitting comment:', err);
       alert('Помилка при додаванні коментаря. Спробуйте ще раз.');
@@ -190,7 +183,6 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
         setComments([...comments, newReply]);
         setReplyText('');
         setReplyingTo(null);
-        console.log('✅ [Reply] Reply added successfully');
       } catch (err) {
         console.error('Error submitting reply:', err);
         alert('Помилка при додаванні відповіді. Спробуйте ще раз.');
@@ -217,7 +209,6 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
               : c
           )
         );
-        console.log('✅ [Like] Like toggled successfully');
       } catch (err) {
         console.error('Error liking comment:', err);
         alert('Помилка при лайкуванні. Спробуйте ще раз.');
@@ -233,11 +224,9 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
       }
 
       try {
-        console.log('🗑️ [Delete] Deleting comment:', commentId);
         const result = await deleteComment(commentId);
 
         if (result.success) {
-          console.log('✅ [Delete] Comment deleted successfully');
           setComments(comments.filter(c => c.id !== commentId && c.parent_comment_id !== commentId));
         } else {
           alert('Помилка при видаленні: ' + result.error);
@@ -257,11 +246,9 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
       }
 
       try {
-        console.log('🗑️ [Delete] Deleting reply:', replyId);
         const result = await deleteReply(replyId);
 
         if (result.success) {
-          console.log('✅ [Delete] Reply deleted successfully');
           setComments(comments.filter(c => c.id !== replyId));
         } else {
           alert('Помилка при видаленні: ' + result.error);

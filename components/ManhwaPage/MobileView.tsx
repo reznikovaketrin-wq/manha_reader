@@ -145,7 +145,6 @@ export const MobileView = memo(function MobileView({
           style={{ width: '100%' }}
           onClick={() => {
             const target = `/reader/${manhwa.id}/${firstChapterId || manhwa.chapters[0]?.id}${firstChapterPage ? `?page=${firstChapterPage}` : ''}`;
-            console.log('[MobileView] Read button clicked', { target, firstChapterId, firstChapterPage });
           }}
         >
           <svg viewBox="0 0 24 24">

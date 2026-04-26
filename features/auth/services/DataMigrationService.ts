@@ -124,7 +124,6 @@ class DataMigrationService {
 
   // ===== MIGRATE ALL DATA =====
   async migrateAllData(userId: string): Promise<MigrationResult> {
-    console.log('[DataMigration] Starting migration for user:', userId);
 
     const errors: string[] = [];
     let historyCount = 0;
@@ -136,7 +135,6 @@ class DataMigrationService {
       // Migrate history
       try {
         historyCount = await this.migrateReadingHistory(userId);
-        console.log('[DataMigration] History migrated:', historyCount);
       } catch (error: any) {
         errors.push(`History: ${error.message}`);
       }
@@ -144,7 +142,6 @@ class DataMigrationService {
       // Migrate bookmarks
       try {
         bookmarksCount = await this.migrateBookmarks(userId);
-        console.log('[DataMigration] Bookmarks migrated:', bookmarksCount);
       } catch (error: any) {
         errors.push(`Bookmarks: ${error.message}`);
       }
@@ -152,7 +149,6 @@ class DataMigrationService {
       // Migrate progress
       try {
         progressCount = await this.migrateReadingProgress(userId);
-        console.log('[DataMigration] Progress migrated:', progressCount);
       } catch (error: any) {
         errors.push(`Progress: ${error.message}`);
       }
@@ -161,7 +157,6 @@ class DataMigrationService {
       try {
         const syncRes: any = await syncGuestReadingHistory(userId);
         readChaptersCount = syncRes?.synced ?? 0;
-        console.log('[DataMigration] Read chapters synced:', readChaptersCount);
       } catch (error: any) {
         errors.push(`Read chapters: ${error.message}`);
       }
@@ -169,7 +164,6 @@ class DataMigrationService {
       // Clear guest data if migration was successful
       if (errors.length === 0) {
         this.clearGuestData();
-        console.log('[DataMigration] Guest data cleared');
       }
 
       return {
@@ -202,7 +196,6 @@ class DataMigrationService {
       localStorage.removeItem(this.STORAGE_KEYS.BOOKMARKS);
       localStorage.removeItem(this.STORAGE_KEYS.READING_PROGRESS);
       localStorage.removeItem(this.STORAGE_KEYS.TRIW_READING_HISTORY); // NEW: clear guest read chapters
-      console.log('[DataMigration] Guest data cleared from localStorage');
     } catch (error) {
       console.error('[DataMigration] Failed to clear guest data:', error);
     }

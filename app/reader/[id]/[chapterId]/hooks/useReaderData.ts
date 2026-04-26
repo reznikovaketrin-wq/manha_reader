@@ -128,12 +128,10 @@ export function useReaderData({
     async (chapterId: string): Promise<ChapterData | null> => {
       // Skip if already loaded or loading
       if (loadedChapters.current.has(chapterId) || loadingChapters.current.has(chapterId)) {
-        console.log(`[ReaderData] Chapter ${chapterId} already loaded/loading, skipping`);
         return null;
       }
 
       const startTime = Date.now();
-      console.log(`[ReaderData] Loading chapter ${chapterId}...`);
       loadingChapters.current.add(chapterId);
 
       try {
@@ -177,7 +175,6 @@ export function useReaderData({
 
         loadedChapters.current.add(chapterId);
         const elapsed = Date.now() - startTime;
-        console.log(`[ReaderData] ✓ Chapter ${chapterId} loaded in ${elapsed}ms (${chapterData.pages.length} pages)`);
         return chapterData;
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Unknown error');
@@ -241,7 +238,6 @@ export function useReaderData({
     if (hasAccess) {
       loadChapter(navigationMeta.nextChapterMeta.id);
     } else {
-      console.log(`[ReaderData] Skipping preload of VIP chapter: ${navigationMeta.nextChapterMeta.id}`);
     }
   }, [navigationMeta.nextChapterMeta, loadChapter, canAccessChapter]);
 

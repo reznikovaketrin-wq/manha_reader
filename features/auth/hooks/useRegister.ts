@@ -40,7 +40,6 @@ export const useRegister = () => {
   const [success, setSuccess] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('registration_success') === 'true';
-      console.log('🔄 [useRegister] Initializing success from sessionStorage:', saved);
       return saved;
     }
     return false;
@@ -50,7 +49,6 @@ export const useRegister = () => {
 
   // 🔍 DEBUG: Track success state changes (don't remove from sessionStorage here!)
   useEffect(() => {
-    console.log('🎯 [useRegister] Success state changed to:', success);
     // Note: We save to sessionStorage immediately in handleSubmit, not here
     // Only remove on explicit reset via resetForm()
   }, [success]);
@@ -207,24 +205,19 @@ export const useRegister = () => {
     setFormState(prev => ({ ...prev, isSubmitting: true }));
 
     try {
-      console.log('🔄 [useRegister] Starting signup...');
       await signUp(
         formState.values.email,
         formState.values.password,
         formState.values.username || undefined
       );
-
-      console.log('✅ [useRegister] Signup successful, setting success=true');
       
       // 🔥 FIX: Save to sessionStorage IMMEDIATELY before state update
       // This ensures the value is persisted before any potential remount
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('registration_success', 'true');
-        console.log('💾 [useRegister] Saved success to sessionStorage');
       }
       
       setSuccess(true);
-      console.log('✅ [useRegister] Success state updated');
       
       // ⚠️ ВАЖНО: НЕ сбрасываем форму сразу, иначе компонент перерисуется
       // Форма все равно скрыта за {success ? ... : <form>}

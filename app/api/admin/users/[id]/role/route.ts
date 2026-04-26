@@ -17,7 +17,6 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    console.log('🔧 [API] POST /admin/users/[id]/role');
 
     // Проверяем права админа
     const result = await verifyAdminAccess();
@@ -81,8 +80,6 @@ export async function POST(
       console.error('❌ [API] Error updating role:', updateError);
       return NextResponse.json({ error: updateError.message || 'Failed to update role' }, { status: 500 });
     }
-
-    console.log(`✅ [API] Role updated for user ${userId}: ${role}`);
     
     return NextResponse.json({
       success: true,

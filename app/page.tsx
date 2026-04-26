@@ -27,24 +27,20 @@ export default async function HomePage() {
   
   try {
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🏠 [HomePage] Starting to load data...');
     }
     
     // Получить все манхвы из API
     const response = await fetchManhwas();
     
     if (process.env.NODE_ENV !== 'production') {
-      console.log('🏠 [HomePage] Got response:', response?.length, 'items');
     }
     
     // Преобразуем API формат в формат компонента (API уже возвращает camelCase)
     if (Array.isArray(response)) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('🏠 [HomePage] Response is array, transforming...');
       }
       const transformed = response.map((m: any) => {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('🔄 [HomePage] Mapping:', m?.id, m?.title);
         }
         return {
           id: m.id,
@@ -63,18 +59,14 @@ export default async function HomePage() {
         // Фильтруем: показываем только манхвы с опубликованными главами
         const hasChapters = ((m as any).chaptersCount || 0) > 0;
         if (!hasChapters && process.env.NODE_ENV !== 'production') {
-          console.log('⏭️ [HomePage] Skipping', m.id, '- no chapters');
         }
         return hasChapters;
       });
 
       transformedManhwa.push(...transformed);
-      console.log('🏠 [HomePage] Transformed:', transformedManhwa.length, 'items');
     } else {
       console.error('🏠 [HomePage] Response is not an array:', typeof response);
     }
-    
-    console.log(`✅ [HomePage] Loaded ${transformedManhwa.length} manhwas from API`);
   } catch (error) {
     console.error('❌ [HomePage] Failed to load manhwas:', error);
   }

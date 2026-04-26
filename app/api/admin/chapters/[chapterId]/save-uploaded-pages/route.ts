@@ -21,8 +21,6 @@ async function verifyAdmin(token: string) {
     .eq('id', authData.user.id)
     .single();
 
-  console.log('🔐 Verify result:', { userId: authData.user.id, userError, userData });
-
   if (userError || userData?.role !== 'admin') {
     console.error('❌ Not admin:', { userError, role: userData?.role });
     throw new Error('Not an admin');
@@ -50,13 +48,10 @@ export async function POST(request: NextRequest, { params }: any) {
       return NextResponse.json({ error: 'No uploaded pages provided' }, { status: 400 });
     }
 
-    console.log(`💾 Saving ${uploadedPages.length} page(s) metadata...`);
-
     const supabase = getSupabaseAdmin();
 
     // Если это первая партия, удаляем старые страницы
     if (isFirstBatch) {
-      console.log('🗑️ Clearing old pages...');
       await supabase.from('chapter_pages').delete().eq('chapter_id', chapterId);
     }
 
@@ -83,8 +78,6 @@ export async function POST(request: NextRequest, { params }: any) {
       .from('chapters')
       .update({ pages_count: totalPages })
       .eq('id', chapterId);
-
-    console.log(`✅ Saved ${uploadedPages.length} page(s). Total: ${totalPages}`);
 
     return NextResponse.json({
       success: true,

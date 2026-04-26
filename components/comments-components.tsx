@@ -96,7 +96,6 @@ export function CommentItem({
 
   // Small debug to ensure rendered name is resolved correctly
   if (process.env.NODE_ENV !== 'production') {
-    console.log('🧾 [CommentItem] userName:', userName, 'resolvedUser:', resolvedUser, 'user_email:', userEmail, 'user_id:', userId);
   }
   const date = new Date(comment.created_at).toLocaleDateString('uk-UA');
   

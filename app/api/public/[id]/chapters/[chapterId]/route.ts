@@ -40,7 +40,6 @@ export async function GET(
 ) {
   try {
     const { id, chapterId } = params;
-    console.log(`📖 [API] GET /api/public/${id}/chapters/${chapterId}`);
 
     // ✅ Создаём клиент ВНУТРИ функции
     const supabase = getSupabaseAnon();
@@ -54,11 +53,8 @@ export async function GET(
       .single();
 
     if (chapterError || !chapter) {
-      console.log(`⚠️ Розділ не найдена: ${chapterId}`);
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
-
-    console.log(`✅ Розділ найдена: ${chapter.title}`);
     
     // 🔒 Проверка VIP доступа
     let userRole = 'user'; // По умолчанию обычный пользователь
@@ -85,24 +81,14 @@ export async function GET(
           }
         }
       } catch (e) {
-        console.log('⚠️ Failed to get user role, treating as regular user');
       }
     }
-    
-    console.log(`👤 Access check for chapter ${chapterId}:`, {
-      userId,
-      userRole,
-      chapterVipOnly: chapter.vip_only,
-      chapterVipEarlyDays: chapter.vip_early_days,
-      chapterPublicAvailableAt: chapter.public_available_at,
-    });
     
     // Админ и VIP имеют полный доступ ко всем главам
     const hasFullAccess = userRole === 'vip' || userRole === 'admin';
     
     // Проверка VIP Only контента
     if (chapter.vip_only && !hasFullAccess) {
-      console.log(`🔒 Access denied: VIP-only chapter for ${userRole} user`);
       return NextResponse.json(
         { 
           error: 'VIP_ONLY',
@@ -117,17 +103,9 @@ export async function GET(
       const now = new Date();
       const availableDate = new Date(chapter.public_available_at);
       
-      console.log(`⏰ Early access check:`, {
-        now: now.toISOString(),
-        availableDate: availableDate.toISOString(),
-        userRole,
-        isBeforeAvailable: now < availableDate,
-      });
-      
       // Обычные пользователи должны ждать до publicAvailableAt
       // VIP и админ имеют ранний доступ
       if (!hasFullAccess && now < availableDate) {
-        console.log(`🔒 Access denied: Early access chapter for ${userRole} user`);
         return NextResponse.json(
           { 
             error: 'EARLY_ACCESS',
@@ -147,8 +125,6 @@ export async function GET(
       .order('page_number', { ascending: true });
 
     if (pagesError) throw pagesError;
-
-    console.log(`📄 Получено сторінок: ${pages?.length || 0}`);
 
     // Структурированный ответ (camelCase)
     const response = {

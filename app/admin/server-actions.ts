@@ -14,7 +14,6 @@ import { revalidateTag, revalidatePath } from 'next/cache';
  * Инвалидировать кеш после изменения манхвы
  */
 export async function invalidateManhwaCache(manhwaId: string) {
-  console.log(`🔄 [Server Action] Invalidating cache for ${manhwaId}`);
   
   try {
     // Инвалидировать теги
@@ -26,8 +25,6 @@ export async function invalidateManhwaCache(manhwaId: string) {
     revalidatePath(`/api/public/${manhwaId}`);
     revalidatePath(`/manhwa/${manhwaId}`);
     revalidatePath('/');
-    
-    console.log(`✅ [Server Action] Cache invalidated for ${manhwaId}`);
     return { success: true };
   } catch (error) {
     console.error('❌ [Server Action] Error invalidating cache:', error);
@@ -39,11 +36,9 @@ export async function invalidateManhwaCache(manhwaId: string) {
  * Инвалидировать кеш расписания
  */
 export async function invalidateScheduleCache() {
-  console.log('🔄 [Server Action] Invalidating schedule cache');
   
   try {
     revalidateTag('schedule-data');
-    console.log('✅ [Server Action] Schedule cache invalidated');
     return { success: true };
   } catch (error) {
     console.error('❌ [Server Action] Error invalidating schedule cache:', error);

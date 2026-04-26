@@ -51,8 +51,6 @@ async function syncGuestReadingHistoryServer(userId: string, guestHistory: any[]
         console.error(`Failed to sync guest chapter ${chapter_id}:`, error.message);
       }
     }
-
-    console.log(`✅ [Sync] Migrated ${guestHistory.length} guest chapters for user ${userId}`);
   } catch (err) {
     console.error('❌ [Sync] Guest reading history sync failed:', err);
   }
@@ -63,10 +61,6 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code');
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
-
-  console.log('🔐 [Callback] Received OAuth callback');
-  console.log('📝 [Callback] Code:', code ? 'EXISTS' : 'NO CODE');
-  console.log('📝 [Callback] Error:', error || 'NO ERROR');
 
   // ❌ Если есть ошибка OAuth (пользователь отменил, и т.д.)
   if (error) {
@@ -122,8 +116,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('✅ [Callback] Session exchanged successfully');
-
     // ✅ Get authenticated user
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -134,7 +126,6 @@ export async function GET(request: NextRequest) {
         try {
           const guestHistory = JSON.parse(decodeURIComponent(guestHistoryParam));
           if (Array.isArray(guestHistory) && guestHistory.length > 0) {
-            console.log(`🔄 [Callback] Syncing ${guestHistory.length} guest chapters for user ${user.id}`);
             await syncGuestReadingHistoryServer(user.id, guestHistory);
           }
         } catch (err) {
@@ -142,8 +133,6 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-
-    console.log('🍪 [Callback] Cookies set, redirecting to /');
 
     // ✅ Успешно - редирект на главную
     return NextResponse.redirect(new URL('/', request.url));

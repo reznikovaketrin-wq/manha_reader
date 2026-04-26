@@ -88,15 +88,8 @@ export function hasNewChapters(
 ): boolean {
   const baseline = serverDate ? parseUTC(serverDate) : null;
 
-  console.log(`[hasNewChapters] 🔍 ${manhwaId}:`, {
-    supabase_serverDate: serverDate ?? 'null',
-    baseline: baseline?.toISOString() ?? 'null',
-    total_chapters: chapters.length,
-  });
-
   // Немає базової дати — не показуємо плашку (уникаємо помилкових спрацьовувань)
   if (!baseline) {
-    console.log(`[hasNewChapters] ❌ ${manhwaId}: no baseline → false`);
     return false;
   }
 
@@ -105,19 +98,6 @@ export function hasNewChapters(
     if (!ch.publishedAt) return false;
     if (ch.status && ch.status !== 'published') return false;
     return parseUTC(ch.publishedAt) > baseline;
-  });
-
-  console.log(`[hasNewChapters] 📊 ${manhwaId}:`, {
-    chapters_with_publishedAt: chapters.filter(ch => ch.publishedAt).length,
-    chapters_without_publishedAt: chapters.filter(ch => !ch.publishedAt).length,
-    newer_than_baseline: newChapters.length,
-    result: newChapters.length > 0,
-    last_3_chapter_dates: chapters.slice(-3).map(ch => ({
-      publishedAt: ch.publishedAt,
-      publishedAt_parsed: ch.publishedAt ? parseUTC(ch.publishedAt).toISOString() : null,
-      status: ch.status,
-      isNewer: ch.publishedAt ? parseUTC(ch.publishedAt) > baseline : false,
-    })),
   });
 
   return newChapters.length > 0;

@@ -64,7 +64,6 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
     e.preventDefault();
 
     try {
-      console.log('➕ [AddManhwaModal] Creating manhwa...');
       setLoading(true);
       setError(null);
 
@@ -72,7 +71,6 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
 
       for (const [key, imageData] of Object.entries(images)) {
         if (imageData.file) {
-          console.log(`📤 Uploading ${key}...`);
           setProgress(Math.round((Object.keys(uploadedImages).length / 3) * 100));
 
           const imgFormData = new FormData();
@@ -95,7 +93,6 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
 
           const uploadData = await uploadResponse.json();
           uploadedImages[`${key}_image`] = uploadData.url;
-          console.log(`✅ ${key} uploaded`);
         }
       }
 
@@ -129,7 +126,6 @@ export function AddManhwaModal({ token, onManhwaCreated, onClose }: AddManhwaMod
       }
 
       const data = await response.json();
-      console.log('✅ Manhwa created:', data.data.id);
 
       setProgress(100);
       setTimeout(() => {

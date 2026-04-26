@@ -12,14 +12,9 @@ import { fetchManhwas, fetchManhwaById as fetchById, fetchChapterPages } from '@
  * Получить все манхвы из API (только с расписанием)
  */
 export async function getManhwaData() {
-  console.log('🔥 [getManhwaData] FUNCTION CALLED AT:', new Date().toISOString());
   
   try {
-    console.log('📚 [getManhwaData] Starting to fetch data...');
     const response = await fetchManhwas();
-
-    console.log('📚 [getManhwaData] Got response, length:', response?.length);
-    console.log('📚 [getManhwaData] First item scheduleDay:', response?.[0]?.scheduleDay);
 
     if (!response || !Array.isArray(response)) {
       console.error('❌ [getManhwaData] Response is not an array:', typeof response);
@@ -27,13 +22,7 @@ export async function getManhwaData() {
     }
 
     // Проверяем какие манхвы имеют расписание
-    console.log('📋 [getManhwaData] Checking all items:');
     response.forEach((m: any, idx: number) => {
-      console.log(`  [${idx}] ${m.id}:`, {
-        schedule_label: m.scheduleDay?.dayLabel,
-        schedule_note: m.scheduleDay?.note,
-        has_scheduleDay: !!m.scheduleDay,
-      });
     });
 
     // Преобразуем формат API в формат приложения
@@ -41,12 +30,10 @@ export async function getManhwaData() {
       .filter((m: any) => {
         const hasSchedule = m.scheduleDay && m.scheduleDay.dayLabel;
         if (hasSchedule) {
-          console.log(`✅ [getManhwaData] PASSING FILTER: ${m.id} has schedule: ${m.scheduleDay.dayLabel}`);
         }
         return hasSchedule;
       })
       .map((m: any) => {
-        console.log('🔄 [getManhwaData] Transforming:', m.id, '→', m.title);
         return {
           id: m.id,
           title: m.title,
@@ -58,9 +45,6 @@ export async function getManhwaData() {
           scheduleDay: m.scheduleDay,
         };
       });
-
-    console.log(`✅ [getManhwaData] RESULT: ${transformed.length} out of ${response.length} manhwas have schedule`);
-    console.log('📦 Filtered data:', JSON.stringify(transformed, null, 2));
     return transformed;
   } catch (error) {
     console.error('❌ [getManhwaData] Error:', error);
@@ -73,7 +57,6 @@ export async function getManhwaData() {
  */
 export async function getManhwaById(id: string) {
   try {
-    console.log(`🔍 Getting manhwa: ${id}`);
 
     const response = await fetchById(id);
 
@@ -98,8 +81,6 @@ export async function getManhwaById(id: string) {
         publishedAt: ch.publishedAt || null,
       })),
     };
-
-    console.log(`✅ Loaded manhwa: ${transformed.title}`);
     return transformed;
   } catch (error) {
     console.error(`❌ Error getting manhwa ${id}:`, error);
@@ -112,7 +93,6 @@ export async function getManhwaById(id: string) {
  */
 export async function getChapterPages(manhwaId: string, chapterId: string) {
   try {
-    console.log(`📖 Getting chapter pages: ${manhwaId}/${chapterId}`);
 
     const response = await fetchChapterPages(manhwaId, chapterId);
 
@@ -126,8 +106,6 @@ export async function getChapterPages(manhwaId: string, chapterId: string) {
       })),
       pagesCount: response.pagesCount,
     };
-
-    console.log(`✅ Loaded ${transformed.pages.length} pages`);
     return transformed;
   } catch (error) {
     console.error(`❌ Error getting chapter pages:`, error);

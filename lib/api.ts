@@ -92,9 +92,6 @@ export async function fetchManhwas(): Promise<Manhwa[]> {
   try {
     const apiUrl = `${API_BASE}/api/public`;
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📚 [API Client] Fetching all manhwas...');
-      console.log('📍 [API Client] URL:', apiUrl);
-      console.log('⏰ [API Client] Timestamp:', new Date().toISOString());
     }
 
     const response = await fetch(apiUrl, {
@@ -110,7 +107,6 @@ export async function fetchManhwas(): Promise<Manhwa[]> {
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📡 [API Client] Response status:', response.status);
     }
 
     if (!response.ok) {
@@ -134,13 +130,6 @@ export async function fetchManhwas(): Promise<Manhwa[]> {
     });
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`✅ [API Client] Loaded ${sorted.length} manhwas at ${new Date().toISOString()}`);
-      console.log('🔄 [API Client] Sorted by last chapter date (newest first)');
-      console.log('📦 [API Client] First item:', sorted.length > 0 ? {
-        id: sorted[0].id,
-        title: sorted[0].title,
-        lastChapterDate: sorted[0].lastChapterDate,
-      } : 'No data');
     }
     
     return sorted;
@@ -156,7 +145,6 @@ export async function fetchManhwas(): Promise<Manhwa[]> {
 export async function fetchManhwaById(id: string): Promise<Manhwa & { chapters: Chapter[] }> {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`📖 [API Client] Fetching manhwa: ${id}`);
     }
 
     const response = await fetch(`${API_BASE}/api/public/${id}`, {
@@ -179,7 +167,6 @@ export async function fetchManhwaById(id: string): Promise<Manhwa & { chapters: 
 
     const data = await response.json();
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`✅ Loaded manhwa: ${data.title}`);
     }
     return data;
   } catch (error) {
@@ -197,7 +184,6 @@ export async function fetchChapterPages(
 ): Promise<ChapterWithPages> {
   try {
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`📄 [API Client] Fetching pages: ${manhwaId}/${chapterId}`);
     }
 
     const response = await fetch(
@@ -223,7 +209,6 @@ export async function fetchChapterPages(
 
     const data = await response.json();
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`✅ Loaded ${data.pages.length} pages`);
     }
     return data;
   } catch (error) {

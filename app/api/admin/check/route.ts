@@ -42,12 +42,10 @@ async function verifyAdmin(token: string) {
   }
 
   const userId = authData.data.user.id;
-  console.log('👤 [API] User:', authData.data.user.email);
 
   // Проверить кеш роли
   const cachedRole = getRoleFromCache(userId);
   if (cachedRole) {
-    console.log('💾 [API] Using cached role:', cachedRole);
     if (cachedRole !== 'admin') {
       throw new Error('Not an admin');
     }
@@ -86,8 +84,6 @@ async function verifyAdmin(token: string) {
     throw new Error('User not found');
   }
 
-  console.log('📊 [API] User data:', userData.data);
-
   // Проверить роль
   const role = userData.data?.role;
   setRoleCache(userId, role);
@@ -109,7 +105,6 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    console.log('🔍 [API /admin/check] Request received');
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -121,13 +116,11 @@ export async function POST(request: NextRequest) {
     }
 
     const token = authHeader.substring(7);
-    console.log('🔑 [API] Token:', token.substring(0, 20) + '...');
 
     // ✅ Вызвать verifyAdmin функцию
     const user = await verifyAdmin(token);
 
     const duration = Date.now() - startTime;
-    console.log(`✅ [API] Admin check passed (${duration}ms)`);
 
     return NextResponse.json({
       success: true,
@@ -136,7 +129,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ [API] Error:', error);
     const duration = Date.now() - startTime;
-    console.log(`⏱️ [API] Total duration: ${duration}ms`);
 
     const message = error instanceof Error ? error.message : 'Server error';
     const status =

@@ -55,12 +55,9 @@ export function useAdminAuth() {
         return;
       }
 
-      console.log('🔍 Checking admin status...');
-
       // ====== GET ACCESS TOKEN ======
       const accessToken = await getAccessToken();
       if (!accessToken) {
-        console.warn('⚠️ No access token available');
         setAdmin(null);
         setLoading(false);
         checkingRef.current = false;
@@ -99,8 +96,6 @@ export function useAdminAuth() {
         setAdmin(data.user);
       } catch (err) {
         clearTimeout(timeoutId);
-
-        console.warn('⚠️ API request failed or timed out → fallback user');
 
         // ✅ Используем user из Context
         const fallbackUser: AdminUser = {

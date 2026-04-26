@@ -124,7 +124,6 @@ export const DesktopView = memo(function DesktopView({
                   onClick={() => {
                   const target = `/reader/${manhwa.id}/${firstChapterId}${firstChapterPage ? `?page=${firstChapterPage}` : ''}`;
                   if (process.env.NODE_ENV !== 'production') {
-                    console.log('[DesktopView] Read button clicked', { target, firstChapterId, firstChapterPage });
                   }
                 }}
               >

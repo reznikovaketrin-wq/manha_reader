@@ -37,13 +37,11 @@ const RegisterFormComponent: React.FC<RegisterFormProps> = ({
 
   React.useEffect(() => {
     if (success && onSuccess) {
-      console.log('✅ [RegisterForm] Success state changed, calling onSuccess');
       onSuccess();
     }
   }, [success, onSuccess]);
 
   React.useEffect(() => {
-    console.log('🔍 [RegisterForm] Rendered with success:', success, 'externalSuccess:', externalSuccess);
   }, [success, externalSuccess]);
 
   // 🔥 FIX: Use external success if provided, otherwise use internal

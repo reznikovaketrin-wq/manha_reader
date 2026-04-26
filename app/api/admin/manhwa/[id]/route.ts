@@ -51,7 +51,6 @@ async function deleteR2Prefix(prefix: string) {
         })
       );
       totalDeleted += batch.length;
-      console.log(`📦 [R2] Deleted batch: ${batch.length} files (prefix: ${prefix})`);
     }
 
     continuationToken = listResp.IsTruncated ? listResp.NextContinuationToken : undefined;
@@ -84,7 +83,6 @@ async function verifyAdmin(token: string) {
 export async function GET(request: NextRequest, { params }: any) {
   try {
     const id = params.id;
-    console.log('📖 [API] GET /admin/manhwa/' + id);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -106,8 +104,6 @@ export async function GET(request: NextRequest, { params }: any) {
       console.error('❌ [API] Error fetching:', error);
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-
-    console.log('✅ [API] Fetched:', data.title);
     return NextResponse.json({ data });
   } catch (error) {
     console.error('❌ [API] Error:', error);
@@ -122,7 +118,6 @@ export async function GET(request: NextRequest, { params }: any) {
 export async function PUT(request: NextRequest, { params }: any) {
   try {
     const id = params.id;
-    console.log('✏️ [API] PUT /admin/manhwa/' + id);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -161,13 +156,9 @@ export async function PUT(request: NextRequest, { params }: any) {
       .single();
 
     if (error) throw error;
-
-    console.log(`🔄 [Cache] Invalidating paths for ${id}`);
     revalidatePath('/schedule');
     revalidatePath('/');
     revalidatePath('/api/public');
-
-    console.log('✅ [API] Updated:', data.title);
     return NextResponse.json({ data, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);
@@ -182,7 +173,6 @@ export async function PUT(request: NextRequest, { params }: any) {
 export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const id = params.id;
-    console.log('🗑️ [API] DELETE /admin/manhwa/' + id);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -201,14 +191,12 @@ export async function DELETE(request: NextRequest, { params }: any) {
       .eq('chapters.manhwa_id', id);
 
     // 2️⃣ Видалити манхву з БД (cascade видаляє chapters та chapter_pages)
-    console.log(`📋 [API] Deleting manhwa from database: ${id}`);
     const { error: dbError } = await supabase
       .from('admin_manhwa')
       .delete()
       .eq('id', id);
 
     if (dbError) throw dbError;
-    console.log('✅ [API] Deleted from database');
 
     // 3️⃣ Видалити всі файли з R2
     try {
@@ -226,27 +214,21 @@ export async function DELETE(request: NextRequest, { params }: any) {
               Delete: { Objects: batch },
             })
           );
-          console.log(`📦 [R2] Deleted ${batch.length} page files`);
         }
       }
 
       // B) Sweep всієї папки {id}/ — прибирає cover/bg/char + будь-які залишки
       const prefix = `${id}/`;
-      console.log(`📦 [R2] Sweeping prefix: ${prefix}`);
       const totalDeleted = await deleteR2Prefix(prefix);
-      console.log(`✅ [R2] Swept ${totalDeleted} remaining files for: ${id}`);
     } catch (r2Error) {
       // Логуємо, але не блокуємо — з БД вже видалено
       console.error('⚠️ [R2] Error deleting files:', r2Error);
     }
 
     // 4️⃣ Очищаємо кеш
-    console.log(`🔄 [Cache] Invalidating paths after deletion of ${id}`);
     revalidatePath('/schedule');
     revalidatePath('/');
     revalidatePath('/api/public');
-
-    console.log('✅ [API] Fully deleted: ' + id);
     return NextResponse.json({
       success: true,
       message: 'Manhwa and all associated files deleted successfully',

@@ -56,8 +56,6 @@ export async function POST(request: NextRequest, { params }: any) {
       return NextResponse.json({ error: 'No files specified' }, { status: 400 });
     }
 
-    console.log(`🔑 Generating ${files.length} presigned URL(s)...`);
-
     const presignedUrls: Array<{ pageNumber: number; fileName: string; uploadUrl: string; filePath: string }> = [];
 
     for (const fileInfo of files) {
@@ -82,8 +80,6 @@ export async function POST(request: NextRequest, { params }: any) {
         filePath,
       });
     }
-
-    console.log(`✅ Generated ${presignedUrls.length} presigned URL(s)`);
 
     return NextResponse.json({
       success: true,

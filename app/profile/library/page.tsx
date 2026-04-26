@@ -87,20 +87,6 @@ export default function LibraryPage() {
               status: ch.status ?? 'published',
             }));
 
-            console.log(`[Library] 🔎 ${item.manhwa_id}:`, {
-              supabase_last_read_at: item.last_read_at ?? 'null',
-              supabase_last_read_chapter: item.last_read_chapter ?? 'null',
-              total_chapters: manhwa.chapters.length,
-              lastReadChapterNumber,
-              // Показати останню главу та чи має вона дату
-              last_chapter_raw: manhwa.chapters.length > 0 ? {
-                id: manhwa.chapters[manhwa.chapters.length - 1].id,
-                number: manhwa.chapters[manhwa.chapters.length - 1].number,
-                publishedAt: manhwa.chapters[manhwa.chapters.length - 1].publishedAt ?? 'undefined',
-                mapped_publishedAt: chapterDates[chapterDates.length - 1]?.publishedAt ?? 'null',
-              } : 'no chapters',
-            });
-
             // Обчислюємо has_new_chapters ОДИН РАЗ при збагаченні даних,
             // а не при кожному рендері — читаємо localStorage тут
             const hasNew = hasNewChapters(item.manhwa_id, chapterDates, item.last_read_at);

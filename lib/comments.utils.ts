@@ -185,7 +185,6 @@ export async function loadManhwaComments(
     if (error) throw error;
     return (data || []) as CommentWithUser[];
   } catch (err) {
-    console.warn('Could not select related users for manhwa_comments, retrying without relation', err);
     const { data, error } = await supabase
       .from('manhwa_comments')
       .select('id, user_id, content, created_at, updated_at, parent_comment_id, display_name')
@@ -210,7 +209,6 @@ export async function loadManhwaComments(
           return rows.map((r) => ({ ...r, users: usersMap.get(r.user_id) || null }));
         }
       } catch (uerr) {
-        console.warn('Could not fetch users fallback for comments', uerr);
       }
     }
 
@@ -241,7 +239,6 @@ export async function createManhwaComment(
     if (error) throw error;
     return data as CommentWithUser;
   } catch (err) {
-    console.warn('Could not select related users for created manhwa_comment, falling back', err);
     const { data, error } = await supabase
       .from('manhwa_comments')
       .insert([
@@ -274,7 +271,6 @@ export async function loadUserLikes(userId: string): Promise<Set<string>> {
     .eq('user_id', userId);
 
   if (error1 && error1.code !== 'PGRST116') {
-    console.warn('Warning loading manhwa likes:', error1.message);
   }
   (manhwaLikes || []).forEach(l => allLikes.add(l.comment_id));
 
@@ -285,7 +281,6 @@ export async function loadUserLikes(userId: string): Promise<Set<string>> {
     .eq('user_id', userId);
 
   if (error2 && error2.code !== 'PGRST116') {
-    console.warn('Warning loading chapter likes:', error2.message);
   }
   (chapterLikes || []).forEach(l => allLikes.add(l.comment_id));
 
@@ -302,7 +297,6 @@ export async function getCommentLikesCount(commentId: string): Promise<number> {
     .eq('comment_id', commentId);
 
   if (error1 && error1.code !== 'PGRST116') {
-    console.warn('Warning getting comment_likes count:', error1.message);
   }
   totalCount += count1 || 0;
 
@@ -313,7 +307,6 @@ export async function getCommentLikesCount(commentId: string): Promise<number> {
     .eq('comment_id', commentId);
 
   if (error2 && error2.code !== 'PGRST116') {
-    console.warn('Warning getting chapter_comment_likes count:', error2.message);
   }
   totalCount += count2 || 0;
 
@@ -344,7 +337,6 @@ export async function toggleCommentLike(
       .eq('user_id', userId);
 
     if (error && error.code !== 'PGRST116') {
-      console.warn(`Could not delete like from ${likesTable}:`, error);
     }
   } else {
     // Вставляем лайк в правильную таблицу
@@ -354,7 +346,6 @@ export async function toggleCommentLike(
 
     // 23505 = duplicate key (лайк уже существует)
     if (error && error.code !== '23505' && error.code !== 'PGRST116') {
-      console.warn(`Could not insert like into ${likesTable}:`, error);
     }
   }
 

@@ -62,11 +62,6 @@ export function ScheduleEditor({ scheduleDay, onSave }: ScheduleEditorProps) {
         const finalNote = note.trim() 
           ? note 
           : `Нове оновлення кожного ${day.dayLabel.toLowerCase()}`;
-        
-        console.log('💾 [ScheduleEditor] Saving with:', {
-          day: day.dayLabel,
-          note: finalNote,
-        });
 
         onSave({
           dayBig: day.dayBig,

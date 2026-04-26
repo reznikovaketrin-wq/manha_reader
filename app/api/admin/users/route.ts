@@ -14,7 +14,6 @@ import { getSupabaseAdminClient } from '@/lib/supabase-server';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('👥 [API] GET /admin/users');
 
     // Проверяем права админа
     const result = await verifyAdminAccess();
@@ -39,8 +38,6 @@ export async function GET(request: NextRequest) {
       console.error('❌ [API] Error fetching users:', error);
       throw error;
     }
-
-    console.log(`✅ [API] Found ${users?.length || 0} users`);
 
     return NextResponse.json({
       success: true,

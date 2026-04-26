@@ -94,6 +94,5 @@ export const logAuthEvent = (
   event: AuthEvents,
   metadata?: Record<string, any>
 ) => {
-  console.log(`[AUTH] ${event}`, metadata);
   // TODO: Integrate with analytics (Google Analytics, Mixpanel, etc.)
 };

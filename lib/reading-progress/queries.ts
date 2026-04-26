@@ -56,39 +56,22 @@ export function useReadingProgress(
 
   // Диагностические логи для отладки состояния пользователя
   if (process.env.NODE_ENV !== 'production') {
-    console.log('[useReadingProgress] Hook State:', {
-      manhwaId,
-      hasUser: !!user,
-      userId: user?.id,
-      userEmail: user?.email,
-      enabled,
-      timestamp: new Date().toLocaleTimeString()
-    });
   }
 
   return useQuery({
     queryKey: readingProgressKeys.progress(manhwaId, user?.id), // Добавляем userId в ключ!
     queryFn: async (): Promise<ReadingProgress | null> => {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('[useReadingProgress] Starting queryFn:', {
-          manhwaId,
-          hasUser: !!user,
-          userId: user?.id
-        });
       }
       
       let progress: ReadingProgress | null = null;
       
       if (user?.id) {
         // Авторизованный пользователь - Supabase
-        console.log('[useReadingProgress] Fetching from Supabase for user:', user.id);
         progress = await fetchProgress(user.id, manhwaId);
-        console.log('[useReadingProgress] Supabase result:', progress);
       } else {
         // Гость - localStorage
-        console.log('[useReadingProgress] Fetching from localStorage');
         progress = getLocalProgress(manhwaId);
-        console.log('[useReadingProgress] localStorage result:', progress);
       }
       
       // Если прогресс есть, исправляем проблемы
@@ -98,11 +81,6 @@ export function useReadingProgress(
         progress.readChapterIds = [...new Set(progress.readChapterIds)];
         
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[useReadingProgress] Progress processed:', {
-            originalIds,
-            processedIds: progress.readChapterIds,
-            currentChapterId: progress.currentChapterId
-          });
         }
       }
       

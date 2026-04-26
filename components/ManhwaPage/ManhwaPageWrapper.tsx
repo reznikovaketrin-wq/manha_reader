@@ -129,8 +129,6 @@ function ManhwaPageContent() {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-
-      console.log('✅ Rating submitted:', rating);
       ui.onRatingModalClose();
 
       // Try to read API response and apply optimistic rating override
@@ -144,14 +142,11 @@ function ManhwaPageContent() {
       try {
         if (refetchManhwa) {
           await refetchManhwa();
-          console.log('🔁 Manhwa data refetched after rating');
         } else {
           // Fallback to router.refresh if refetch isn't available
           router.refresh();
-          console.log('🔁 router.refresh() fallback after rating');
         }
       } catch (err) {
-        console.warn('⚠️ Could not refetch manhwa data', err);
       }
 
       // Clear optimistic override after refetch completes (or after fallback)

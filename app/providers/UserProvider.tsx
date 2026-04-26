@@ -42,7 +42,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 const result = await syncLocalToSupabase(currentUser.id);
                 syncedRef.current = true;
                 if (process.env.NODE_ENV !== 'production') {
-                  console.log('[UserProvider] Progress synced:', result);
                 }
               } catch (error) {
                 console.error('[UserProvider] Error syncing progress:', error);

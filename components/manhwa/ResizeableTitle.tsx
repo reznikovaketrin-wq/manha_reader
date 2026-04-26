@@ -29,13 +29,11 @@ export default function ResizeableTitle({
 
   // ✅ Флаг что мы на клиенте (не на сервере)
   useEffect(() => {
-    console.log(`🔴 Устанавливаю isClient = true`);
     setIsClient(true);
   }, []);
 
   useEffect(() => {
     const mobile = window.matchMedia('(max-width: 767px)').matches;
-    console.log(`🔴 Устанавливаю isMobile = ${mobile}`);
     setIsMobile(mobile);
   }, []);
 
@@ -45,16 +43,13 @@ export default function ResizeableTitle({
 
   useEffect(() => {
     // ОТЛАДКА: Логируем начало
-    console.log(`🔵 useEffect ResizeableTitle: cacheKey="${cacheKey}", isMobile=${isMobile}, isClient=${isClient}`);
 
     if (!cacheKey || isMobile === null || !isClient || calculatingRef.current) {
-      console.log(`❌ Ранний выход: cacheKey=${!cacheKey}, isMobile=${isMobile === null}, isClient=${!isClient}, calculating=${calculatingRef.current}`);
       return;
     }
 
     const element = titleRef.current;
     if (!element || element.offsetParent === null) {
-      console.log(`❌ Element не найден или скрыт`);
       return;
     }
 
@@ -84,7 +79,6 @@ export default function ResizeableTitle({
 
     // НАЧАЛО РАСЧЕТА
     if (children.length > 30) {
-      console.log(`\n🔍 ResizeableTitle начинает расчет: "${children.substring(0, 40)}..."`);
     }
 
     const checkSize = (fontSize: number, targetLines: number): Promise<boolean> => {
@@ -105,7 +99,6 @@ export default function ResizeableTitle({
 
             // Логируем только для долгих названий
             if (children.length > 30) {
-              console.log(`  ${fontSize}px: ${lines}строк (нужно ${targetLines}), w=${width}px, h=${height}px, lh=${lineHeight.toFixed(1)}px`);
             }
 
             const fits = lines === targetLines;
@@ -120,7 +113,6 @@ export default function ResizeableTitle({
       const originalWidth = element.offsetWidth;
       element.style.width = `${originalWidth}px`;
       
-      if (children.length > 30) console.log(`📏 Зафиксирована ширина: ${originalWidth}px`);
 
       // ОПРЕДЕЛЯЕМ ЦЕЛЕВЫЕ СТРОКИ: проверяем при максимальном размере
       element.style.fontSize = `${maxFontSize}px`;
@@ -136,19 +128,15 @@ export default function ResizeableTitle({
       let initialLines = Math.round(height / lineHeight);
 
       if (children.length > 30) {
-        console.log(`📊 При ${maxFontSize}px: ${initialLines} строк (h=${height}px)`);
       }
 
       // Массив целевых значений строк: ищем на 1 строку меньше, чем minimum
       const targetLines = Math.max(1, initialLines - 1);
       
       if (children.length > 30) {
-        console.log(`🎯 При ${initialLines} строках максимально, ищем для ≤${targetLines} строк`);
       }
 
       // Ищем размер для целевого количества строк
-      if (children.length > 30) console.log(`\n📍 Ищем максимальный размер для ≤${targetLines} строк...`);
-      if (maxHeight && children.length > 30) console.log(`📏 Максимальная высота доступна: ${maxHeight}px`);
       
       for (let size = maxFontSize; size >= minFontSize; size -= 1) {
         element.style.fontSize = `${size}px`;
@@ -170,20 +158,17 @@ export default function ResizeableTitle({
 
         if (children.length > 30 && size % 2 === 0) {
           const status = fits ? '✅' : '❌';
-          console.log(`  ${size}px: ${lines} строк, h=${height}px ${status}`);
         }
 
         if (fits) {
           bestSize = size;
           bestMaxLines = targetLines;
-          if (children.length > 30) console.log(`✅ Нашли ${size}px для ≤${targetLines} строк и h≤${maxHeight || '∞'}px`);
           element.style.width = '';
           return;
         }
       }
 
       // Fallback: минимум
-      if (children.length > 30) console.log(`⚠️  Fallback: ${minFontSize}px`);
       bestSize = minFontSize;
       bestMaxLines = targetLines;
       
@@ -192,7 +177,6 @@ export default function ResizeableTitle({
     };
 
     // Запускаем поиск с использованием Promise.then()
-    console.log(`🟢 Запускаю search() для: "${children.substring(0, 40)}..."`);
     
     search().then(() => {
       // СОХРАНЕНИЕ (выполняется ПОСЛЕ того как search() полностью завершит работу)
@@ -208,14 +192,12 @@ export default function ResizeableTitle({
         
         // Логируем сохранение
         if (children.length > 30) {
-          console.log(`💾 Сохраняю: localStorage.setItem("${cacheKey}", "${bestSize}")`);
         }
         
         try {
           localStorage.setItem(cacheKey, bestSize.toString());
           const verify = localStorage.getItem(cacheKey);
           if (children.length > 30) {
-            console.log(`✅ Проверка: localStorage.getItem = "${verify}"`);
           }
         } catch (err) {
           console.error(`❌ localStorage ошибка:`, err);

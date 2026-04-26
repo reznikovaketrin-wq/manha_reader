@@ -392,7 +392,6 @@ class AuthService {
           .update({ username })
           .eq('id', currentUser.id);
       } catch (dbError) {
-        console.warn('Failed to update users table:', dbError);
       }
 
       logAuthEvent(AuthEvents.PROFILE_UPDATE, { userId: currentUser.id, field: 'username' });

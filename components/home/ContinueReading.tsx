@@ -103,17 +103,8 @@ export default function ContinueReading() {
             );
 
             if (fallbackByNumber) {
-              console.warn('[ContinueReading] Chapter id mismatch — using fallback by number', {
-                originalChapterId: item.currentChapterId,
-                matchedChapterId: fallbackByNumber.id,
-              });
               chapter = fallbackByNumber;
             } else {
-              console.warn('[ContinueReading] Chapter not found:', {
-                chapterId: item.currentChapterId,
-                availableIds: manhwa.chapters.map(c => c.id),
-                availableNumbers: manhwa.chapters.map(c => c.number),
-              });
               return null;
             }
           }

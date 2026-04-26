@@ -165,8 +165,6 @@ export async function verifyAdminAccess() {
     if (userError || userData?.role !== 'admin') {
       throw new Error('Not an admin');
     }
-
-    console.log('✅ Admin access verified:', authData.user.email);
     return authData.user;
   } catch (error) {
     console.error('❌ Admin verification failed:', error);
@@ -241,7 +239,6 @@ export async function trackManhwaViewServer(
         return { success: true };
       }
     } catch (err) {
-      console.warn('views_logs dedupe failed, falling back to simple increment', err);
     }
 
     // Fallback: simple increment

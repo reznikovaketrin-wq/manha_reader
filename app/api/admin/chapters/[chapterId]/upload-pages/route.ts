@@ -49,7 +49,6 @@ async function verifyAdmin(token: string) {
 export async function POST(request: NextRequest, { params }: any) {
   try {
     const chapterId = params.chapterId;
-    console.log('📤 [API] Upload pages for chapter:', chapterId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -69,8 +68,6 @@ export async function POST(request: NextRequest, { params }: any) {
       return NextResponse.json({ error: 'No files provided' }, { status: 400 });
     }
 
-    console.log(`📤 Uploading ${files.length} page(s) to R2...`);
-
     const supabase = getSupabaseAdmin();
 
     // Получить главу
@@ -85,7 +82,6 @@ export async function POST(request: NextRequest, { params }: any) {
     // Если это первый файл (pageNumber = 1) или не указан номер страницы, удаляем старые страницы
     const isFirstBatch = !pageNumberStr || parseInt(pageNumberStr) === 1;
     if (isFirstBatch) {
-      console.log('🗑️ Clearing old pages...');
       await supabase.from('chapter_pages').delete().eq('chapter_id', chapterId);
     }
 
@@ -101,8 +97,6 @@ export async function POST(request: NextRequest, { params }: any) {
 
       const buffer = await file.arrayBuffer();
       const uint8Array = new Uint8Array(buffer);
-
-      console.log(`📤 Uploading: ${filePath}`);
 
       // Загрузить на R2
       await s3Client.send(
@@ -127,7 +121,6 @@ export async function POST(request: NextRequest, { params }: any) {
       if (pageError) throw pageError;
 
       uploadedPages.push({ pageNumber, imageUrl });
-      console.log(`✅ Page ${pageNumber} uploaded`);
     }
 
     // Обновить количество страниц в главе (считаем все страницы в БД)
@@ -142,8 +135,6 @@ export async function POST(request: NextRequest, { params }: any) {
       .from('chapters')
       .update({ pages_count: totalPages })
       .eq('id', chapterId);
-
-    console.log(`✅ Batch uploaded: ${files.length} file(s). Total pages: ${totalPages}`);
     return NextResponse.json({
       success: true,
       pages: uploadedPages,

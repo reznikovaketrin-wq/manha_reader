@@ -115,7 +115,6 @@ export async function fetchProgress(
   manhwaId: string
 ): Promise<ReadingProgress | null> {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('[fetchProgress] Starting query:', { userId, manhwaId });
   }
   
   try {
@@ -127,13 +126,6 @@ export async function fetchProgress(
       .maybeSingle();
     
     if (process.env.NODE_ENV !== 'production') {
-      console.log('[fetchProgress] Supabase response:', {
-        userId,
-        manhwaId,
-        hasData: !!data,
-        error: error?.message,
-        rawData: data
-      });
     }
     
     if (error) {
@@ -146,7 +138,6 @@ export async function fetchProgress(
     const result = fromSupabaseRow(data as ReadingProgressRow);
     
     if (process.env.NODE_ENV !== 'production') {
-      console.log('[fetchProgress] Processed result:', result);
     }
     
     return result;
@@ -394,9 +385,6 @@ export async function syncLocalToSupabase(userId: string): Promise<{
   if (synced > 0 && errors.length === 0) {
     clearLocalProgress();
   }
-  
-  console.log(`[ReadingProgressAPI] Synced ${synced}/${entries.length} entries`, 
-    errors.length > 0 ? { errors } : '');
   
   return { synced, errors };
 }

@@ -47,7 +47,6 @@ export function useManhwaData(id: string): UseManhwaDataReturn {
       }
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`📖 Starting fetch for id: ${id}`);
       }
 
       const response = await fetch(`/api/public/${id}`);
@@ -61,7 +60,6 @@ export function useManhwaData(id: string): UseManhwaDataReturn {
       const apiData: ManhwaAPI = await response.json();
 
       if (process.env.NODE_ENV !== 'production') {
-        console.log(`� API Response:`, apiData);
       }
 
       // ✅ Используем ПОЛНЫЙ mapper для конвертации
@@ -70,13 +68,11 @@ export function useManhwaData(id: string): UseManhwaDataReturn {
       // ✅ Проверяем монтирование ПЕРЕД setState
       if (isMountedRef.current) {
         if (process.env.NODE_ENV !== 'production') {
-          console.log(`✅ Манхва завантажена: ${domainManhwa.title}`);
         }
         setManhwa(domainManhwa);
         setError(null);
       } else {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('⚠️ Component unmounted, skipping setState');
         }
       }
     } catch (err) {

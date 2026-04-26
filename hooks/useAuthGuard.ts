@@ -25,7 +25,6 @@ export function useAuthGuard(): UseAuthGuardReturn {
 
   const requireAuth = (callback: () => void) => {
     if (!user) {
-      console.warn('⚠️ Требуется авторизация');
       // Можно показать modal для логина
       return;
     }

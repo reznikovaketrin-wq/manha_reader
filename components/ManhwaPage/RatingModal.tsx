@@ -48,12 +48,9 @@ export const RatingModal = memo(function RatingModal({
 
     try {
       setIsSubmitting(true);
-      console.log('📤 Отправляю оценку:', selectedRating);
       
       // Вызываем callback из родителя
       await onSubmit(selectedRating);
-      
-      console.log('✅ Оценка отправлена успешно');
       
       // Закрываем модалку
       onClose();
@@ -73,7 +70,6 @@ export const RatingModal = memo(function RatingModal({
   // ============================================
   const handleClose = () => {
     if (!isSubmitting) {
-      console.log('🚪 Закрываю модалку');
       setSelectedRating(0);
       onClose();
     }
@@ -142,7 +138,6 @@ export const RatingModal = memo(function RatingModal({
                   star <= selectedRating ? styles.starActive : ''
                 }`}
                 onClick={() => {
-                  console.log('⭐ Выбрана звезда:', star);
                   setSelectedRating(star);
                 }}
                 disabled={isSubmitting}

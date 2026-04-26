@@ -36,11 +36,6 @@ export async function POST(
     const manhwaId = params.id;
     const { rating, userId } = await request.json();
 
-    console.log(`⭐ [API] POST /api/public/${manhwaId}/rate`, {
-      rating,
-      userId: userId?.substring(0, 8) + '...'
-    });
-
     // ============ ВАЛИДАЦИЯ ============
 
     if (!manhwaId) {
@@ -73,14 +68,11 @@ export async function POST(
       .single();
 
     if (manhwaError || !manhwa) {
-      console.log(`⚠️ Манхва не найдена: ${manhwaId}`);
       return NextResponse.json(
         { success: false, message: 'Манхва не найдена' },
         { status: 404 }
       );
     }
-
-    console.log(`✅ Манхва найдена: ${manhwaId}, текущий рейтинг: ${manhwa.rating}`);
 
     // ============ СОХРАНЕНИЕ ОЦЕНКИ ============
 
@@ -94,7 +86,6 @@ export async function POST(
 
     if (existingRating) {
       // Обновляем существующую оценку
-      console.log(`🔄 Обновляю оценку пользователя...`);
 
       const { error: updateError } = await supabaseAdmin
         .from('manhwa_ratings')
@@ -109,11 +100,8 @@ export async function POST(
         console.error('❌ Ошибка обновления оценки:', updateError);
         throw updateError;
       }
-
-      console.log(`✅ Оценка обновлена`);
     } else {
       // Создаем новую оценку
-      console.log(`➕ Создаю новую оценку...`);
 
       const { error: insertError } = await supabaseAdmin
         .from('manhwa_ratings')
@@ -129,13 +117,9 @@ export async function POST(
         console.error('❌ Ошибка создания оценки:', insertError);
         throw insertError;
       }
-
-      console.log(`✅ Оценка создана`);
     }
 
     // ============ ПЕРЕСЧЕТ СРЕДНЕЙ ОЦЕНКИ ============
-
-    console.log(`📊 Пересчитываю среднюю оценку...`);
 
     const { data: allRatings, error: ratingsError } = await supabaseAdmin
       .from('manhwa_ratings')
@@ -157,11 +141,7 @@ export async function POST(
     const newAverageRating = parseFloat((totalSum / allRatings.length).toFixed(1));
     const totalRatings = allRatings.length;
 
-    console.log(`📈 Новая средняя оценка: ${newAverageRating} (всего: ${totalRatings})`);
-
     // ============ ОБНОВЛЕНИЕ МАНХВЫ ============
-
-    console.log(`🔄 Обновляю манхву...`);
 
     const { error: updateManhwaError } = await supabaseAdmin
       .from('admin_manhwa')
@@ -174,7 +154,6 @@ export async function POST(
       console.error('⚠️ Ошибка обновления манхвы:', updateManhwaError);
       // Не прерываем, оценка уже сохранена
     } else {
-      console.log(`✅ Манхва обновлена`);
     }
 
     // ============ УСПЕШНЫЙ ОТВЕТ ============
@@ -186,8 +165,6 @@ export async function POST(
       newAverageRating: newAverageRating,
       totalRatings: totalRatings
     };
-
-    console.log(`✅ Отправляю ответ:`, response);
 
     return NextResponse.json(response);
 

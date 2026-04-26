@@ -24,7 +24,6 @@ async function verifyAdmin(token: string) {
 export async function GET(request: NextRequest, { params }: any) {
   try {
     const manhwaId = params.id;
-    console.log('📖 [API] GET chapters for:', manhwaId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -43,8 +42,6 @@ export async function GET(request: NextRequest, { params }: any) {
       .order('chapter_number', { ascending: true });
 
     if (error) throw error;
-
-    console.log('✅ [API] Got chapters:', data.length);
     return NextResponse.json({ data });
   } catch (error) {
     console.error('❌ [API] Error:', error);
@@ -59,7 +56,6 @@ export async function GET(request: NextRequest, { params }: any) {
 export async function POST(request: NextRequest, { params }: any) {
   try {
     const manhwaId = params.id;
-    console.log('➕ [API] POST chapter for:', manhwaId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -77,7 +73,6 @@ export async function POST(request: NextRequest, { params }: any) {
     // Если номер главы указан в теле запроса, использовать его
     if (body.chapter_number !== undefined && body.chapter_number !== null) {
       nextChapterNumber = Number(body.chapter_number);
-      console.log(`📝 [API] Custom chapter number: ${nextChapterNumber}`);
       
       // Проверить, не существует ли уже глава с таким номером
       const { data: existingChapter, error: checkError } = await supabase
@@ -101,17 +96,13 @@ export async function POST(request: NextRequest, { params }: any) {
       // Если нет глав, начинаем с 0; иначе берем max + 1
       if (maxData && maxData.length > 0) {
         nextChapterNumber = maxData[0].chapter_number + 1;
-        console.log(`📊 [API] Found max chapter ${maxData[0].chapter_number}, next will be ${nextChapterNumber}`);
       } else {
         nextChapterNumber = 0;
-        console.log(`📊 [API] No chapters found, starting with 0`);
       }
     }
 
     // Создать ID главы из номера (без padStart для поддержки дробных чисел)
     const chapterId = String(nextChapterNumber).replace('.', '-');
-
-    console.log(`🎯 [API] Creating chapter: ID=${chapterId}, Number=${nextChapterNumber}, Manhwa=${manhwaId}`);
 
     const { data, error } = await supabase
       .from('chapters')
@@ -129,8 +120,6 @@ export async function POST(request: NextRequest, { params }: any) {
       .single();
 
     if (error) throw error;
-
-    console.log('✅ [API] Chapter created:', chapterId);
     // NOTE: last_chapter_date is NOT updated here.
     // It is only updated when the chapter is actually published or scheduled
     // (via /api/admin/chapters/[chapterId]/publish), so drafts don't affect sort order.

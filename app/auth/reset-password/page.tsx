@@ -35,18 +35,13 @@ function ResetPasswordForm() {
     // This runs ONCE on component mount, synchronously
     if (typeof window !== 'undefined') {
       const hash = window.location.hash || '';
-      console.log('🔍 [Reset Password INIT] Checking hash:', hash || 'empty');
-      console.log('🔍 [Reset Password INIT] Full URL:', window.location.href);
       
       if (hash.startsWith('#')) {
         const params = new URLSearchParams(hash.slice(1));
         const type = params.get('type');
         const accessToken = params.get('access_token');
         
-        console.log('🔍 [Reset Password INIT] Hash params - type:', type, 'token:', accessToken ? 'exists' : 'missing');
-        
         if (type === 'recovery' && accessToken) {
-          console.log('✅ [Reset Password INIT] Recovery token found in hash!');
           sessionStorage.setItem('password_recovery_flow', 'true');
           // Clear hash immediately
           window.history.replaceState(null, '', window.location.pathname);
@@ -56,7 +51,6 @@ function ResetPasswordForm() {
       
       // Check sessionStorage flag
       const hasFlag = sessionStorage.getItem('password_recovery_flow') === 'true';
-      console.log('🔍 [Reset Password INIT] Recovery flag:', hasFlag);
       return hasFlag;
     }
     return false;
@@ -65,14 +59,10 @@ function ResetPasswordForm() {
 
   useEffect(() => {
     const validateToken = async () => {
-      console.log('🔍 [Reset Password] Validating state...');
-      console.log('🔍 [Reset Password] hasValidToken:', hasValidToken);
-      console.log('🔍 [Reset Password] User exists:', !!user);
       
       // Check for errors in URL
       const urlError = searchParams?.get('error') || searchParams?.get('error_description');
       if (urlError) {
-        console.log('❌ [Reset Password] URL error:', urlError);
         setTokenError(decodeURIComponent(urlError));
         setIsCheckingToken(false);
         return;
@@ -80,7 +70,6 @@ function ResetPasswordForm() {
 
       // If we already have a valid token (set during init), we're good
       if (hasValidToken) {
-        console.log('✅ [Reset Password] Valid token confirmed, showing form');
         setIsCheckingToken(false);
         return;
       }
@@ -89,7 +78,6 @@ function ResetPasswordForm() {
       // Recovery sessions have specific AMR (Authentication Method Reference) claims
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('🔍 [Reset Password] Session check:', session ? 'exists' : 'null');
 
         if (session) {
           // Decode access token payload safely to inspect claims (AMR or similar)
@@ -106,14 +94,12 @@ function ResetPasswordForm() {
           };
 
           const payload = decodeJwt(accessToken as string | undefined);
-          console.log('🔍 [Reset Password] Decoded token payload:', payload);
 
           const amr = payload?.amr ?? payload?.amr?.map ? payload.amr : undefined;
           // Recovery sessions often include a claim indicating recovery; fallback to checking `type` claim
           const isRecovery = Array.isArray(amr) ? amr.some((it: any) => it === 'recovery' || it.method === 'recovery') : !!payload?.type && payload.type === 'recovery';
 
           if (isRecovery) {
-            console.log('✅ [Reset Password] Recovery session detected via token payload!');
             sessionStorage.setItem('password_recovery_flow', 'true');
             setHasValidToken(true);
             setIsCheckingToken(false);
@@ -125,15 +111,12 @@ function ResetPasswordForm() {
       }
       
       // No valid token - check if user is logged in normally
-      console.log('🔍 [Reset Password] No recovery token, checking user...');
       if (user) {
-        console.log('🔀 [Reset Password] User logged in normally, redirecting to /profile/change-password');
         router.push('/profile/change-password');
         return;
       }
       
       // Not logged in and no token
-      console.log('❌ [Reset Password] No token and not logged in');
       setTokenError('Відсутній токен відновлення. Перейдіть по посиланню з email.');
       setIsCheckingToken(false);
     };

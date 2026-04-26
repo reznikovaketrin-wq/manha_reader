@@ -40,18 +40,6 @@ function ManhwaPage({
     
     // Временный лог для отладки
     if (process.env.NODE_ENV !== 'production') {
-      console.log('[ManhwaPage] ReadChapters debug:', {
-        manhwaId,
-        progressExists: !!progress,
-        // Детальная информация по ID:
-        savedChapterIds: JSON.stringify(progress.readChapterIds),
-        allChapterIds: JSON.stringify(manhwa?.chapters?.map(ch => ch.id)),
-        firstChapters: manhwa?.chapters?.slice(0, 5).map(ch => ({ id: ch.id, number: ch.chapterNumber })),
-        // Проверка конкретных ID:
-        hasChapter3: progress.readChapterIds?.includes('24'),
-        hasChapter4: progress.readChapterIds?.includes('34'),
-        expectedIDs: ['13', '18', '24', '34'], // Если пользователь читал 4 главы
-      });
     }
     
     return set;

@@ -107,7 +107,6 @@ export function useReaderScroll({
           // Only log the first time a page number is registered to reduce noise
           if (DEBUG_SCROLL && !loggedRegistrations.current.has(pageNumber)) {
             loggedRegistrations.current.add(pageNumber);
-            console.log(`[ReaderScroll] Page registered: ${pageNumber}`);
           }
 
           try {
@@ -124,7 +123,6 @@ export function useReaderScroll({
             if (contentRef.current) {
               contentRef.current.scrollTo({ top: elementTop, behavior: 'smooth' });
               if (DEBUG_SCROLL) {
-                console.log(`[ReaderScroll] ✓ Page ${pageNumber} registered and scrolled`);
               }
             }
             clearTimeout(pending.timer);
@@ -189,12 +187,10 @@ export function useReaderScroll({
       const startTime = Date.now();
       
       if (DEBUG_SCROLL) {
-        console.log(`[ReaderScroll] waitForAndScroll: page=${pageNumber}, timeout=${timeoutMs}ms`);
       }
 
       if (!contentRef.current) {
         if (DEBUG_SCROLL) {
-          console.warn(`[ReaderScroll] No content container`);
         }
         resolve({ success: false, reason: 'no-container', pageNumber });
         return;
@@ -210,7 +206,6 @@ export function useReaderScroll({
         contentRef.current.scrollTo({ top: elementTop, behavior: 'smooth' });
         const elapsed = Date.now() - startTime;
         if (DEBUG_SCROLL) {
-          console.log(`[ReaderScroll] ✓ Scrolled to page ${pageNumber} directly (${elapsed}ms)`);
         }
         resolve({ success: true, reason: 'already-visible', pageNumber, elapsedMs: elapsed });
         return;
@@ -223,7 +218,6 @@ export function useReaderScroll({
         contentRef.current.scrollTo({ top: elementTop, behavior: 'smooth' });
         const elapsed = Date.now() - startTime;
         if (DEBUG_SCROLL) {
-          console.log(`[ReaderScroll] ✓ Scrolled to page ${pageNumber} from refs (${elapsed}ms)`);
         }
         resolve({ success: true, reason: 'already-visible', pageNumber, elapsedMs: elapsed });
         return;
@@ -232,7 +226,6 @@ export function useReaderScroll({
       const timer = window.setTimeout(() => {
         const elapsed = Date.now() - startTime;
         if (DEBUG_SCROLL) {
-          console.warn(`[ReaderScroll] ✗ Timeout waiting for page ${pageNumber} (${elapsed}ms)`);
         }
         const pending = pendingScrolls.current.get(pageNumber);
         if (pending) {

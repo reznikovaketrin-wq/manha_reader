@@ -13,18 +13,10 @@ export const metadata = {
 export const revalidate = 60; // Кеш на 60 секунд
 
 export default async function SchedulePage() {
-  console.log('📅 [SchedulePage] Server component rendering at:', new Date().toISOString());
   
   try {
     // Получить данные на сервере
     const scheduleData = await getManhwaData();
-    
-    console.log('📅 [SchedulePage] Data received:', {
-      totalCount: scheduleData?.length || 0,
-      withSchedule: scheduleData?.filter((m: any) => m.scheduleDay).length || 0,
-      timestamp: new Date().toISOString(),
-      cacheMode: 'ISR 60 seconds (auto-revalidate)',
-    });
 
     return (
       <>

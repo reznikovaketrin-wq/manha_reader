@@ -50,7 +50,6 @@ async function deleteR2Prefix(prefix: string) {
             Delete: { Objects: batch },
           })
         );
-        console.log(`📦 [R2] Deleted ${batch.length} files (prefix: ${prefix})`);
       }
     }
 
@@ -81,7 +80,6 @@ async function verifyAdmin(token: string) {
 export async function GET(request: NextRequest, { params }: any) {
   try {
     const chapterId = params.chapterId;
-    console.log('📖 [API] GET chapter:', chapterId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -110,8 +108,6 @@ export async function GET(request: NextRequest, { params }: any) {
       .order('page_number', { ascending: true });
 
     if (pagesError) throw pagesError;
-
-    console.log('✅ [API] Got chapter with pages:', pages?.length || 0);
     return NextResponse.json({ data: { ...chapter, pages: pages || [] } });
   } catch (error) {
     console.error('❌ [API] Error:', error);
@@ -126,7 +122,6 @@ export async function GET(request: NextRequest, { params }: any) {
 export async function PUT(request: NextRequest, { params }: any) {
   try {
     const chapterId = params.chapterId;
-    console.log('✏️ [API] PUT chapter:', chapterId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -160,15 +155,12 @@ export async function PUT(request: NextRequest, { params }: any) {
     if (error) throw error;
 
     // ✅ Очищаем кеш при обновлении главы
-    console.log(`🔄 [Cache] Revalidating schedule cache`);
     revalidateTag('schedule-data');
     
     // Если есть manhwa_id в данных - очищаем и конкретную манхву
     if (data?.manhwa_id) {
       revalidateTag(`manhwa-${data.manhwa_id}`);
     }
-
-    console.log('✅ [API] Chapter updated');
     return NextResponse.json({ data, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);
@@ -183,7 +175,6 @@ export async function PUT(request: NextRequest, { params }: any) {
 export async function DELETE(request: NextRequest, { params }: any) {
   try {
     const chapterId = params.chapterId;
-    console.log('🗑️ [API] DELETE chapter:', chapterId);
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -218,7 +209,6 @@ export async function DELETE(request: NextRequest, { params }: any) {
       .eq('id', chapterId);
 
     if (dbError) throw dbError;
-    console.log('✅ [API] Chapter deleted from DB');
 
     // 3️⃣ Видалити файли з R2
     try {
@@ -236,7 +226,6 @@ export async function DELETE(request: NextRequest, { params }: any) {
               Delete: { Objects: batch },
             })
           );
-          console.log(`📦 [R2] Deleted ${batch.length} page files`);
         }
       }
 
@@ -245,11 +234,8 @@ export async function DELETE(request: NextRequest, { params }: any) {
       const r2FolderKey = chapter.chapter_id || String(chapter.chapter_number);
       if (chapter.manhwa_id && r2FolderKey) {
         const prefix = `${chapter.manhwa_id}/chapters/${r2FolderKey}/`;
-        console.log(`📦 [R2] Sweeping prefix: ${prefix}`);
         await deleteR2Prefix(prefix);
       }
-
-      console.log('✅ [R2] Chapter files deleted');
     } catch (r2Error) {
       // Логуємо, але не блокуємо відповідь — з БД вже видалено
       console.error('⚠️ [R2] Error deleting chapter files:', r2Error);
@@ -260,8 +246,6 @@ export async function DELETE(request: NextRequest, { params }: any) {
     if (chapter.manhwa_id) {
       revalidateTag(`manhwa-${chapter.manhwa_id}`);
     }
-
-    console.log('✅ [API] Chapter fully deleted');
     return NextResponse.json({ success: true, cacheRevalidated: true });
   } catch (error) {
     console.error('❌ [API] Error:', error);

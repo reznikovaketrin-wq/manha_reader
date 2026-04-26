@@ -99,12 +99,6 @@ export function fromSupabaseRow(row: ReadingProgressRow): ReadingProgress {
   const normalizedChapters = (row.read_chapters || []).map(id => String(id));
   const uniqueReadChapters = [...new Set(normalizedChapters)];
   
-  console.log('[fromSupabaseRow] normalizing chapter IDs', {
-    raw: row.read_chapters,
-    normalized: normalizedChapters,
-    unique: uniqueReadChapters,
-  });
-  
   return {
     manhwaId: row.manhwa_id,
     currentChapterId: String(row.chapter_id), // ИСПРАВЛЕНО: также нормализуем

@@ -13,7 +13,6 @@ import { getSupabaseServerClient } from './supabase-server';
  */
 export async function deleteComment(commentId: string) {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('🗑️ [deleteComment] Attempting to delete comment:', commentId);
   }
 
   const currentUser = await getCurrentUser();
@@ -48,14 +47,12 @@ export async function deleteComment(commentId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📋 [deleteComment] Found comment, user_id:', comment.user_id);
     }
 
     // ✅ ШАГ 2: Проверяем права
     // Если админ - удаляем всё
     if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('👑 [deleteComment] Admin delete allowed');
       }
     }
     // Если обычный пользователь - проверяем что это его комментарий
@@ -64,7 +61,6 @@ export async function deleteComment(commentId: string) {
       return { success: false, error: 'Not authorized' };
     } else {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ [deleteComment] User can delete own comment');
       }
     }
 
@@ -80,7 +76,6 @@ export async function deleteComment(commentId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('✅ [deleteComment] Comment deleted successfully');
     }
     return { success: true };
   } catch (error) {
@@ -100,7 +95,6 @@ export async function deleteComment(commentId: string) {
  */
 export async function deleteReply(replyId: string) {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('🗑️ [deleteReply] Attempting to delete reply:', replyId);
   }
 
   const currentUser = await getCurrentUser();
@@ -135,20 +129,17 @@ export async function deleteReply(replyId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📋 [deleteReply] Found reply, user_id:', reply.user_id);
     }
 
     // ✅ ШАГ 2: Проверяем права
     if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('👑 [deleteReply] Admin delete allowed');
       }
     } else if (reply.user_id !== currentUser.id) {
       console.error('❌ [deleteReply] Not authorized');
       return { success: false, error: 'Not authorized' };
     } else {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ [deleteReply] User can delete own reply');
       }
     }
 
@@ -164,7 +155,6 @@ export async function deleteReply(replyId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('✅ [deleteReply] Reply deleted successfully');
     }
     return { success: true };
   } catch (error) {
@@ -182,7 +172,6 @@ export async function deleteReply(replyId: string) {
  */
 export async function deleteChapterComment(commentId: string) {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('🗑️ [deleteChapterComment] Attempting to delete chapter comment:', commentId);
   }
 
   const currentUser = await getCurrentUser();
@@ -216,19 +205,16 @@ export async function deleteChapterComment(commentId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📋 [deleteChapterComment] Found comment, user_id:', comment.user_id);
     }
 
     if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('👑 [deleteChapterComment] Admin delete allowed');
       }
     } else if (comment.user_id !== currentUser.id) {
       console.error('❌ [deleteChapterComment] Not authorized - not own comment');
       return { success: false, error: 'Not authorized' };
     } else {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ [deleteChapterComment] User can delete own comment');
       }
     }
 
@@ -244,7 +230,6 @@ export async function deleteChapterComment(commentId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('✅ [deleteChapterComment] Comment deleted successfully');
     }
     return { success: true };
   } catch (error) {
@@ -261,7 +246,6 @@ export async function deleteChapterComment(commentId: string) {
  */
 export async function deleteChapterReply(replyId: string) {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('🗑️ [deleteChapterReply] Attempting to delete chapter reply:', replyId);
   }
 
   const currentUser = await getCurrentUser();
@@ -295,19 +279,16 @@ export async function deleteChapterReply(replyId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('📋 [deleteChapterReply] Found reply, user_id:', reply.user_id);
     }
 
     if (isAdmin) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('👑 [deleteChapterReply] Admin delete allowed');
       }
     } else if (reply.user_id !== currentUser.id) {
       console.error('❌ [deleteChapterReply] Not authorized');
       return { success: false, error: 'Not authorized' };
     } else {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('✅ [deleteChapterReply] User can delete own reply');
       }
     }
 
@@ -323,7 +304,6 @@ export async function deleteChapterReply(replyId: string) {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('✅ [deleteChapterReply] Reply deleted successfully');
     }
     return { success: true };
   } catch (error) {

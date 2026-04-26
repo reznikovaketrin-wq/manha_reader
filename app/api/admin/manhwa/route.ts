@@ -31,7 +31,6 @@ async function verifyAdmin(token: string) {
 // GET - получить все манхвы
 export async function GET(request: NextRequest) {
   try {
-    console.log('📚 [API] GET /admin/manhwa');
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -49,8 +48,6 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-
-    console.log('✅ [API] Found', data?.length || 0, 'manhwa');
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('❌ [API] GET error:', error);
@@ -64,7 +61,6 @@ export async function GET(request: NextRequest) {
 // POST - создать новую манхву
 export async function POST(request: NextRequest) {
   try {
-    console.log('📝 [API] POST /admin/manhwa');
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -120,8 +116,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) throw error;
-
-    console.log('✅ [API] Manhwa created:', id);
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('❌ [API] POST error:', error);

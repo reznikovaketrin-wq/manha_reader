@@ -24,29 +24,17 @@ export default function ScheduleClient({ initialData }: ScheduleClientProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔥 [ScheduleClient] Component mounted with initialData:', {
-      type: typeof initialData,
-      isArray: Array.isArray(initialData),
-      length: Array.isArray(initialData) ? initialData.length : 'not array',
-      firstItem: initialData?.[0],
-    });
 
     if (!initialData || !Array.isArray(initialData) || initialData.length === 0) {
-      console.log('⚠️ [ScheduleClient] No data or empty array');
       setScheduleItems([]);
       setLoading(false);
       return;
     }
 
     // Фильтруем только манхвы у которых есть scheduleDay
-    console.log('📋 [ScheduleClient] Filtering items with scheduleDay...');
     const items = initialData
       .filter((m: any) => {
         const has = m.scheduleDay && m.scheduleDay.dayLabel;
-        console.log(`  ${has ? '✅' : '❌'} ${m.id}:`, {
-          scheduleDay: m.scheduleDay,
-          dayLabel: m.scheduleDay?.dayLabel,
-        });
         return has;
       })
       .map((m: any) => ({
@@ -63,9 +51,6 @@ export default function ScheduleClient({ initialData }: ScheduleClientProps) {
         const dayB = DAY_ORDER.indexOf(b.dayBig);
         return dayA - dayB;
       });
-
-    console.log(`✅ [ScheduleClient] Filtered ${items.length} items out of ${initialData.length}`);
-    console.log('📦 [ScheduleClient] Items:', items);
     setScheduleItems(items);
     setLoading(false);
   }, [initialData]);

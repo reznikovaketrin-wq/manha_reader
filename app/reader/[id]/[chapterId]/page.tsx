@@ -342,15 +342,11 @@ export default function ReaderPage() {
               for (let i = 0; i < idxMeta; i++) pageOffset += manhwaMeta.chapters[i].pagesCount || 0;
               const absolutePage = pageOffset + initialPage;
 
-              console.log(`[ReaderPage] (from manhwa meta) Target: relative page ${initialPage}, absolute page ${absolutePage}, pageOffset=${pageOffset}, chapterIndex=${idxMeta}`);
-
               const result = await scroll.waitForAndScroll(absolutePage, timeout);
               computed = true;
 
               if (result.success) {
-                console.log(`[ReaderPage] ✓ Successfully restored to page ${initialPage} (${result.reason}, ${result.elapsedMs}ms)`);
               } else {
-                console.warn(`[ReaderPage] ✗ Failed to restore page ${initialPage}: ${result.reason}`);
                 setRestoreState({ show: true, targetPage: initialPage, absolutePage });
               }
             }
@@ -374,18 +370,13 @@ export default function ReaderPage() {
               for (let i = 0; i < idx; i++) pageOffset += loadedChapters[i].pages.length;
               const absolutePage = pageOffset + initialPage;
 
-              console.log(`[ReaderPage] (from loaded chapters) Target: relative page ${initialPage}, absolute page ${absolutePage}, pageOffset=${pageOffset}, chapterIndex=${idx}`);
-
               const result = await scroll.waitForAndScroll(absolutePage, timeout - (Date.now() - startWait));
 
               if (result.success) {
-                console.log(`[ReaderPage] ✓ Successfully restored to page ${initialPage} (${result.reason}, ${result.elapsedMs}ms)`);
               } else {
-                console.warn(`[ReaderPage] ✗ Failed to restore page ${initialPage}: ${result.reason}`);
                 setRestoreState({ show: true, targetPage: initialPage, absolutePage });
               }
             } else {
-              console.warn(`[ReaderPage] ✗ Chapter ${chapterId} not found in loaded chapters after waiting ${timeout}ms`);
             }
           }
         }
@@ -448,7 +439,6 @@ export default function ReaderPage() {
       } catch (e) {
         // don't break the reader if something fails
         // eslint-disable-next-line no-console
-        console.warn('[ReaderPage] Failed to apply non-infinite mode', e);
       }
     })();
 
@@ -478,7 +468,6 @@ export default function ReaderPage() {
           if (ch.id === readerData.prevChapterMeta!.id) {
             const result = await scroll.waitForAndScroll(pageOffset + 1, 2000);
             if (!result.success) {
-              console.warn(`[ReaderPage] Failed to scroll to prev chapter: ${result.reason}`);
             }
             return;
           }
@@ -510,7 +499,6 @@ export default function ReaderPage() {
           if (ch.id === readerData.nextChapterMeta!.id) {
             const result = await scroll.waitForAndScroll(pageOffset + 1, 2000);
             if (!result.success) {
-              console.warn(`[ReaderPage] Failed to scroll to next chapter: ${result.reason}`);
             }
             return;
           }
@@ -526,7 +514,6 @@ export default function ReaderPage() {
             if (ch.id === readerData.nextChapterMeta!.id) {
               const result = await scroll.waitForAndScroll(pageOffset + 1, 2000);
               if (!result.success) {
-                console.warn(`[ReaderPage] Failed to scroll to loaded next chapter: ${result.reason}`);
               }
               return;
             }
@@ -554,13 +541,10 @@ export default function ReaderPage() {
 
   const handleRetryRestore = useCallback(async () => {
     if (restoreState.absolutePage > 0) {
-      console.log(`[ReaderPage] Retrying restore to page ${restoreState.targetPage}...`);
       const result = await scroll.waitForAndScroll(restoreState.absolutePage, 5000);
       if (result.success) {
-        console.log(`[ReaderPage] ✓ Retry successful`);
         setRestoreState({ show: false, targetPage: 0, absolutePage: 0 });
       } else {
-        console.warn(`[ReaderPage] ✗ Retry failed: ${result.reason}`);
       }
     }
   }, [restoreState, scroll]);

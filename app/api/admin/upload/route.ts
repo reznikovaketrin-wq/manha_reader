@@ -38,7 +38,6 @@ async function verifyAdmin(token: string) {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📤 [API] POST /admin/upload');
 
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -61,8 +60,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`📝 Uploading ${type} for ${manhwaId}`);
-
     // Инициализировать S3 client для R2
     const s3Client = new S3Client({
       region: 'auto',
@@ -80,8 +77,6 @@ export async function POST(request: NextRequest) {
     const fileName = `${type}.${file.name.split('.').pop()}`;
     const key = `${manhwaId}/${fileName}`;
 
-    console.log(`🔑 Key: ${key}`);
-
     // Загрузить на R2
     await s3Client.send(
       new PutObjectCommand({
@@ -94,8 +89,6 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_R2_BASE_URL;
     const fileUrl = `${baseUrl}/${key}`;
-
-    console.log(`✅ File uploaded: ${fileUrl}`);
 
     return NextResponse.json({
       success: true,

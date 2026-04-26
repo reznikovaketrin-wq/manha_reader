@@ -18,7 +18,6 @@ import { mapChaptersAPIToDomain } from './chapterMapper';
  */
 export function mapManhwaAPIToDomain(api: ManhwaAPI): Manhwa {
   if (process.env.NODE_ENV !== 'production') {
-    console.log('🔄 Mapping API to Domain:', api);
   }
   
   return {

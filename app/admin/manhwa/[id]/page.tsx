@@ -2,6 +2,30 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+
+// Supabase returns timestamps without 'Z' suffix (e.g. "2026-04-27T17:00:00").
+// Without 'Z', new Date() treats the string as LOCAL browser time instead of UTC,
+// causing a ±N hour offset depending on the browser's timezone.
+// This helper ensures the string is always parsed as UTC.
+function toUTC(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  // Already has timezone info (+XX:XX or Z) — parse as-is
+  if (dateStr.includes('+') || dateStr.endsWith('Z')) return new Date(dateStr);
+  // No timezone suffix — assume UTC (Supabase stores everything in UTC)
+  return new Date(dateStr + 'Z');
+}
+
+function fmtDate(dateStr: string | null | undefined): string {
+  const d = toUTC(dateStr);
+  if (!d) return '';
+  return d.toLocaleDateString('uk-UA', { timeZone: 'Europe/Kiev' });
+}
+
+function fmtDateTime(dateStr: string | null | undefined): string {
+  const d = toUTC(dateStr);
+  if (!d) return '';
+  return d.toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' });
+}
 import { useUser } from '@/app/providers/UserProvider';
 import { getAccessToken } from '@/lib/auth';
 import { EditableTitle } from '@/components/admin/EditableTitle';
@@ -116,7 +140,6 @@ export default function AdminManhwaDetailPage() {
 
   const loadData = async (accessToken: string) => {
     try {
-      console.log('📖 [AdminDetail] Loading data...');
       setLoading(true);
 
       const manhwaRes = await fetch(`/api/admin/manhwa/${id}`, {
@@ -148,8 +171,6 @@ export default function AdminManhwaDetailPage() {
           };
         }
       }
-
-      console.log('✅ Manhwa loaded:', data.title);
       setManhwa(data);
 
       const chaptersRes = await fetch(`/api/admin/manhwa/${id}/chapters`, {
@@ -160,8 +181,6 @@ export default function AdminManhwaDetailPage() {
 
       const chaptersData = await chaptersRes.json();
       setChapters(chaptersData.data);
-
-      console.log('✅ Data loaded');
     } catch (err) {
       console.error('❌ Error:', err);
       setError(err instanceof Error ? err.message : 'Помилка завантаження');
@@ -187,21 +206,14 @@ export default function AdminManhwaDetailPage() {
         if (value && value.dayLabel) {
           payload.schedule_label = value.dayLabel;
           payload.schedule_note = value.note || '';
-          console.log(`💾 Saving schedule:`, { 
-            dayLabel: value.dayLabel,
-            note: value.note,
-          });
         } else {
           payload.schedule_label = null;
           payload.schedule_note = null;
-          console.log(`💾 Clearing schedule`);
         }
       } else if (field === 'publication_type') {
         payload.publication_type = value;
-        console.log(`💾 Saving publication_type:`, value);
       } else {
         payload[field] = value;
-        console.log(`💾 Saving ${field}:`, value);
       }
 
       const res = await fetch(`/api/admin/manhwa/${id}`, {
@@ -220,7 +232,6 @@ export default function AdminManhwaDetailPage() {
       }
 
       const result = await res.json();
-      console.log(`✅ ${field} saved successfully`);
 
       await invalidateManhwaCache(id);
 
@@ -275,8 +286,6 @@ export default function AdminManhwaDetailPage() {
       formData.append('type', type);
       formData.append('manhwaId', id);
 
-      console.log('📤 Uploading image:', { type, fileName: file.name, size: file.size });
-
       const uploadRes = await fetch('/api/admin/upload', {
         method: 'POST',
         headers: {
@@ -292,8 +301,6 @@ export default function AdminManhwaDetailPage() {
 
       const uploadData = await uploadRes.json();
       const imageUrl = uploadData.url;
-
-      console.log('✅ Image uploaded:', imageUrl);
 
       const updateRes = await fetch(`/api/admin/manhwa/${id}`, {
         method: 'PUT',
@@ -312,8 +319,6 @@ export default function AdminManhwaDetailPage() {
       setManhwa((prev) => (prev ? { ...prev, [imageField]: imageUrl } : null));
 
       await invalidateManhwaCache(id);
-
-      console.log(`✅ ${type} image updated`);
     } catch (err) {
       console.error('❌ Error:', err);
       setError(err instanceof Error ? err.message : 'Помилка загрузки');
@@ -352,7 +357,6 @@ export default function AdminManhwaDetailPage() {
       setCreateFormData({ title: '', description: '', chapter_number: undefined, vip_only: false, vip_early_days: 0 });
       setModal('none');
       await invalidateManhwaCache(id);
-      console.log('✅ Chapter created');
     } catch (err) {
       console.error('❌ Error:', err);
       setError(err instanceof Error ? err.message : 'Помилка');
@@ -374,8 +378,6 @@ export default function AdminManhwaDetailPage() {
       setError(null);
 
       if (!token) throw new Error('No token');
-
-      console.log(`📤 Початок завантаження ${uploadFiles.length} файлів (presigned URLs)...`);
 
       // 1️⃣ Генерація presigned URLs для всіх файлів
       const filesInfo = uploadFiles.map((file, index) => ({
@@ -403,7 +405,6 @@ export default function AdminManhwaDetailPage() {
       }
 
       const { presignedUrls } = await presignedResponse.json();
-      console.log(`✅ Отримано ${presignedUrls.length} presigned URLs`);
 
       // 2️⃣ Прямо завантажити кожен файл в R2 через presigned URL
       const uploadedPages: Array<{ pageNumber: number; filePath: string }> = [];
@@ -433,12 +434,9 @@ export default function AdminManhwaDetailPage() {
             pageNumber: presignedData.pageNumber,
             filePath: presignedData.filePath,
           });
-
-          console.log(`✅ Файл ${index + 1}/${uploadFiles.length}: ${file.name}`);
         });
 
         await Promise.all(batchPromises);
-        console.log(`✅ Завантажено ${Math.min(i + batchSize, uploadFiles.length)} з ${uploadFiles.length} файлів`);
       }
 
       // 3️⃣ Зберегти метаданні в БД
@@ -460,7 +458,6 @@ export default function AdminManhwaDetailPage() {
       }
 
       const { totalPages } = await saveResponse.json();
-      console.log(`✅ Метаданні збережено. Всього сторінок: ${totalPages}`);
 
       setChapters((prev) =>
         prev.map((ch) =>
@@ -471,7 +468,6 @@ export default function AdminManhwaDetailPage() {
       setUploadFiles([]);
       setModal('none');
       await invalidateManhwaCache(id);
-      console.log('✅ Всі файли завантажено успішно через presigned URLs!');
     } catch (err) {
       console.error('❌ Error:', err);
       setError(err instanceof Error ? err.message : 'Помилка завантаження');
@@ -527,18 +523,12 @@ export default function AdminManhwaDetailPage() {
         setPublishVipOnly(false);
         setPublishVipEarlyDays(0);
         await invalidateManhwaCache(id);
-        console.log('✅ Chapter published now');
       } else {
         // Treat user input as Kyiv time (UTC+3) by explicitly appending the offset.
         // Ukraine permanently uses EEST (UTC+3) with no DST since ~2023.
         // Without the offset, new Date() would parse the string as LOCAL browser time,
         // which may differ from UTC+3 and cause the displayed time to be off.
         const scheduledAtISO = `${publishDate}T${publishTime}:00+03:00`;
-        
-        console.log('📅 Publish scheduled:', {
-          userInput: { date: publishDate, time: publishTime },
-          utcTime: scheduledAtISO,
-        });
 
         const body = {
           action: 'schedule',
@@ -571,7 +561,6 @@ export default function AdminManhwaDetailPage() {
         setPublishVipOnly(false);
         setPublishVipEarlyDays(0);
         await invalidateManhwaCache(id);
-        console.log('✅ Chapter scheduled for publication');
       }
     } catch (err) {
       console.error('❌ Error:', err);
@@ -598,7 +587,6 @@ export default function AdminManhwaDetailPage() {
 
       setChapters((prev) => prev.filter((ch) => ch.id !== chapterId));
       await invalidateManhwaCache(id);
-      console.log('✅ Chapter deleted');
     } catch (err) {
       console.error('❌ Error:', err);
       alert('Помилка при видаленні');
@@ -676,8 +664,6 @@ export default function AdminManhwaDetailPage() {
       });
 
       if (!response.ok) throw new Error('Delete failed');
-
-      console.log('✅ Manhwa deleted successfully');
       await invalidateManhwaCache(id);
       
       router.push('/admin/manhwa');
@@ -1095,7 +1081,7 @@ export default function AdminManhwaDetailPage() {
                             )}
                             {!chapter.vip_only && chapter.vip_early_days && chapter.vip_early_days > 0 && chapter.scheduled_at && (
                               <span className="px-2 py-1 bg-indigo-600/20 text-indigo-400 text-xs rounded border border-indigo-500/30">
-                                🔐 VIP: {new Date(chapter.scheduled_at).toLocaleDateString('uk-UA', { timeZone: 'Europe/Kiev' })}
+                                🔐 VIP: {fmtDateTime(chapter.scheduled_at)}
                               </span>
                             )}
                           </div>
@@ -1104,10 +1090,10 @@ export default function AdminManhwaDetailPage() {
 
                           <div className="flex gap-4 text-sm text-text-muted">
                             <span>📄 {chapter.pages_count} сторінок</span>
-                            <span>📅 {new Date(chapter.created_at).toLocaleDateString('uk-UA')}</span>
+                            <span>📅 {fmtDate(chapter.created_at)}</span>
                             {chapter.status === 'scheduled' && (chapter.public_available_at || chapter.scheduled_at) && (
                               <span className="text-yellow-400">
-                                🌍 {new Date(chapter.public_available_at || chapter.scheduled_at!).toLocaleString('uk-UA', { timeZone: 'Europe/Kiev' })}
+                                🌍 {fmtDateTime(chapter.public_available_at || chapter.scheduled_at)}
                               </span>
                             )}
                           </div>

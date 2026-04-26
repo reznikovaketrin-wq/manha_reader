@@ -26,7 +26,6 @@ export default function UserMenu() {
   if (!user || !profile) {
     // Only log in development to avoid console spam
     if (process.env.NODE_ENV === 'development') {
-      console.log('👤 [UserMenu] No user, showing login buttons');
     }
     return (
       <>
@@ -71,12 +70,8 @@ export default function UserMenu() {
   const handleSignOut = async () => {
     startTransition(async () => {
       try {
-        console.log('🔐 [UserMenu] Signing out...');
         
         await signOut();
-        
-        console.log('✅ [UserMenu] Sign out successful');
-        console.log('🔔 [UserMenu] onAuthStateChange triggered, UserProvider updated');
         
         setOpen(false);
         
