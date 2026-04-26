@@ -118,6 +118,26 @@ export async function PUT(request: NextRequest, { params }: any) {
 
     if (error) throw error;
 
+    // ✅ Update last_chapter_date only when chapter becomes accessible:
+    //   - 'publish' action → VIP access starts NOW → use published_at
+    //   - 'schedule' action → VIP access starts at scheduled_at (may be future)
+    //     We store it so the date is set, but public API caps it at NOW when sorting
+    if (data?.manhwa_id) {
+      const effectiveDate = data.published_at || data.scheduled_at;
+      if (effectiveDate) {
+        const supabaseAdmin = getSupabaseAdmin();
+        const { error: dateError } = await supabaseAdmin
+          .from('admin_manhwa')
+          .update({ last_chapter_date: effectiveDate })
+          .eq('id', data.manhwa_id);
+        if (dateError) {
+          console.warn('⚠️ [API] Could not update last_chapter_date:', dateError.message);
+        } else {
+          console.log(`✅ [API] Updated last_chapter_date to ${effectiveDate} for manhwa ${data.manhwa_id}`);
+        }
+      }
+    }
+
     // ✅ Очищаем кеш при публикации
     console.log(`🔄 [Cache] Revalidating schedule cache after publish`);
     revalidateTag('schedule-data');

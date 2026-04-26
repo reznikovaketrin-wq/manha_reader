@@ -131,22 +131,9 @@ export async function POST(request: NextRequest, { params }: any) {
     if (error) throw error;
 
     console.log('✅ [API] Chapter created:', chapterId);
-
-    // 🆕 ОБНОВЛЯЕМ last_chapter_date в манхве
-    console.log('🔄 [API] Updating last_chapter_date for:', manhwaId);
-    const now = new Date().toISOString();
-    
-    const { error: updateError } = await supabase
-      .from('admin_manhwa')
-      .update({ last_chapter_date: now })
-      .eq('id', manhwaId);
-
-    if (updateError) {
-      console.error('⚠️ [API] Warning: Could not update last_chapter_date:', updateError);
-      // Не прерываем процесс, глава уже создана
-    } else {
-      console.log('✅ [API] Updated last_chapter_date for:', manhwaId);
-    }
+    // NOTE: last_chapter_date is NOT updated here.
+    // It is only updated when the chapter is actually published or scheduled
+    // (via /api/admin/chapters/[chapterId]/publish), so drafts don't affect sort order.
 
     return NextResponse.json({ data });
   } catch (error) {

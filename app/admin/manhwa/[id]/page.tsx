@@ -529,10 +529,11 @@ export default function AdminManhwaDetailPage() {
         await invalidateManhwaCache(id);
         console.log('✅ Chapter published now');
       } else {
-        // Використовуємо локальний час (браузер в UTC+3), щоб 12:00 → 09:00 UTC,
-        // а при відображенні toLocaleString('uk-UA') покаже назад 12:00
-        const localDate = new Date(`${publishDate}T${publishTime}:00`);
-        const scheduledAtISO = localDate.toISOString();
+        // Treat user input as Kyiv time (UTC+3) by explicitly appending the offset.
+        // Ukraine permanently uses EEST (UTC+3) with no DST since ~2023.
+        // Without the offset, new Date() would parse the string as LOCAL browser time,
+        // which may differ from UTC+3 and cause the displayed time to be off.
+        const scheduledAtISO = `${publishDate}T${publishTime}:00+03:00`;
         
         console.log('📅 Publish scheduled:', {
           userInput: { date: publishDate, time: publishTime },
@@ -1431,9 +1432,10 @@ export default function AdminManhwaDetailPage() {
                         ) : publishDate ? (
                           <>
                             🌍 Всі отримають доступ{' '}
-                            <span className="text-green-400">{new Date(`${publishDate}T${publishTime}`).toLocaleDateString('uk-UA')}</span>{'  '}⭐ VIP — на{' '}
+                            <span className="text-green-400">{new Date(`${publishDate}T${publishTime}:00+03:00`).toLocaleDateString('uk-UA', { timeZone: 'Europe/Kiev' })}</span>{' '}о{' '}
+                            <span className="text-green-400">{publishTime}</span>{'  '}⭐ VIP — на{' '}
                             <span className="text-yellow-400">{publishVipEarlyDays} {publishVipEarlyDays === 1 ? 'день' : 'днів'}</span>{' '}раніше{' '}
-                            ({new Date(new Date(`${publishDate}T${publishTime}`).getTime() - publishVipEarlyDays * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA')})
+                            ({new Date(new Date(`${publishDate}T${publishTime}:00+03:00`).getTime() - publishVipEarlyDays * 24 * 60 * 60 * 1000).toLocaleDateString('uk-UA', { timeZone: 'Europe/Kiev' })})
                           </>
                         ) : (
                           `⭐ VIP отримають доступ на ${publishVipEarlyDays} ${publishVipEarlyDays === 1 ? 'день' : 'днів'} раніше за публічну дату`

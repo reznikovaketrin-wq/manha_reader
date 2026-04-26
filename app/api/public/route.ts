@@ -104,6 +104,16 @@ export async function GET(request: NextRequest) {
         };
       }
 
+      // lastChapterDate: cap at NOW so scheduled (future) chapters
+      // don't push the manhwa above already-published ones.
+      // A chapter scheduled for tomorrow should only affect sort order from tomorrow onwards.
+      const rawDate = manhwa.last_chapter_date;
+      const effectiveLastChapterDate = rawDate
+        ? new Date(rawDate).getTime() > Date.now()
+          ? new Date().toISOString()   // future → treat as "just now"
+          : rawDate
+        : null;
+
       const result = {
         id: manhwa.id,
         title: manhwa.title,
@@ -118,7 +128,7 @@ export async function GET(request: NextRequest) {
         type: manhwa.type,
         publicationType: manhwa.publication_type,
         scheduleDay: scheduleDay,
-        lastChapterDate: manhwa.last_chapter_date,
+        lastChapterDate: effectiveLastChapterDate,
         chaptersCount: chaptersCountMap.get(manhwa.id) || 0,
       };
       
