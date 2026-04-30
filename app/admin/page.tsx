@@ -73,11 +73,11 @@ export default function AdminManhwaPage() {
   }
 
   return (
-    <div className="min-h-screen p-6">
+    <div className="min-h-screen p-3 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-wrap justify-between items-start gap-4">
           <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-4xl font-bold bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent">
               ⚙️ Адмін-панель
             </h1>
             <p className="text-text-muted mt-2 text-lg">Управління контентом та користувачами</p>
@@ -141,7 +141,7 @@ export default function AdminManhwaPage() {
           </button>
         </div>
 
-        <div className="bg-card-bg rounded-3xl border border-text-muted/10 p-6 min-h-[500px]">
+        <div className="bg-card-bg rounded-3xl border border-text-muted/10 p-3 sm:p-6 min-h-[500px]">
           {activeTab === "manhwa" && (
             <>
               {manhwas.length === 0 ? (

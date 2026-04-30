@@ -746,7 +746,7 @@ export default function AdminManhwaDetailPage() {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-3 sm:p-6">
           <div className="max-w-7xl mx-auto">
             {error && (
               <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 text-red-400 rounded-lg">
@@ -989,8 +989,8 @@ export default function AdminManhwaDetailPage() {
               </div>
             </div>
 
-            <div className="bg-card-bg border border-text-muted/20 rounded-lg p-6">
-              <div className="flex justify-between items-center mb-6">
+            <div className="bg-card-bg border border-text-muted/20 rounded-lg p-4 sm:p-6">
+              <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
                 <h2 className="text-2xl font-bold text-text-main">📚 Розділи</h2>
                 <button
                   onClick={() => {
@@ -1031,9 +1031,9 @@ export default function AdminManhwaDetailPage() {
                       key={chapter.id}
                       className="group p-4 bg-bg-main border border-text-muted/20 rounded-lg hover:border-accent-gradient transition-all"
                     >
-                      <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
                             {editingChapterId === chapter.id ? (
                               <div className="flex items-center gap-2">
                                 <span className="text-text-muted text-sm font-semibold">Розділ</span>
@@ -1088,7 +1088,7 @@ export default function AdminManhwaDetailPage() {
 
                           <p className="text-sm text-text-muted mb-2">{chapter.description}</p>
 
-                          <div className="flex gap-4 text-sm text-text-muted">
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-muted">
                             <span>📄 {chapter.pages_count} сторінок</span>
                             <span>📅 {fmtDate(chapter.created_at)}</span>
                             {chapter.status === 'scheduled' && (chapter.public_available_at || chapter.scheduled_at) && (
@@ -1099,7 +1099,7 @@ export default function AdminManhwaDetailPage() {
                           </div>
                         </div>
 
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex flex-wrap gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => fetchChapterPages(chapter)}
                             disabled={chapter.pages_count === 0}
