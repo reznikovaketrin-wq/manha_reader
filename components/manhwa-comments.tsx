@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { useUser } from '@/app/providers/UserProvider';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { deleteComment, deleteReply } from '@/lib/comments-actions';
+import { supabase } from '@/lib/supabase-client';
 import {
   loadManhwaComments,
   createManhwaComment,
@@ -135,7 +136,9 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
     setSubmitting(true);
 
     try {
+      const { data: { user: freshUser } } = await supabase.auth.getUser();
       const displayName = (profile as any)?.username
+        || (freshUser as any)?.user_metadata?.username
         || (user as any)?.user_metadata?.username
         || (user.email || '').split('@')[0];
       const data = await createManhwaComment(manhwaId, user.id, newComment, null, displayName);
@@ -174,7 +177,9 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
       setSubmitting(true);
 
       try {
+        const { data: { user: freshUser } } = await supabase.auth.getUser();
         const displayName = (profile as any)?.username
+          || (freshUser as any)?.user_metadata?.username
           || (user as any)?.user_metadata?.username
           || (user.email || '').split('@')[0];
         const data = await createManhwaComment(manhwaId, user.id, replyText, parentCommentId, displayName);
