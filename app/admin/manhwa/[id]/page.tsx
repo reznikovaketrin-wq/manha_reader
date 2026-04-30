@@ -1031,8 +1031,8 @@ export default function AdminManhwaDetailPage() {
                       key={chapter.id}
                       className="group p-4 bg-bg-main border border-text-muted/20 rounded-lg hover:border-accent-gradient transition-all"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2 mb-2">
                             {editingChapterId === chapter.id ? (
                               <div className="flex items-center gap-2">
@@ -1099,14 +1099,14 @@ export default function AdminManhwaDetailPage() {
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0">
                           <button
                             onClick={() => fetchChapterPages(chapter)}
                             disabled={chapter.pages_count === 0}
-                            className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            className="px-2 sm:px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
                             title={chapter.pages_count === 0 ? 'Немає сторінок' : `Перегляд ${chapter.pages_count} сторінок`}
                           >
-                            👁 Перегляд
+                            👁<span className="hidden sm:inline"> Перегляд</span>
                           </button>
 
                           <button
@@ -1116,9 +1116,9 @@ export default function AdminManhwaDetailPage() {
                               setUploadFiles([]);
                             }}
                             disabled={uploading}
-                            className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            className="px-2 sm:px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
                           >
-                            📤 Сторінки
+                            📤<span className="hidden sm:inline"> Сторінки</span>
                           </button>
 
                           <button
@@ -1131,16 +1131,16 @@ export default function AdminManhwaDetailPage() {
                               setPublishVipEarlyDays(0);
                             }}
                             disabled={uploading || chapter.pages_count === 0}
-                            className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            className="px-2 sm:px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50 whitespace-nowrap"
                             title={chapter.pages_count === 0 ? 'Спочатку завантажте сторінки' : ''}
                           >
-                            ⏰ Публікація
+                            ⏰<span className="hidden sm:inline"> Публікація</span>
                           </button>
 
                           <button
                             onClick={() => handleDeleteChapter(chapter.id)}
                             disabled={uploading}
-                            className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+                            className="px-2 sm:px-3 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg transition-colors disabled:opacity-50"
                           >
                             🗑️
                           </button>
