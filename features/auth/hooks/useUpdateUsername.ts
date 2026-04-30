@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { authService } from '../services/AuthService';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '@/lib/supabase-client';
 
 export function useUpdateUsername() {
   const [username, setUsername] = useState('');
@@ -58,6 +59,21 @@ export function useUpdateUsername() {
         if (refreshUser) {
           await refreshUser();
         }
+
+        // Sync display_name in all user's comments (fire-and-forget)
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            fetch('/api/profile/sync-username', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ username }),
+            });
+          }
+        } catch (_) { /* non-critical */ }
       }
     } catch (err: any) {
       setError(err.message || 'Помилка при зміні імені користувача');

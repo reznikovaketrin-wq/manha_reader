@@ -193,13 +193,15 @@ export async function loadManhwaComments(
     if (error) throw error;
     const rows = (data || []) as any[];
 
-    // RLS blocks direct users table query from anon client.
-    // Use our server-side API route that uses service role key to get current usernames.
-    const needFallback = rows.some(r => !r.users || !r.users.username);
+    // If ALL rows have display_name — no API call needed (fast path)
+    const needFallback = rows.some(r => !r.display_name && (!r.users || !r.users.username));
     console.log('[loadManhwaComments] needFallback:', needFallback);
     if (!needFallback) return rows as CommentWithUser[];
 
-    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+    // Some old comments may lack display_name — fetch their usernames via server API
+    const userIds = Array.from(new Set(
+      rows.filter((r: any) => !r.display_name).map((r: any) => r.user_id).filter(Boolean)
+    ));
     console.log('[loadManhwaComments] userIds to fetch via API:', userIds);
     if (userIds.length === 0) return rows as CommentWithUser[];
 
@@ -261,7 +263,8 @@ export async function createManhwaComment(
   manhwaId: string,
   userId: string,
   content: string,
-  parentCommentId?: string | null
+  parentCommentId?: string | null,
+  displayName?: string | null
 ): Promise<CommentWithUser> {
   try {
     const { data, error } = await supabase
@@ -272,6 +275,7 @@ export async function createManhwaComment(
           manhwa_id: manhwaId,
           content,
           parent_comment_id: parentCommentId || null,
+          display_name: displayName || null,
         },
       ])
       .select('id, user_id, content, created_at, updated_at, parent_comment_id, display_name, users(username,email)')
@@ -288,6 +292,7 @@ export async function createManhwaComment(
           manhwa_id: manhwaId,
           content,
           parent_comment_id: parentCommentId || null,
+          display_name: displayName || null,
         },
       ])
       .select('id, user_id, content, created_at, updated_at, parent_comment_id, display_name')

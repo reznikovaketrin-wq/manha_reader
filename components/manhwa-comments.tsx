@@ -135,7 +135,8 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
     setSubmitting(true);
 
     try {
-      const data = await createManhwaComment(manhwaId, user.id, newComment);
+      const displayName = (profile as any)?.username || (user.email || '').split('@')[0];
+      const data = await createManhwaComment(manhwaId, user.id, newComment, null, displayName);
       const newEnrichedComment: EnrichedComment = {
         ...data,
         display_name: (profile as any)?.username || (user.email || '').split('@')[0],
@@ -171,7 +172,8 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
       setSubmitting(true);
 
       try {
-        const data = await createManhwaComment(manhwaId, user.id, replyText, parentCommentId);
+        const displayName = (profile as any)?.username || (user.email || '').split('@')[0];
+        const data = await createManhwaComment(manhwaId, user.id, replyText, parentCommentId, displayName);
         const newReply: EnrichedComment = {
           ...data,
           display_name: (profile as any)?.username || (user.email || '').split('@')[0],
