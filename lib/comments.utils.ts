@@ -183,7 +183,49 @@ export async function loadManhwaComments(
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []) as CommentWithUser[];
+    const rows = (data || []) as any[];
+
+    // If foreign key join returned users — return as-is
+    const needFallback = rows.some(r => !r.users || !r.users.username);
+    if (!needFallback) return rows as CommentWithUser[];
+
+    // RLS likely blocked the join — fetch users manually
+    const userIds = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+    if (userIds.length === 0) return rows as CommentWithUser[];
+
+    let usersMap = new Map<string, { username?: string | null; email?: string | null }>();
+
+    const { data: usersData, error: usersError } = await supabase
+      .from('users')
+      .select('id, username, email')
+      .in('id', userIds);
+
+    if (!usersError && usersData) {
+      (usersData as any[]).forEach((u: any) => usersMap.set(u.id, { username: u.username, email: u.email }));
+    }
+
+    // Also try profiles table if some users still missing username
+    if (usersMap.size < userIds.length || [...usersMap.values()].some(u => !u.username)) {
+      try {
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, username, email')
+          .in('id', userIds);
+        (profilesData || []).forEach((u: any) => {
+          const existing = usersMap.get(u.id);
+          usersMap.set(u.id, {
+            username: u.username || existing?.username,
+            email: u.email || existing?.email,
+          });
+        });
+      } catch (_) { /* ignore */ }
+    }
+
+    return rows.map((r: any) => {
+      const joined = r.users;
+      const manual = usersMap.get(r.user_id);
+      return { ...r, users: (joined?.username ? joined : manual) || joined || null };
+    }) as CommentWithUser[];
   } catch (err) {
     const { data, error } = await supabase
       .from('manhwa_comments')
