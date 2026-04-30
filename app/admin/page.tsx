@@ -184,20 +184,22 @@ export default function AdminManhwaPage() {
                           <div className="w-full h-full flex items-center justify-center text-3xl">📚</div>
                         )}
 
-                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
-                          <span className="text-yellow-400 font-bold text-xs flex items-center gap-1">
-                            ⭐ {manhwa.rating.toFixed(1)}
-                          </span>
-                        </div>
-
-                        {/* Views & Comments */}
-                        <div className="absolute bottom-2 left-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <span className="bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-md flex items-center gap-1">
-                            👁 {(manhwa.views_count ?? 0).toLocaleString()}
-                          </span>
-                          <span className="bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-md flex items-center gap-1">
-                            💬 {manhwa.comments_count ?? 0}
-                          </span>
+                        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+                          <div className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10">
+                            <span className="text-yellow-400 font-bold text-xs flex items-center gap-1">
+                              ⭐ {manhwa.rating.toFixed(1)}
+                            </span>
+                          </div>
+                          <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
+                            <span className="text-white text-xs flex items-center gap-1">
+                              👁 {(manhwa.views_count ?? 0).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
+                            <span className="text-white text-xs flex items-center gap-1">
+                              💬 {manhwa.comments_count ?? 0}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
