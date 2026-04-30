@@ -182,15 +182,25 @@ export async function loadManhwaComments(
       .eq('manhwa_id', manhwaId)
       .order('created_at', { ascending: false });
 
+    console.log('[loadManhwaComments] primary query error:', error);
+    console.log('[loadManhwaComments] raw rows count:', data?.length ?? 0);
+    if (data?.length) {
+      console.log('[loadManhwaComments] first row users field:', JSON.stringify((data[0] as any).users));
+      console.log('[loadManhwaComments] first row user_id:', (data[0] as any).user_id);
+      console.log('[loadManhwaComments] first row display_name:', (data[0] as any).display_name);
+    }
+
     if (error) throw error;
     const rows = (data || []) as any[];
 
     // If foreign key join returned users — return as-is
     const needFallback = rows.some(r => !r.users || !r.users.username);
+    console.log('[loadManhwaComments] needFallback:', needFallback);
     if (!needFallback) return rows as CommentWithUser[];
 
     // RLS likely blocked the join — fetch users manually
     const userIds = Array.from(new Set(rows.map((r: any) => r.user_id).filter(Boolean)));
+    console.log('[loadManhwaComments] userIds to fetch:', userIds);
     if (userIds.length === 0) return rows as CommentWithUser[];
 
     let usersMap = new Map<string, { username?: string | null; email?: string | null }>();
@@ -200,6 +210,9 @@ export async function loadManhwaComments(
       .select('id, username, email')
       .in('id', userIds);
 
+    console.log('[loadManhwaComments] users table query error:', usersError);
+    console.log('[loadManhwaComments] users table data:', JSON.stringify(usersData));
+
     if (!usersError && usersData) {
       (usersData as any[]).forEach((u: any) => usersMap.set(u.id, { username: u.username, email: u.email }));
     }
@@ -207,10 +220,12 @@ export async function loadManhwaComments(
     // Also try profiles table if some users still missing username
     if (usersMap.size < userIds.length || [...usersMap.values()].some(u => !u.username)) {
       try {
-        const { data: profilesData } = await supabase
+        const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
           .select('id, username, email')
           .in('id', userIds);
+        console.log('[loadManhwaComments] profiles query error:', profilesError);
+        console.log('[loadManhwaComments] profiles data:', JSON.stringify(profilesData));
         (profilesData || []).forEach((u: any) => {
           const existing = usersMap.get(u.id);
           usersMap.set(u.id, {
@@ -221,10 +236,14 @@ export async function loadManhwaComments(
       } catch (_) { /* ignore */ }
     }
 
+    console.log('[loadManhwaComments] final usersMap:', JSON.stringify([...usersMap.entries()]));
+
     return rows.map((r: any) => {
       const joined = r.users;
       const manual = usersMap.get(r.user_id);
-      return { ...r, users: (joined?.username ? joined : manual) || joined || null };
+      const resolved = (joined?.username ? joined : manual) || joined || null;
+      console.log(`[loadManhwaComments] comment ${r.id} → resolved users:`, JSON.stringify(resolved));
+      return { ...r, users: resolved };
     }) as CommentWithUser[];
   } catch (err) {
     const { data, error } = await supabase
