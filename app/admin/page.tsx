@@ -21,6 +21,8 @@ interface Manhwa {
   cover_image?: string;
   tags?: string[];
   created_at?: string;
+  views_count?: number;
+  comments_count?: number;
 }
 
 export default function AdminManhwaPage() {
@@ -187,7 +189,17 @@ export default function AdminManhwaPage() {
                             ⭐ {manhwa.rating.toFixed(1)}
                           </span>
                         </div>
-                        
+
+                        {/* Views & Comments */}
+                        <div className="absolute bottom-2 left-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <span className="bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-md flex items-center gap-1">
+                            👁 {(manhwa.views_count ?? 0).toLocaleString()}
+                          </span>
+                          <span className="bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded-md flex items-center gap-1">
+                            💬 {manhwa.comments_count ?? 0}
+                          </span>
+                        </div>
+
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       </div>
 

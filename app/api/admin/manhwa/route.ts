@@ -42,13 +42,28 @@ export async function GET(request: NextRequest) {
 
     const supabase = getSupabaseAdmin();
 
-    const { data, error } = await supabase
-      .from('admin_manhwa')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [{ data, error }, { data: viewsData }, { data: commentsData }] = await Promise.all([
+      supabase.from('admin_manhwa').select('*').order('created_at', { ascending: false }),
+      supabase.from('views').select('manhwa_id, view_count'),
+      supabase.from('manhwa_comments').select('manhwa_id'),
+    ]);
 
     if (error) throw error;
-    return NextResponse.json({ success: true, data });
+
+    // Build lookup maps
+    const viewsMap: Record<string, number> = {};
+    for (const v of viewsData ?? []) viewsMap[v.manhwa_id] = v.view_count;
+
+    const commentsMap: Record<string, number> = {};
+    for (const c of commentsData ?? []) commentsMap[c.manhwa_id] = (commentsMap[c.manhwa_id] ?? 0) + 1;
+
+    const enriched = (data ?? []).map((m: Record<string, unknown>) => ({
+      ...m,
+      views_count: viewsMap[m.id as string] ?? 0,
+      comments_count: commentsMap[m.id as string] ?? 0,
+    }));
+
+    return NextResponse.json({ success: true, data: enriched });
   } catch (error) {
     console.error('❌ [API] GET error:', error);
     return NextResponse.json(
