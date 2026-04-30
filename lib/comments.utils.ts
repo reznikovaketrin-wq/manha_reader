@@ -182,27 +182,17 @@ export async function loadManhwaComments(
       .eq('manhwa_id', manhwaId)
       .order('created_at', { ascending: false });
 
-    console.log('[loadManhwaComments] primary query error:', error);
-    console.log('[loadManhwaComments] raw rows count:', data?.length ?? 0);
-    if (data?.length) {
-      console.log('[loadManhwaComments] first row users field:', JSON.stringify((data[0] as any).users));
-      console.log('[loadManhwaComments] first row user_id:', (data[0] as any).user_id);
-      console.log('[loadManhwaComments] first row display_name:', (data[0] as any).display_name);
-    }
-
     if (error) throw error;
     const rows = (data || []) as any[];
 
     // If ALL rows have display_name — no API call needed (fast path)
     const needFallback = rows.some(r => !r.display_name && (!r.users || !r.users.username));
-    console.log('[loadManhwaComments] needFallback:', needFallback);
     if (!needFallback) return rows as CommentWithUser[];
 
     // Some old comments may lack display_name — fetch their usernames via server API
     const userIds = Array.from(new Set(
       rows.filter((r: any) => !r.display_name).map((r: any) => r.user_id).filter(Boolean)
     ));
-    console.log('[loadManhwaComments] userIds to fetch via API:', userIds);
     if (userIds.length === 0) return rows as CommentWithUser[];
 
     let usersMap = new Map<string, string>(); // id → username
@@ -211,20 +201,12 @@ export async function loadManhwaComments(
       const res = await fetch(`/api/public/usernames?ids=${userIds.join(',')}`);
       if (res.ok) {
         const usersData: { id: string; username: string }[] = await res.json();
-        console.log('[loadManhwaComments] API usernames response:', JSON.stringify(usersData));
         usersData.forEach(u => { if (u.username) usersMap.set(u.id, u.username); });
-      } else {
-        console.log('[loadManhwaComments] API usernames error status:', res.status);
       }
-    } catch (fetchErr) {
-      console.log('[loadManhwaComments] API fetch error:', fetchErr);
-    }
-
-    console.log('[loadManhwaComments] final usersMap:', JSON.stringify([...usersMap.entries()]));
+    } catch (_) { /* non-critical */ }
 
     return rows.map((r: any) => {
       const username = usersMap.get(r.user_id) || r.users?.username || null;
-      console.log(`[loadManhwaComments] comment ${r.id} → username:`, username);
       return { ...r, users: username ? { username } : (r.users || null) };
     }) as CommentWithUser[];
   } catch (err) {

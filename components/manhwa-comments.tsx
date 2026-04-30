@@ -135,14 +135,16 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
     setSubmitting(true);
 
     try {
-      const displayName = (profile as any)?.username || (user.email || '').split('@')[0];
+      const displayName = (profile as any)?.username
+        || (user as any)?.user_metadata?.username
+        || (user.email || '').split('@')[0];
       const data = await createManhwaComment(manhwaId, user.id, newComment, null, displayName);
       const newEnrichedComment: EnrichedComment = {
         ...data,
-        display_name: (profile as any)?.username || (user.email || '').split('@')[0],
+        display_name: displayName,
         user_email: user.email,
         // Attach current user's username/email so UI shows username immediately
-        users: { username: (profile as any)?.username, email: user.email },
+        users: { username: displayName, email: user.email },
         likes_count: 0,
         user_liked: false,
       };
@@ -172,11 +174,13 @@ export const ManhwaCommentsComponent = memo(function ManhwaCommentsComponent({
       setSubmitting(true);
 
       try {
-        const displayName = (profile as any)?.username || (user.email || '').split('@')[0];
+        const displayName = (profile as any)?.username
+          || (user as any)?.user_metadata?.username
+          || (user.email || '').split('@')[0];
         const data = await createManhwaComment(manhwaId, user.id, replyText, parentCommentId, displayName);
         const newReply: EnrichedComment = {
           ...data,
-          display_name: (profile as any)?.username || (user.email || '').split('@')[0],
+          display_name: displayName,
           user_email: user.email,
           likes_count: 0,
           user_liked: false,
