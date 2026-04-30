@@ -52,15 +52,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Получаем количество опубликованных глав для каждой манхвы
-    const { data: chaptersData } = await supabase
-      .from('chapters')
-      .select('manhwa_id')
-      .eq('status', 'published');
+    const now = new Date().toISOString();
 
+    // Fetch all chapters that are currently accessible:
+    //   - status='published' (released immediately or VIP-only)
+    //   - status='scheduled' AND scheduled_at <= NOW (VIP early access has started)
+    // We use these to compute the true effective lastChapterDate per manhwa,
+    // so sorting reacts the moment a chapter becomes accessible — not when it was created.
+    const { data: accessibleChapters } = await supabase
+      .from('chapters')
+      .select('manhwa_id, published_at, scheduled_at, status')
+      .or(`status.eq.published,and(status.eq.scheduled,scheduled_at.lte.${now})`);
+
+    // Build maps: chaptersCount and lastChapterDate per manhwa
     const chaptersCountMap = new Map<string, number>();
-    (chaptersData || []).forEach((ch: any) => {
-      chaptersCountMap.set(ch.manhwa_id, (chaptersCountMap.get(ch.manhwa_id) || 0) + 1);
+    const lastChapterDateMap = new Map<string, string>();
+
+    (accessibleChapters || []).forEach((ch: any) => {
+      // Count published chapters only
+      if (ch.status === 'published') {
+        chaptersCountMap.set(ch.manhwa_id, (chaptersCountMap.get(ch.manhwa_id) || 0) + 1);
+      }
+
+      // Effective access date: published_at for published, scheduled_at for scheduled-but-accessible
+      const accessDate = ch.published_at || ch.scheduled_at;
+      if (!accessDate) return;
+
+      const current = lastChapterDateMap.get(ch.manhwa_id);
+      // Normalize: ensure UTC by appending Z if missing (Supabase omits it)
+      const normalizedDate = accessDate.endsWith('Z') || accessDate.includes('+') ? accessDate : accessDate + 'Z';
+      if (!current || new Date(normalizedDate) > new Date(current)) {
+        lastChapterDateMap.set(ch.manhwa_id, normalizedDate);
+      }
     });
 
     // Трансформируем данные из БД в API формат (camelCase)
@@ -87,15 +110,9 @@ export async function GET(request: NextRequest) {
         };
       }
 
-      // lastChapterDate: cap at NOW so scheduled (future) chapters
-      // don't push the manhwa above already-published ones.
-      // A chapter scheduled for tomorrow should only affect sort order from tomorrow onwards.
-      const rawDate = manhwa.last_chapter_date;
-      const effectiveLastChapterDate = rawDate
-        ? new Date(rawDate).getTime() > Date.now()
-          ? new Date().toISOString()   // future → treat as "just now"
-          : rawDate
-        : null;
+      // lastChapterDate: taken from accessible chapters map (already UTC-normalized).
+      // This is null until at least one chapter becomes accessible (published or scheduled_at <= now).
+      const effectiveLastChapterDate = lastChapterDateMap.get(manhwa.id) ?? null;
 
       const result = {
         id: manhwa.id,
