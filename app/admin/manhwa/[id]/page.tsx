@@ -113,6 +113,9 @@ export default function AdminManhwaDetailPage() {
 
   // Редагування нумерації глави
   const [editingChapterId, setEditingChapterId] = useState<number | null>(null);
+
+  // Сортування розділів: 'desc' = нові зверху (за замовчуванням), 'asc' = старі зверху
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [editChapterNumber, setEditChapterNumber] = useState<string>('');
 
   // ✅ Загружаем токен и данные
@@ -992,19 +995,28 @@ export default function AdminManhwaDetailPage() {
             <div className="bg-card-bg border border-text-muted/20 rounded-lg p-4 sm:p-6">
               <div className="flex flex-wrap justify-between items-center gap-3 mb-6">
                 <h2 className="text-2xl font-bold text-text-main">📚 Розділи</h2>
-                <button
-                  onClick={() => {
-                    setModal('create');
-                    setCreateFormData({ title: '', description: '', chapter_number: undefined, vip_only: false, vip_early_days: 0 });
-                  }}
-                  className="px-4 py-2 relative bg-black text-white rounded-lg font-semibold overflow-hidden"
-                  style={{
-                    background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
-                    border: '2px solid transparent',
-                  }}
-                >
-                  ➕ Завантажити розділ
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSortOrder(o => o === 'desc' ? 'asc' : 'desc')}
+                    className="px-3 py-2 bg-card-bg border border-text-muted/30 text-text-main rounded-lg font-semibold text-sm hover:border-text-muted/60 transition-all"
+                    title={sortOrder === 'desc' ? 'Нові зверху — натисни щоб показати старі зверху' : 'Старі зверху — натисни щоб показати нові зверху'}
+                  >
+                    {sortOrder === 'desc' ? '↓ Нові зверху' : '↑ Старі зверху'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setModal('create');
+                      setCreateFormData({ title: '', description: '', chapter_number: undefined, vip_only: false, vip_early_days: 0 });
+                    }}
+                    className="px-4 py-2 relative bg-black text-white rounded-lg font-semibold overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(#000000, #000000) padding-box, linear-gradient(135deg, #FF1B6D, #A259FF) border-box',
+                      border: '2px solid transparent',
+                    }}
+                  >
+                    ➕ Завантажити розділ
+                  </button>
+                </div>
               </div>
 
               {chapters.length === 0 ? (
@@ -1026,7 +1038,7 @@ export default function AdminManhwaDetailPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {chapters.map((chapter) => (
+                  {[...chapters].sort((a, b) => sortOrder === 'desc' ? b.chapter_number - a.chapter_number : a.chapter_number - b.chapter_number).map((chapter) => (
                     <div
                       key={chapter.id}
                       className="group p-4 bg-bg-main border border-text-muted/20 rounded-lg hover:border-accent-gradient transition-all"
